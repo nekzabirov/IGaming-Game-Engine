@@ -21,6 +21,40 @@ application {
     mainClass.set("com.nekgamebling.MainKt")
 }
 
+// Task to run the sync aggregators CLI
+tasks.register<JavaExec>("runSync") {
+    group = "application"
+    description = "Run the sync all aggregators CLI"
+    mainClass.set("com.nekgamebling.SyncMainKt")
+    classpath = sourceSets.main.get().runtimeClasspath
+}
+
+// Create additional start scripts for sync CLI
+tasks.named<CreateStartScripts>("startScripts") {
+    applicationName = "game-core"
+}
+
+val syncStartScripts by tasks.registering(CreateStartScripts::class) {
+    applicationName = "sync-aggregators"
+    mainClass.set("com.nekgamebling.SyncMainKt")
+    outputDir = layout.buildDirectory.dir("syncScripts").get().asFile
+    classpath = tasks.named<Jar>("jar").get().outputs.files + configurations.runtimeClasspath.get()
+}
+
+distributions {
+    main {
+        contents {
+            from(syncStartScripts) {
+                into("bin")
+            }
+        }
+    }
+}
+
+tasks.named("build") {
+    finalizedBy("installDist")
+}
+
 dependencies {
     // Ktor Server
     implementation(libs.bundles.ktor.server)

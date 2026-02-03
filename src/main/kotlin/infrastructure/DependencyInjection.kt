@@ -8,7 +8,6 @@ import application.saga.spin.settle.SettleSpinSaga
 import application.service.*
 import com.nekgamebling.infrastructure.handler.handlerModule
 import infrastructure.api.grpc.grpcModule
-import infrastructure.messaging.messagingModule
 import infrastructure.external.UnitCurrencyAdapter
 import infrastructure.external.s3.S3FileAdapter
 import infrastructure.external.turbo.TurboPlayerAdapter
@@ -22,7 +21,7 @@ import org.koin.dsl.module
  * Koin module for dependency injection.
  * All dependencies use constructor injection.
  */
-fun Application.coreModule() = module {
+fun coreModule() = module {
     includes(
         DBModule,
         adapterModule,
@@ -31,7 +30,6 @@ fun Application.coreModule() = module {
         handlerModule,
         grpcModule,
         AggregatorModule,
-        messagingModule(this@coreModule)
     )
 }
 

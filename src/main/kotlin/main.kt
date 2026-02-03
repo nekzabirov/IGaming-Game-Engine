@@ -2,6 +2,7 @@ package com.nekgamebling
 
 import com.nekgamebling.infrastructure.api.installApi
 import infrastructure.coreModule
+import infrastructure.messaging.messagingModule
 import infrastructure.persistence.exposed.ExposedConfig
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -29,6 +30,7 @@ fun Application.module() {
     install(Koin) {
         slf4jLogger()
         modules(coreModule())
+        modules(messagingModule(this@module))
     }
 
     install(ContentNegotiation) {

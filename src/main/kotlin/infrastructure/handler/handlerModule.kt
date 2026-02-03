@@ -18,6 +18,8 @@ import com.nekgamebling.application.port.inbound.aggregator.FindAggregatorQuery
 import com.nekgamebling.application.port.inbound.aggregator.FindAggregatorResponse
 import com.nekgamebling.application.port.inbound.aggregator.FindAllAggregatorQuery
 import com.nekgamebling.application.port.inbound.aggregator.FindAllAggregatorResponse
+import com.nekgamebling.application.port.inbound.aggregator.SyncAllAggregatorCommand
+import com.nekgamebling.application.port.inbound.aggregator.SyncAllAggregatorResponse
 import com.nekgamebling.application.port.inbound.aggregator.UpdateAggregatorCommand
 import com.nekgamebling.application.port.inbound.provider.query.FindAllProvidersQuery
 import com.nekgamebling.application.port.inbound.provider.query.FindAllProvidersResponse
@@ -51,6 +53,7 @@ import com.nekgamebling.infrastructure.handler.collection.query.FindAllCollectio
 import com.nekgamebling.infrastructure.handler.collection.query.FindCollectionQueryHandler
 import com.nekgamebling.infrastructure.handler.game.query.FindAllGameQueryHandler
 import com.nekgamebling.infrastructure.handler.aggregator.command.CreateAggregatorCommandHandler
+import com.nekgamebling.infrastructure.handler.aggregator.command.SyncAggregatorCommandHandler
 import com.nekgamebling.infrastructure.handler.aggregator.command.UpdateAggregatorCommandHandler
 import com.nekgamebling.infrastructure.handler.aggregator.query.FindAggregatorQueryHandler
 import com.nekgamebling.infrastructure.handler.aggregator.query.FindAllAggregatorQueryHandler
@@ -100,4 +103,5 @@ val handlerModule = module {
     single<CommandHandler<UpdateCollectionCommand, Unit>>(named("updateCollection")) { UpdateCollectionCommandHandler() }
     single<CommandHandler<UpdateCollectionGamesCommand, Unit>>(named("updateCollectionGames")) { UpdateCollectionGamesCommandHandler() }
     single<CommandHandler<PlayGameCommand, PlayGameResponse>>(named("playGame")) { PlayGameCommandHandler(get()) }
+    single<CommandHandler<SyncAllAggregatorCommand, SyncAllAggregatorResponse>>(named("syncAllAggregators")) { SyncAggregatorCommandHandler(get()) }
 }
