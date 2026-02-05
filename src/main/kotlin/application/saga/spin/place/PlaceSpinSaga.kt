@@ -4,7 +4,7 @@ import application.port.outbound.EventPublisherAdapter
 import application.port.outbound.PlayerAdapter
 import application.port.outbound.RoundRepository
 import application.port.outbound.SpinRepository
-import application.port.outbound.WalletAdapter
+import application.port.outbound.external.WalletAdapter
 import application.saga.RetryPolicy
 import application.saga.SagaOrchestrator
 import application.saga.spin.place.step.*

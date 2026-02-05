@@ -1,6 +1,6 @@
 package application.saga.spin.settle.step
 
-import application.port.outbound.WalletAdapter
+import application.port.outbound.external.WalletAdapter
 import application.saga.SagaStep
 import application.saga.spin.settle.SettleSpinContext
 

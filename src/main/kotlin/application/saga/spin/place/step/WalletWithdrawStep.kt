@@ -1,6 +1,6 @@
 package application.saga.spin.place.step
 
-import application.port.outbound.WalletAdapter
+import application.port.outbound.external.WalletAdapter
 import application.saga.SagaStep
 import application.saga.spin.place.PlaceSpinContext
 import domain.session.model.Balance

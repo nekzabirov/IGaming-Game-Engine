@@ -3,7 +3,7 @@ package application.service
 import application.port.outbound.PlayerAdapter
 import application.port.outbound.RoundRepository
 import application.port.outbound.SpinRepository
-import application.port.outbound.WalletAdapter
+import application.port.outbound.external.WalletAdapter
 import domain.common.error.*
 import domain.common.value.SpinType
 import domain.game.model.Game

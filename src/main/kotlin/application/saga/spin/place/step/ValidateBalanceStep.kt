@@ -1,7 +1,7 @@
 package application.saga.spin.place.step
 
 import application.port.outbound.PlayerAdapter
-import application.port.outbound.WalletAdapter
+import application.port.outbound.external.WalletAdapter
 import application.saga.ValidationStep
 import application.saga.spin.place.PlaceSpinContext
 import domain.common.error.BetLimitExceededError

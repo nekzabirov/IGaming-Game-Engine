@@ -1,4 +1,4 @@
-package application.port.outbound
+package application.port.outbound.external
 
 import domain.session.model.Balance
 import shared.value.Currency

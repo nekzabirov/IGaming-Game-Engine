@@ -1,6 +1,6 @@
 package infrastructure.aggregator.pragmatic.handler
 
-import application.port.outbound.WalletAdapter
+import application.port.outbound.external.WalletAdapter
 import application.saga.spin.end.EndSpinContext
 import application.saga.spin.end.EndSpinSaga
 import application.saga.spin.place.PlaceSpinContext

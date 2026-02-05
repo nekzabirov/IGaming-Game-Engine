@@ -90,6 +90,9 @@ dependencies {
     implementation(libs.bundles.grpc)
     implementation(libs.protobuf.kotlin)
 
+    // Wallet gRPC Client
+    implementation(libs.wallet.grpc.client)
+
     // Testing
     testImplementation(libs.bundles.testing)
 }

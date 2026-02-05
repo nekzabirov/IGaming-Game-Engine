@@ -1,6 +1,7 @@
 package infrastructure
 
 import application.port.outbound.*
+import application.port.outbound.external.WalletAdapter
 import application.saga.spin.end.EndSpinSaga
 import application.saga.spin.place.PlaceSpinSaga
 import application.saga.spin.rollback.RollbackSpinSaga
@@ -11,7 +12,7 @@ import infrastructure.api.grpc.grpcModule
 import infrastructure.external.UnitCurrencyAdapter
 import infrastructure.external.s3.S3FileAdapter
 import infrastructure.external.turbo.TurboPlayerAdapter
-import infrastructure.external.turbo.TurboWalletAdapter
+import infrastructure.external.walletEngine.WalletEngineAdapter
 import infrastructure.aggregator.AggregatorModule
 import infrastructure.persistence.DBModule
 import io.ktor.server.application.*
@@ -37,7 +38,12 @@ private val adapterModule = module {
     // ==========================================
     // Infrastructure - Ports/Adapters
     // ==========================================
-    single<WalletAdapter> { TurboWalletAdapter() }
+    single<WalletAdapter> {
+        WalletEngineAdapter(
+            host = System.getenv("WALLET_GRPC_HOST") ?: "localhost",
+            port = (System.getenv("WALLET_GRPC_PORT") ?: "5051").toInt()
+        )
+    }
     single<PlayerAdapter> { TurboPlayerAdapter() }
     single<CurrencyAdapter> { UnitCurrencyAdapter() }
     single<FileAdapter> {
