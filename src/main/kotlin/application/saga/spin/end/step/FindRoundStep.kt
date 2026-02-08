@@ -4,6 +4,7 @@ import application.port.outbound.RoundRepository
 import application.saga.ValidationStep
 import application.saga.spin.end.EndSpinContext
 import domain.common.error.RoundNotFoundError
+import shared.Logger
 
 /**
  * Step 1: Find the round by external ID.
@@ -16,7 +17,10 @@ class FindRoundStep(
         val round = roundRepository.findBySessionAndExtId(
             context.session.id,
             context.extRoundId
-        ) ?: return Result.failure(RoundNotFoundError(context.extRoundId))
+        ) ?: run {
+            Logger.warn("[FindRoundStep] end: round not found extRoundId=${context.extRoundId} session=${context.session.id}")
+            return Result.failure(RoundNotFoundError(context.extRoundId))
+        }
 
         context.round = round
         return Result.success(Unit)

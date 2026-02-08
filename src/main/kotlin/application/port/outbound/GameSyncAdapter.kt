@@ -1,6 +1,6 @@
 package application.port.outbound
 
-import domain.aggregator.model.AggregatorInfo
+import domain.aggregator.AggregatorInfo
 import domain.game.model.GameVariant
 
 /**

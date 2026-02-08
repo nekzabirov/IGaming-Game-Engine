@@ -4,7 +4,7 @@ import application.port.outbound.AggregatorAdapterFactory
 import application.port.outbound.AggregatorFreespinPort
 import application.port.outbound.AggregatorGameSyncPort
 import application.port.outbound.AggregatorLaunchUrlPort
-import domain.aggregator.model.AggregatorInfo
+import domain.aggregator.AggregatorInfo
 import infrastructure.aggregator.pateplay.adapter.PateplayFreespinAdapter
 import infrastructure.aggregator.pateplay.adapter.PateplayGameSyncAdapter
 import infrastructure.aggregator.pateplay.adapter.PateplayLaunchUrlAdapter

@@ -34,6 +34,7 @@ class OneGameHubHandler(
 ) {
     suspend fun balance(token: SessionToken): OneGameHubResponse {
         val session = sessionService.findByToken(token).getOrElse {
+            Logger.error("[OneGameHub] balance failed: session lookup error: ${it.message}")
             return it.toErrorResponse
         }
 
@@ -44,6 +45,7 @@ class OneGameHubHandler(
         val start = System.currentTimeMillis()
 
         val session = sessionService.findByToken(token).getOrElse {
+            Logger.error("[OneGameHub] bet failed: session lookup error for round=${payload.roundId}: ${it.message}")
             return it.toErrorResponse
         }
         val sessionTime = System.currentTimeMillis() - start
@@ -59,6 +61,7 @@ class OneGameHubHandler(
 
         val sagaStart = System.currentTimeMillis()
         placeSpinSaga.execute(context).getOrElse {
+            Logger.error("[OneGameHub] bet saga failed for round=${payload.roundId} player=${session.playerId}: ${it.message}")
             return it.toErrorResponse
         }
         val sagaTime = System.currentTimeMillis() - sagaStart
@@ -79,6 +82,7 @@ class OneGameHubHandler(
         val start = System.currentTimeMillis()
 
         val session = sessionService.findByToken(token).getOrElse {
+            Logger.error("[OneGameHub] win failed: session lookup error for round=${payload.roundId}: ${it.message}")
             return it.toErrorResponse
         }
 
@@ -91,6 +95,7 @@ class OneGameHubHandler(
         )
 
         settleSpinSaga.execute(context).getOrElse {
+            Logger.error("[OneGameHub] win settle saga failed for round=${payload.roundId} player=${session.playerId}: ${it.message}")
             return it.toErrorResponse
         }
 
@@ -101,6 +106,7 @@ class OneGameHubHandler(
                 freeSpinId = payload.freeSpinId
             )
             endSpinSaga.execute(endContext).getOrElse {
+                Logger.error("[OneGameHub] win endRound saga failed for round=${payload.roundId} player=${session.playerId}: ${it.message}")
                 return it.toErrorResponse
             }
         }
@@ -124,6 +130,7 @@ class OneGameHubHandler(
     suspend fun cancel(token: SessionToken, roundId: String, transactionId: String): OneGameHubResponse =
         Logger.profileSuspend("OneGameHub.cancel(round=$roundId)") {
             val session = sessionService.findByToken(token).getOrElse {
+                Logger.error("[OneGameHub] cancel failed: session lookup error for round=$roundId: ${it.message}")
                 return@profileSuspend it.toErrorResponse
             }
 
@@ -134,6 +141,7 @@ class OneGameHubHandler(
             )
 
             rollbackSpinSaga.execute(context).getOrElse {
+                Logger.error("[OneGameHub] cancel saga failed for round=$roundId player=${session.playerId}: ${it.message}")
                 return@profileSuspend it.toErrorResponse
             }
 
@@ -141,7 +149,8 @@ class OneGameHubHandler(
         }
 
     private suspend fun returnSuccess(session: Session): OneGameHubResponse {
-        val balance = walletAdapter.findBalance(session.playerId).getOrElse {
+        val balance = walletAdapter.findBalance(session.playerId, session.currency).getOrElse {
+            Logger.error("[OneGameHub] balance lookup failed for player=${session.playerId}: ${it.message}")
             return it.toErrorResponse
         }
 

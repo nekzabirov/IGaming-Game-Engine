@@ -4,7 +4,7 @@ import application.port.outbound.external.WalletAdapter
 import com.nekgamebling.wallet.*
 import domain.common.value.SpinType
 import domain.session.model.Balance
-import infrastructure.external.turbo.BalanceCache
+import com.nekgamebling.infrastructure.external.BalanceCache
 import infrastructure.persistence.exposed.table.RoundTable
 import infrastructure.persistence.exposed.table.SessionTable
 import infrastructure.persistence.exposed.table.SpinTable
@@ -34,14 +34,10 @@ class WalletEngineAdapter(
         WalletServiceGrpc.newBlockingStub(channel)
     }
 
-    override suspend fun findBalance(playerId: String): Result<Balance> = runCatching {
-        BalanceCache.get(playerId)?.let { cached ->
-            Logger.info("[CACHE HIT] balance for player=$playerId")
-            return@runCatching cached
-        }
-
+    override suspend fun findBalance(playerId: String, currency: Currency): Result<Balance> = runCatching {
         val request = GetAccountRequest.newBuilder()
             .setPlayerId(playerId)
+            .setCurrencyCode(currency.value)
             .build()
 
         val account = Logger.profileSuspend("walletEngine.findBalance") {
@@ -53,6 +49,8 @@ class WalletEngineAdapter(
         BalanceCache.put(playerId, balance)
 
         balance
+    }.onFailure {
+        Logger.error("[WalletEngine] findBalance failed for player=$playerId currency=${currency.value}: ${it.message}")
     }
 
     override suspend fun withdraw(
@@ -80,6 +78,8 @@ class WalletEngineAdapter(
         BalanceCache.put(playerId, balance)
 
         balance
+    }.onFailure {
+        Logger.error("[WalletEngine] withdraw failed for player=$playerId tx=$transactionId real=$realAmount bonus=$bonusAmount: ${it.message}")
     }
 
     override suspend fun deposit(
@@ -107,6 +107,8 @@ class WalletEngineAdapter(
         BalanceCache.put(playerId, balance)
 
         balance
+    }.onFailure {
+        Logger.error("[WalletEngine] deposit failed for player=$playerId tx=$transactionId real=$realAmount bonus=$bonusAmount: ${it.message}")
     }
 
     override suspend fun rollback(playerId: String, transactionId: String): Result<Unit> = runCatching {
@@ -146,6 +148,8 @@ class WalletEngineAdapter(
         }
 
         BalanceCache.invalidate(playerId)
+    }.onFailure {
+        Logger.error("[WalletEngine] rollback failed for player=$playerId tx=$transactionId: ${it.message}")
     }
 
     private data class SpinData(

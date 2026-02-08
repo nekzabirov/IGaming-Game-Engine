@@ -1,7 +1,7 @@
 package infrastructure.aggregator.pateplay.adapter
 
 import application.port.outbound.AggregatorFreespinPort
-import domain.aggregator.model.AggregatorInfo
+import domain.aggregator.AggregatorInfo
 import domain.common.error.AggregatorError
 import infrastructure.aggregator.pateplay.client.PateplayHttpClient
 import infrastructure.aggregator.pateplay.client.dto.CancelFreespinRequestDto

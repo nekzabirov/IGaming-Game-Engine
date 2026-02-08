@@ -4,6 +4,7 @@ import domain.common.error.*
 import io.grpc.Metadata
 import io.grpc.Status
 import io.grpc.StatusException
+import shared.Logger
 
 /**
  * Centralized mapper for converting DomainError to gRPC StatusException.
@@ -16,6 +17,7 @@ object GrpcErrorMapper {
      * status code and metadata containing error details.
      */
     fun toStatusException(error: DomainError): StatusException {
+        Logger.warn("[GRPC] DomainError code={} message={}", error.errorCode.name, error.message)
         val status = mapToStatus(error)
         val metadata = buildMetadata(error)
         return status.asException(metadata)
@@ -120,6 +122,7 @@ object GrpcErrorMapper {
             is DomainError -> toStatusException(throwable)
             is StatusException -> throwable
             else -> {
+                Logger.error("[GRPC] Unexpected error: ${throwable.message}", throwable)
                 val metadata = Metadata().apply {
                     put(GrpcErrorMetadata.ERROR_CODE_KEY, ErrorCode.INTERNAL_ERROR.name)
                     put(GrpcErrorMetadata.ERROR_CODE_VALUE_KEY, ErrorCode.INTERNAL_ERROR.value.toString())

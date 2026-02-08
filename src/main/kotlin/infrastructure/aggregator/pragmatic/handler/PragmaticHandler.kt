@@ -30,10 +30,12 @@ class PragmaticHandler(
 
     suspend fun authenticate(sessionToken: SessionToken): PragmaticResponse {
         val session = sessionService.findByToken(sessionToken).getOrElse {
+            Logger.error("[Pragmatic] authenticate failed: session lookup error: ${it.message}")
             return it.toErrorResponse()
         }
 
-        val balance = walletAdapter.findBalance(session.playerId).getOrElse {
+        val balance = walletAdapter.findBalance(session.playerId, session.currency).getOrElse {
+            Logger.error("[Pragmatic] authenticate failed: balance lookup error for player=${session.playerId}: ${it.message}")
             return it.toErrorResponse()
         }
 
@@ -53,6 +55,7 @@ class PragmaticHandler(
     suspend fun bet(sessionToken: SessionToken, payload: PragmaticBetPayload): PragmaticResponse =
         Logger.profileSuspend("Pragmatic.place(round=${payload.roundId})") {
             val session = sessionService.findByToken(sessionToken).getOrElse {
+                Logger.error("[Pragmatic] bet failed: session lookup error for round=${payload.roundId}: ${it.message}")
                 return@profileSuspend it.toErrorResponse()
             }
 
@@ -68,6 +71,7 @@ class PragmaticHandler(
             )
 
             placeSpinSaga.execute(context).getOrElse {
+                Logger.error("[Pragmatic] bet saga failed for round=${payload.roundId} player=${session.playerId}: ${it.message}")
                 return@profileSuspend it.toErrorResponse()
             }
 
@@ -86,7 +90,7 @@ class PragmaticHandler(
                 )
             } else {
                 // Fallback for freespin (no wallet operation)
-                val balance = walletAdapter.findBalance(session.playerId).getOrElse {
+                val balance = walletAdapter.findBalance(session.playerId, session.currency).getOrElse {
                     return@profileSuspend it.toErrorResponse()
                 }
                 PragmaticResponse.Success(
@@ -102,6 +106,7 @@ class PragmaticHandler(
     suspend fun result(sessionToken: SessionToken, payload: PragmaticBetPayload): PragmaticResponse =
         Logger.profileSuspend("Pragmatic.settle(round=${payload.roundId})") {
             val session = sessionService.findByToken(sessionToken).getOrElse {
+                Logger.error("[Pragmatic] result failed: session lookup error for round=${payload.roundId}: ${it.message}")
                 return@profileSuspend it.toErrorResponse()
             }
 
@@ -116,6 +121,7 @@ class PragmaticHandler(
             )
 
             settleSpinSaga.execute(context).getOrElse {
+                Logger.error("[Pragmatic] settle saga failed for round=${payload.roundId} player=${session.playerId}: ${it.message}")
                 return@profileSuspend it.toErrorResponse()
             }
 
@@ -130,7 +136,7 @@ class PragmaticHandler(
                 )
             } else {
                 // Fallback for freespin or zero-win (saga skipped wallet operation)
-                val balance = walletAdapter.findBalance(session.playerId).getOrElse {
+                val balance = walletAdapter.findBalance(session.playerId, session.currency).getOrElse {
                     return@profileSuspend it.toErrorResponse()
                 }
                 PragmaticResponse.Success(
@@ -145,6 +151,7 @@ class PragmaticHandler(
     suspend fun endRound(sessionToken: SessionToken, roundId: String): PragmaticResponse =
         Logger.profileSuspend("Pragmatic.endRound(round=$roundId)") {
             val session = sessionService.findByToken(sessionToken).getOrElse {
+                Logger.error("[Pragmatic] endRound failed: session lookup error for round=$roundId: ${it.message}")
                 return@profileSuspend it.toErrorResponse()
             }
 
@@ -155,6 +162,7 @@ class PragmaticHandler(
             )
 
             endSpinSaga.execute(context).getOrElse {
+                Logger.error("[Pragmatic] endRound saga failed for round=$roundId player=${session.playerId}: ${it.message}")
                 return@profileSuspend it.toErrorResponse()
             }
 
@@ -164,6 +172,7 @@ class PragmaticHandler(
     suspend fun refund(sessionToken: SessionToken, roundId: String, transactionId: String): PragmaticResponse =
         Logger.profileSuspend("Pragmatic.refund(round=$roundId)") {
             val session = sessionService.findByToken(sessionToken).getOrElse {
+                Logger.error("[Pragmatic] refund failed: session lookup error for round=$roundId: ${it.message}")
                 return@profileSuspend it.toErrorResponse()
             }
 
@@ -174,6 +183,7 @@ class PragmaticHandler(
             )
 
             rollbackSpinSaga.execute(context).getOrElse {
+                Logger.error("[Pragmatic] refund saga failed for round=$roundId player=${session.playerId}: ${it.message}")
                 return@profileSuspend it.toErrorResponse()
             }
 
@@ -198,6 +208,7 @@ class PragmaticHandler(
         amount: String
     ): PragmaticResponse {
         val session = sessionService.findByToken(sessionToken).getOrElse {
+            Logger.error("[Pragmatic] adjustment failed: session lookup error for round=$roundId: ${it.message}")
             return it.toErrorResponse()
         }
 
@@ -206,6 +217,7 @@ class PragmaticHandler(
         }
 
         val game = gameService.findById(session.gameId).getOrElse {
+            Logger.error("[Pragmatic] adjustment failed: game lookup error for gameId=${session.gameId}: ${it.message}")
             return it.toErrorResponse()
         }
 
@@ -222,6 +234,7 @@ class PragmaticHandler(
             )
 
             placeSpinSaga.execute(context).getOrElse {
+                Logger.error("[Pragmatic] adjustment place saga failed for round=$roundId player=${session.playerId}: ${it.message}")
                 return it.toErrorResponse()
             }
 
@@ -236,6 +249,7 @@ class PragmaticHandler(
             )
 
             settleSpinSaga.execute(context).getOrElse {
+                Logger.error("[Pragmatic] adjustment settle saga failed for round=$roundId player=${session.playerId}: ${it.message}")
                 return it.toErrorResponse()
             }
 
@@ -243,7 +257,8 @@ class PragmaticHandler(
         }
 
         // Use cached balance from saga (no extra HTTP call!)
-        val balance = resultBalance ?: walletAdapter.findBalance(session.playerId).getOrElse {
+        val balance = resultBalance ?: walletAdapter.findBalance(session.playerId, session.currency).getOrElse {
+            Logger.error("[Pragmatic] adjustment failed: balance lookup error for player=${session.playerId}: ${it.message}")
             return it.toErrorResponse()
         }
 

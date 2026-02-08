@@ -1,8 +1,8 @@
 package infrastructure.aggregator.onegamehub.adapter
 
 import application.port.outbound.AggregatorGameSyncPort
-import domain.aggregator.model.AggregatorGame
-import domain.aggregator.model.AggregatorInfo
+import domain.aggregator.AggregatorGame
+import domain.aggregator.AggregatorInfo
 import domain.common.error.AggregatorError
 import infrastructure.aggregator.onegamehub.model.OneGameHubConfig
 import infrastructure.aggregator.onegamehub.client.OneGameHubHttpClient

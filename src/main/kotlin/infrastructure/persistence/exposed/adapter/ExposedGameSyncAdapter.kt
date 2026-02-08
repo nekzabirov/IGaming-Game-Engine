@@ -1,7 +1,7 @@
 package infrastructure.persistence.exposed.adapter
 
 import application.port.outbound.GameSyncAdapter
-import domain.aggregator.model.AggregatorInfo
+import domain.aggregator.AggregatorInfo
 import domain.game.model.GameVariant
 import infrastructure.persistence.exposed.mapper.toProvider
 import infrastructure.persistence.exposed.table.GameTable

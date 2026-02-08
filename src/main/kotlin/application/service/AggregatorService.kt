@@ -1,8 +1,8 @@
 package application.service
 
-import application.port.outbound.AggregatorInfoRepository
+import application.port.outbound.storage.AggregatorInfoRepository
 import com.nekgamebling.application.port.outbound.storage.CacheAdapter
-import domain.aggregator.model.AggregatorInfo
+import domain.aggregator.AggregatorInfo
 import domain.common.error.NotFoundError
 import infrastructure.persistence.cache.CachingRepository
 import java.util.UUID

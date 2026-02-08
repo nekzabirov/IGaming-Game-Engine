@@ -3,6 +3,7 @@ package application.saga.spin.rollback.step
 import application.port.outbound.external.WalletAdapter
 import application.saga.SagaStep
 import application.saga.spin.rollback.RollbackSpinContext
+import shared.Logger
 
 /**
  * Step 3: Refund the bet amount to wallet.
@@ -37,6 +38,7 @@ class WalletRefundStep(
             realAmount = context.refundRealAmount,
             bonusAmount = context.refundBonusAmount
         ).getOrElse {
+            Logger.error("[WalletRefundStep] refund failed for player=${context.session.playerId} tx=$txId real=${context.refundRealAmount} bonus=${context.refundBonusAmount}: ${it.message}")
             return Result.failure(it)
         }
 

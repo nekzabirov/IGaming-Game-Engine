@@ -1,4 +1,4 @@
-package domain.aggregator.model
+package domain.aggregator
 
 import shared.serializer.UUIDSerializer
 import domain.common.value.Aggregator

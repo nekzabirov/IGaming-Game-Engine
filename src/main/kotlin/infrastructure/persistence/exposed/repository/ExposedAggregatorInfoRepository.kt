@@ -1,7 +1,7 @@
 package infrastructure.persistence.exposed.repository
 
-import application.port.outbound.AggregatorInfoRepository
-import domain.aggregator.model.AggregatorInfo
+import application.port.outbound.storage.AggregatorInfoRepository
+import domain.aggregator.AggregatorInfo
 import infrastructure.persistence.exposed.mapper.toAggregatorInfo
 import infrastructure.persistence.exposed.table.AggregatorInfoTable
 import org.jetbrains.exposed.sql.selectAll

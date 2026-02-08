@@ -1,6 +1,6 @@
 package infrastructure.persistence.exposed.mapper
 
-import domain.aggregator.model.AggregatorInfo
+import domain.aggregator.AggregatorInfo
 import infrastructure.persistence.exposed.table.AggregatorInfoTable
 import org.jetbrains.exposed.sql.ResultRow
 

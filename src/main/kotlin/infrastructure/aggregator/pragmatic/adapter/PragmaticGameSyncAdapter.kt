@@ -1,8 +1,8 @@
 package infrastructure.aggregator.pragmatic.adapter
 
 import application.port.outbound.AggregatorGameSyncPort
-import domain.aggregator.model.AggregatorGame
-import domain.aggregator.model.AggregatorInfo
+import domain.aggregator.AggregatorGame
+import domain.aggregator.AggregatorInfo
 import infrastructure.aggregator.pragmatic.client.PragmaticHttpClient
 import infrastructure.aggregator.pragmatic.model.PragmaticConfig
 import domain.common.value.Locale

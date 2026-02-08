@@ -1,5 +1,7 @@
 package infrastructure.api.grpc.error
 
+import shared.Logger
+
 /**
  * Extension functions for convenient error handling in gRPC services.
  */
@@ -10,6 +12,7 @@ package infrastructure.api.grpc.error
  */
 fun <T> Result<T>.getOrThrowGrpc(): T {
     return getOrElse { error ->
+        Logger.error("[GRPC] Result failure: ${error.message}")
         throw GrpcErrorMapper.toStatusException(error)
     }
 }

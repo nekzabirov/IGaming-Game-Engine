@@ -3,6 +3,7 @@ package application.saga.spin.settle.step
 import application.port.outbound.external.WalletAdapter
 import application.saga.SagaStep
 import application.saga.spin.settle.SettleSpinContext
+import shared.Logger
 
 /**
  * Step 4: Deposit winnings to wallet (BEFORE saving settle spin).
@@ -37,6 +38,7 @@ class WalletDepositStep(
             realAmount = context.realAmount,
             bonusAmount = context.bonusAmount
         ).getOrElse {
+            Logger.error("[WalletDepositStep] deposit failed for player=${context.session.playerId} tx=$txId real=${context.realAmount} bonus=${context.bonusAmount}: ${it.message}")
             return Result.failure(it)
         }
 

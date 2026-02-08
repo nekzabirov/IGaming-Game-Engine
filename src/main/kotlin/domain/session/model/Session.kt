@@ -57,17 +57,6 @@ data class Spin(
 )
 
 /**
- * Bet amount breakdown.
- */
-data class BetAmount(
-    val real: Long,
-    val bonus: Long,
-    val currency: Currency
-) {
-    val total: Long get() = real + bonus
-}
-
-/**
  * Player balance.
  */
 data class Balance(

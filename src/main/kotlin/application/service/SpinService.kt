@@ -11,6 +11,7 @@ import domain.session.model.Session
 import domain.session.model.Spin
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import shared.Logger
 import java.util.UUID
 
 /**
@@ -81,7 +82,7 @@ class SpinService(
         // Normal mode: use wallet
         // Fetch balance and bet limit in parallel
         val (balance, betLimit) = coroutineScope {
-            val balanceDeferred = async { walletAdapter.findBalance(session.playerId) }
+            val balanceDeferred = async { walletAdapter.findBalance(session.playerId, session.currency) }
             val betLimitDeferred = async { playerAdapter.findCurrentBetLimit(session.playerId) }
 
             val balanceResult = balanceDeferred.await().getOrElse {
@@ -103,6 +104,7 @@ class SpinService(
 
         // Validate bet limit
         if (betLimit != null && betLimit < command.amount) {
+            Logger.warn("[SpinService] place: bet limit exceeded for player=${session.playerId} amount=${command.amount} limit=$betLimit")
             return Result.failure(
                 BetLimitExceededError(session.playerId, command.amount, betLimit)
             )
@@ -110,6 +112,7 @@ class SpinService(
 
         // Validate sufficient balance
         if (command.amount > balance.totalAmount) {
+            Logger.warn("[SpinService] place: insufficient balance for player=${session.playerId} required=${command.amount} available=${balance.totalAmount}")
             return Result.failure(
                 InsufficientBalanceError(session.playerId, command.amount, balance.totalAmount)
             )
@@ -138,6 +141,7 @@ class SpinService(
             realAmount = betRealAmount,
             bonusAmount = betBonusAmount
         ).getOrElse {
+            Logger.error("[SpinService] place: wallet withdraw failed for player=${session.playerId} tx=${spin.id}: ${it.message}")
             return Result.failure(it)
         }
 
@@ -153,11 +157,17 @@ class SpinService(
 
         // Find the round
         val round = roundRepository.findBySessionAndExtId(session.id, extRoundId)
-            ?: return Result.failure(RoundNotFoundError(extRoundId))
+            ?: run {
+                Logger.warn("[SpinService] settle: round not found extRoundId=$extRoundId session=${session.id}")
+                return Result.failure(RoundNotFoundError(extRoundId))
+            }
 
         // Find the place spin
         val placeSpin = spinRepository.findByRoundAndType(round.id, SpinType.PLACE)
-            ?: return Result.failure(RoundFinishedError(extRoundId))
+            ?: run {
+                Logger.warn("[SpinService] settle: place spin not found for round=$extRoundId")
+                return Result.failure(RoundFinishedError(extRoundId))
+            }
 
         if (isFreeSpin) {
             // FreeSpin mode: just save to DB, no wallet operations
@@ -205,6 +215,7 @@ class SpinService(
             realAmount = realAmount,
             bonusAmount = bonusAmount
         ).getOrElse {
+            Logger.error("[SpinService] settle: wallet deposit failed for player=${session.playerId} tx=${settleSpin.id}: ${it.message}")
             return Result.failure(it)
         }
 
@@ -218,11 +229,17 @@ class SpinService(
     suspend fun rollback(session: Session, command: SpinCommand): Result<Unit> {
         // Find the round
         val round = roundRepository.findBySessionAndExtId(session.id, command.extRoundId)
-            ?: return Result.failure(RoundNotFoundError(command.extRoundId))
+            ?: run {
+                Logger.warn("[SpinService] rollback: round not found extRoundId=${command.extRoundId} session=${session.id}")
+                return Result.failure(RoundNotFoundError(command.extRoundId))
+            }
 
         // Find the spin to rollback
         val spin = spinRepository.findAllByRound(round.id).firstOrNull()
-            ?: return Result.failure(RoundNotFoundError(command.extRoundId))
+            ?: run {
+                Logger.warn("[SpinService] rollback: no spin found for round=${command.extRoundId}")
+                return Result.failure(RoundNotFoundError(command.extRoundId))
+            }
 
         val isFreeSpin = spin.freeSpinId != null
 
@@ -254,7 +271,10 @@ class SpinService(
      */
     suspend fun closeRound(session: Session, extRoundId: String): Result<Unit> {
         val round = roundRepository.findBySessionAndExtId(session.id, extRoundId)
-            ?: return Result.failure(RoundNotFoundError(extRoundId))
+            ?: run {
+                Logger.warn("[SpinService] closeRound: round not found extRoundId=$extRoundId session=${session.id}")
+                return Result.failure(RoundNotFoundError(extRoundId))
+            }
 
         roundRepository.finish(round.id)
 

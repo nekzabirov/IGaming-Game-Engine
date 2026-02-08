@@ -3,7 +3,7 @@ package com.nekgamebling.infrastructure.handler.aggregator.command
 import application.port.inbound.CommandHandler
 import com.nekgamebling.application.port.inbound.aggregator.CreateAggregatorCommand
 import com.nekgamebling.application.port.inbound.aggregator.CreateAggregatorResponse
-import domain.aggregator.model.AggregatorInfo
+import domain.aggregator.AggregatorInfo
 import domain.common.error.DuplicateEntityError
 import infrastructure.persistence.exposed.table.AggregatorInfoTable
 import org.jetbrains.exposed.sql.insertAndGetId

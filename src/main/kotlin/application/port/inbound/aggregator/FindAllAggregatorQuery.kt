@@ -1,7 +1,7 @@
 package com.nekgamebling.application.port.inbound.aggregator
 
 import application.port.inbound.Query
-import domain.aggregator.model.AggregatorInfo
+import domain.aggregator.AggregatorInfo
 import shared.value.Page
 import shared.value.Pageable
 

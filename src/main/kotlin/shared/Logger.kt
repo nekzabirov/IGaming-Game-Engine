@@ -10,6 +10,16 @@ internal object Logger {
 
     fun info(format: String, vararg arguments: Any) = logger.info(format, *arguments)
 
+    fun warn(msg: String) = logger.warn(msg)
+
+    fun warn(format: String, vararg arguments: Any) = logger.warn(format, *arguments)
+
+    fun error(msg: String) = logger.error(msg)
+
+    fun error(msg: String, throwable: Throwable) = logger.error(msg, throwable)
+
+    fun error(format: String, vararg arguments: Any) = logger.error(format, *arguments)
+
     inline fun <T> profile(operation: String, block: () -> T): T {
         var result: T
         val timeMs = measureTimeMillis {

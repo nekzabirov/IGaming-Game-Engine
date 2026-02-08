@@ -11,7 +11,7 @@ interface WalletAdapter {
     /**
      * Get player's current balance.
      */
-    suspend fun findBalance(playerId: String): Result<Balance>
+    suspend fun findBalance(playerId: String, currency: Currency): Result<Balance>
 
     /**
      * Withdraw funds from player's wallet.

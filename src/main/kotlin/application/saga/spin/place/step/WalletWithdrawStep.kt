@@ -4,7 +4,7 @@ import application.port.outbound.external.WalletAdapter
 import application.saga.SagaStep
 import application.saga.spin.place.PlaceSpinContext
 import domain.session.model.Balance
-import infrastructure.external.turbo.BalanceCache
+import com.nekgamebling.infrastructure.external.BalanceCache
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -62,7 +62,7 @@ class WalletWithdrawStep(
                 bonusAmount = bonusAmount
             ).onFailure { err ->
                 // Log error - reconciliation job will handle orphan spins
-                Logger.info("[ERROR] ASYNC wallet withdraw failed for tx=$txId player=$playerId: ${err.message}")
+                Logger.error("[WalletWithdrawStep] ASYNC wallet withdraw failed for tx=$txId player=$playerId: ${err.message}")
             }
         }
 

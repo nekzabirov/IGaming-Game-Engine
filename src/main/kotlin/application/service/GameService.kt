@@ -6,6 +6,7 @@ import domain.common.error.AggregatorNotSupportedError
 import domain.common.error.GameUnavailableError
 import domain.common.error.NotFoundError
 import domain.common.error.ValidationError
+import shared.Logger
 import domain.game.model.Game
 import domain.game.model.GameWithDetails
 import domain.game.repository.GameRepository
@@ -107,11 +108,13 @@ class GameService(
         lobbyUrl: String
     ): Result<DemoGameResult> {
         val game = findByIdentity(gameIdentity).getOrElse {
+            Logger.error("[GameService] launchDemo: game lookup failed for identity=$gameIdentity: ${it.message}")
             return Result.failure(it)
         }
 
         // Validate locale support
         if (!game.supportsLocale(locale)) {
+            Logger.warn("[GameService] launchDemo: unsupported locale=${locale.value} for game=$gameIdentity")
             return Result.failure(
                 ValidationError("locale", "Game does not support locale: ${locale.value}")
             )
@@ -119,6 +122,7 @@ class GameService(
 
         // Validate platform support
         if (!game.supportsPlatform(platform)) {
+            Logger.warn("[GameService] launchDemo: unsupported platform=$platform for game=$gameIdentity")
             return Result.failure(
                 ValidationError("platform", "Game does not support platform: $platform")
             )
@@ -126,7 +130,10 @@ class GameService(
 
         // Get aggregator adapter
         val factory = aggregatorRegistry.getFactory(game.aggregator.aggregator)
-            ?: return Result.failure(AggregatorNotSupportedError(game.aggregator.aggregator.name))
+            ?: run {
+                Logger.error("[GameService] launchDemo: aggregator not supported=${game.aggregator.aggregator.name}")
+                return Result.failure(AggregatorNotSupportedError(game.aggregator.aggregator.name))
+            }
 
         val launchUrlAdapter = factory.createLaunchUrlAdapter(game.aggregator)
 
@@ -141,6 +148,7 @@ class GameService(
             currency = currency,
             demo = true
         ).getOrElse {
+            Logger.error("[GameService] launchDemo: launch URL error for game=${game.symbol}: ${it.message}")
             return Result.failure(it)
         }
 

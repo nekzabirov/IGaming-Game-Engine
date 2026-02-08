@@ -1,7 +1,7 @@
 package application.port.outbound
 
-import domain.aggregator.model.AggregatorGame
-import domain.aggregator.model.AggregatorInfo
+import domain.aggregator.AggregatorGame
+import domain.aggregator.AggregatorInfo
 import domain.common.value.Aggregator
 import shared.value.Currency
 import domain.common.value.Locale

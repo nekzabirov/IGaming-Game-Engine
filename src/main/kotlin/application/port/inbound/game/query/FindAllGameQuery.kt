@@ -1,7 +1,7 @@
 package com.nekgamebling.application.port.inbound.game.query
 
 import application.port.inbound.Query
-import domain.aggregator.model.AggregatorInfo
+import domain.aggregator.AggregatorInfo
 import domain.collection.model.Collection
 import domain.game.model.Game
 import domain.game.model.GameVariant

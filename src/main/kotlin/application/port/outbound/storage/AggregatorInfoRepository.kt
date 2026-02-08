@@ -1,6 +1,6 @@
-package application.port.outbound
+package application.port.outbound.storage
 
-import domain.aggregator.model.AggregatorInfo
+import domain.aggregator.AggregatorInfo
 import java.util.UUID
 
 /**

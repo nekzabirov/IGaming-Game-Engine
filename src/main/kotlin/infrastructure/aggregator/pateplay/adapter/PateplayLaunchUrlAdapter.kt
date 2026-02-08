@@ -1,7 +1,7 @@
 package infrastructure.aggregator.pateplay.adapter
 
 import application.port.outbound.AggregatorLaunchUrlPort
-import domain.aggregator.model.AggregatorInfo
+import domain.aggregator.AggregatorInfo
 import domain.common.error.AggregatorError
 import infrastructure.aggregator.pateplay.model.PateplayConfig
 import io.ktor.http.*

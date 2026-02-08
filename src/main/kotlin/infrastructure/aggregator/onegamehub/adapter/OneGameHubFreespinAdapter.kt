@@ -1,7 +1,7 @@
 package infrastructure.aggregator.onegamehub.adapter
 
 import application.port.outbound.AggregatorFreespinPort
-import domain.aggregator.model.AggregatorInfo
+import domain.aggregator.AggregatorInfo
 import domain.common.error.AggregatorError
 import infrastructure.aggregator.onegamehub.model.OneGameHubConfig
 import infrastructure.aggregator.shared.FreespinPresetValidator

@@ -10,6 +10,7 @@ import domain.common.error.IllegalStateError
 import domain.common.error.InsufficientBalanceError
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import shared.Logger
 
 /**
  * Combined step: Find/create round AND validate balance in PARALLEL.
@@ -74,15 +75,17 @@ class PrepareRoundAndBalanceStep(
     ): BalanceValidation {
         // Fetch balance and bet limit in parallel
         val (balanceResult, betLimitResult) = coroutineScope {
-            val balanceDeferred = async { walletAdapter.findBalance(context.session.playerId) }
+            val balanceDeferred = async { walletAdapter.findBalance(context.session.playerId, context.session.currency) }
             val betLimitDeferred = async { playerAdapter.findCurrentBetLimit(context.session.playerId) }
             balanceDeferred.await() to betLimitDeferred.await()
         }
 
         val balance = balanceResult.getOrElse {
+            Logger.error("[PrepareRoundAndBalanceStep] balance fetch failed for player=${context.session.playerId}: ${it.message}")
             return BalanceValidation(error = it)
         }
         val betLimit = betLimitResult.getOrElse {
+            Logger.error("[PrepareRoundAndBalanceStep] bet limit fetch failed for player=${context.session.playerId}: ${it.message}")
             return BalanceValidation(error = it)
         }
 
@@ -95,6 +98,7 @@ class PrepareRoundAndBalanceStep(
 
         // Validate bet limit
         if (betLimit != null && betLimit < context.amount) {
+            Logger.warn("[PrepareRoundAndBalanceStep] bet limit exceeded for player=${context.session.playerId} amount=${context.amount} limit=$betLimit")
             return BalanceValidation(
                 error = BetLimitExceededError(context.session.playerId, context.amount, betLimit)
             )
@@ -102,6 +106,7 @@ class PrepareRoundAndBalanceStep(
 
         // Validate sufficient balance
         if (context.amount > adjustedBalance.totalAmount) {
+            Logger.warn("[PrepareRoundAndBalanceStep] insufficient balance for player=${context.session.playerId} required=${context.amount} available=${adjustedBalance.totalAmount}")
             return BalanceValidation(
                 error = InsufficientBalanceError(context.session.playerId, context.amount, adjustedBalance.totalAmount)
             )

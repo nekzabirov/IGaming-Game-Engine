@@ -1,8 +1,8 @@
 package infrastructure.aggregator.pateplay.adapter
 
 import application.port.outbound.AggregatorGameSyncPort
-import domain.aggregator.model.AggregatorGame
-import domain.aggregator.model.AggregatorInfo
+import domain.aggregator.AggregatorGame
+import domain.aggregator.AggregatorInfo
 import infrastructure.aggregator.pateplay.model.PateplayConfig
 import domain.common.value.Locale
 import domain.common.value.Platform

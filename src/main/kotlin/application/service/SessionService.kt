@@ -15,6 +15,7 @@ import shared.value.Currency
 import shared.value.SessionToken
 import domain.common.value.Locale
 import domain.common.value.Platform
+import shared.Logger
 import java.security.SecureRandom
 import java.util.Base64
 import java.util.UUID
@@ -129,11 +130,13 @@ class SessionService(
     suspend fun open(command: OpenSessionCommand): Result<OpenSessionResult> {
         // Find game with details
         val game = gameService.findByIdentity(command.gameIdentity).getOrElse {
+            Logger.error("[Session] open failed: game lookup error for identity=${command.gameIdentity}: ${it.message}")
             return Result.failure(it)
         }
 
         // Validate locale support
         if (!game.supportsLocale(command.locale)) {
+            Logger.warn("[Session] open failed: unsupported locale=${command.locale.value} for game=${command.gameIdentity}")
             return Result.failure(
                 ValidationError("locale", "Game does not support locale: ${command.locale.value}")
             )
@@ -141,6 +144,7 @@ class SessionService(
 
         // Validate platform support
         if (!game.supportsPlatform(command.platform)) {
+            Logger.warn("[Session] open failed: unsupported platform=${command.platform} for game=${command.gameIdentity}")
             return Result.failure(
                 ValidationError("platform", "Game does not support platform: ${command.platform}")
             )
@@ -148,7 +152,10 @@ class SessionService(
 
         // Get aggregator adapter
         val factory = aggregatorRegistry.getFactory(game.aggregator.aggregator)
-            ?: return Result.failure(AggregatorNotSupportedError(game.aggregator.aggregator.name))
+            ?: run {
+                Logger.error("[Session] open failed: aggregator not supported=${game.aggregator.aggregator.name}")
+                return Result.failure(AggregatorNotSupportedError(game.aggregator.aggregator.name))
+            }
 
         val launchUrlAdapter = factory.createLaunchUrlAdapter(game.aggregator)
 
@@ -184,6 +191,7 @@ class SessionService(
             lobbyUrl = command.lobbyUrl,
             demo = false
         ).getOrElse {
+            Logger.error("[Session] open failed: launch URL error for game=${game.symbol} player=${command.playerId}: ${it.message}")
             return Result.failure(it)
         }
 

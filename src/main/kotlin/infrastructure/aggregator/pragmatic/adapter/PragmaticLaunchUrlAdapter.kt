@@ -1,7 +1,7 @@
 package infrastructure.aggregator.pragmatic.adapter
 
 import application.port.outbound.AggregatorLaunchUrlPort
-import domain.aggregator.model.AggregatorInfo
+import domain.aggregator.AggregatorInfo
 import infrastructure.aggregator.pragmatic.model.PragmaticConfig
 import infrastructure.aggregator.pragmatic.client.PragmaticHttpClient
 import infrastructure.aggregator.pragmatic.client.dto.LaunchUrlRequestDto

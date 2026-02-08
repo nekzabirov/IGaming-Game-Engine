@@ -1,4 +1,4 @@
-package infrastructure.external.turbo
+package com.nekgamebling.infrastructure.external
 
 import domain.session.model.Balance
 import java.util.concurrent.ConcurrentHashMap

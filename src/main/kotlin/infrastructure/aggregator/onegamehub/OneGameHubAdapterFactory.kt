@@ -5,7 +5,7 @@ import application.port.outbound.AggregatorFreespinPort
 import application.port.outbound.AggregatorGameSyncPort
 import application.port.outbound.AggregatorLaunchUrlPort
 import infrastructure.aggregator.onegamehub.adapter.OneGameHubCurrencyAdapter
-import domain.aggregator.model.AggregatorInfo
+import domain.aggregator.AggregatorInfo
 import infrastructure.aggregator.onegamehub.adapter.OneGameHubFreespinAdapter
 import infrastructure.aggregator.onegamehub.adapter.OneGameHubGameSyncAdapter
 import infrastructure.aggregator.onegamehub.adapter.OneGameHubLaunchUrlAdapter

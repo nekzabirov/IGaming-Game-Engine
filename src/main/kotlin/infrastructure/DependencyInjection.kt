@@ -1,19 +1,21 @@
 package infrastructure
 
-import application.port.outbound.*
+import application.port.outbound.CurrencyAdapter
+import application.port.outbound.FileAdapter
+import application.port.outbound.PlayerAdapter
 import application.port.outbound.external.WalletAdapter
 import application.saga.spin.end.EndSpinSaga
 import application.saga.spin.place.PlaceSpinSaga
 import application.saga.spin.rollback.RollbackSpinSaga
 import application.saga.spin.settle.SettleSpinSaga
 import application.service.*
+import com.nekgamebling.infrastructure.external.stub.StubPlayerAdapter
 import com.nekgamebling.infrastructure.handler.handlerModule
+import infrastructure.aggregator.AggregatorModule
 import infrastructure.api.grpc.grpcModule
 import infrastructure.external.UnitCurrencyAdapter
 import infrastructure.external.s3.S3FileAdapter
-import infrastructure.external.turbo.TurboPlayerAdapter
 import infrastructure.external.walletEngine.WalletEngineAdapter
-import infrastructure.aggregator.AggregatorModule
 import infrastructure.persistence.DBModule
 import io.ktor.server.application.*
 import org.koin.dsl.module
@@ -44,7 +46,7 @@ private val adapterModule = module {
             port = (System.getenv("WALLET_GRPC_PORT") ?: "5051").toInt()
         )
     }
-    single<PlayerAdapter> { TurboPlayerAdapter() }
+    single<PlayerAdapter> { StubPlayerAdapter() }
     single<CurrencyAdapter> { UnitCurrencyAdapter() }
     single<FileAdapter> {
         S3FileAdapter(

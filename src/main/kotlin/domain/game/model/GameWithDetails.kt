@@ -1,6 +1,6 @@
 package domain.game.model
 
-import domain.aggregator.model.AggregatorInfo
+import domain.aggregator.AggregatorInfo
 import domain.provider.model.Provider
 import shared.value.ImageMap
 import domain.common.value.Locale

@@ -1,7 +1,7 @@
 package application.service
 
 import application.port.outbound.AggregatorAdapterRegistry
-import application.port.outbound.AggregatorInfoRepository
+import application.port.outbound.storage.AggregatorInfoRepository
 import application.port.outbound.GameSyncAdapter
 import application.port.outbound.GameVariantRepository
 import domain.common.error.AggregatorNotSupportedError
