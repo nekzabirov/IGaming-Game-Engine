@@ -30,7 +30,7 @@ This is a **Kotlin iGambling Core Service** following **Hexagonal Architecture**
 ```
 src/main/kotlin/
 ├── application/           # Use cases, services, sagas (orchestration)
-│   ├── port/outbound/    # Adapter interfaces (WalletAdapter, PlayerAdapter, CacheAdapter)
+│   ├── port/outbound/    # Adapter interfaces (WalletAdapter, PlayerLimitAdapter, CacheAdapter)
 │   ├── saga/spin/        # Distributed transaction sagas (PlaceSpinSaga, SettleSpinSaga, etc.)
 │   └── usecase/          # Application use cases organized by domain
 │
@@ -61,7 +61,7 @@ src/main/kotlin/
 - `*Handler` - processes aggregator callbacks using sagas
 - `*Config` - aggregator-specific configuration
 
-**Domain Errors**: Type-safe error handling via sealed classes in `domain/common/error/`. Errors include: `NotFoundError`, `InsufficientBalanceError`, `BetLimitExceededError`, `SessionInvalidError`, etc.
+**Domain Errors**: Type-safe error handling via sealed classes in `domain/common/error/`. Errors include: `NotFoundError`, `InsufficientBalanceError`, `SpinLimitExceededError`, `SessionInvalidError`, etc.
 
 **Dependency Injection**: Koin modules in `infrastructure/DependencyInjection.kt`. Key modules: `coreModule()`, `adapterModule`, `sagaModule`, `AggregatorModule`.
 
@@ -120,10 +120,10 @@ After modifying `.proto` files, run `./gradlew generateProto`.
 
 ## Required Custom Adapters
 
-The service ships with mock adapters. For production, implement:
+The service ships with default adapters. For production, implement:
 
 - `WalletAdapter` - balance queries, withdrawals, deposits, rollbacks
-- `PlayerAdapter` - bet limit retrieval
+- `PlayerLimitAdapter` - spin limit storage per player (cache-backed implementation provided in `infrastructure/external/CachePlayerLimitAdapter.kt`)
 - `CacheAdapter` - session caching
 - `FileAdapter` - file storage operations (S3 implementation provided in `infrastructure/external/s3/`)
 - `EventPublisherAdapter` - domain event publishing (RabbitMQ implementation provided)
