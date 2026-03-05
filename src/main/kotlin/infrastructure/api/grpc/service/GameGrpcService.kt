@@ -159,7 +159,7 @@ class GameGrpcService(
             locale = Locale(request.locale),
             platform = request.platform.toDomain(),
             lobbyUrl = request.lobbyUrl,
-            spinLimitAmount = if (request.hasSpinLimitAmount()) request.spinLimitAmount else null
+            spinMaxAmount = if (request.hasSpinMaxAmount()) request.spinMaxAmount else null
         )
 
         return playGameCommandHandler.handle(command)

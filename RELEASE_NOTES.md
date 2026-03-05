@@ -256,7 +256,7 @@ Production-ready adapters replacing mock implementations:
 | Adapter | Description |
 |---------|-------------|
 | **TurboWalletAdapter** | HTTP client integration for wallet operations (balance, withdraw, deposit, rollback) |
-| **TurboPlayerAdapter** | HTTP client integration for player limit retrieval |
+| **CachePlayerLimitAdapter** | Cache-backed spin limit storage per player (1h TTL) |
 
 **Wallet DTOs Added:**
 - `BalanceType` - Real and bonus balance separation
@@ -264,9 +264,9 @@ Production-ready adapters replacing mock implementations:
 - `SettleTransactionRequest` - Structured win deposit requests
 - `AccountDto`, `AccountRequest` - Account management
 
-**Player DTOs Added:**
-- `PlayerLimitDto` - Bet limit configuration
-- `PlayerResponse` - Player data response
+**Player Limit Port Added:**
+- `PlayerLimitAdapter` - Spin limit management (save, delete, get)
+- `CachePlayerLimitAdapter` - Default cache-backed implementation
 
 ---
 

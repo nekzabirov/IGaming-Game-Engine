@@ -1,6 +1,7 @@
 package application.saga.spin.rollback
 
 import application.port.outbound.EventPublisherAdapter
+import application.port.outbound.PlayerLimitAdapter
 import application.port.outbound.RoundRepository
 import application.port.outbound.SpinRepository
 import application.port.outbound.external.WalletAdapter
@@ -15,12 +16,14 @@ import application.service.GameService
  * Step order:
  * 1. FindRoundWithSpin - find round AND place spin in single query (optimized)
  * 2. WalletRefund - refund the bet amount to wallet
- * 3. SaveRollbackSpin - save rollback spin record
- * 4. PublishEvent - publish rollback event
+ * 3. RestoreSpinBudget - restore spin budget (spinMaxAmount) for rolled back amount
+ * 4. SaveRollbackSpin - save rollback spin record
+ * 5. PublishEvent - publish rollback event
  */
 class RollbackSpinSaga(
     private val gameService: GameService,
     private val walletAdapter: WalletAdapter,
+    private val playerLimitAdapter: PlayerLimitAdapter,
     private val eventPublisher: EventPublisherAdapter,
     private val roundRepository: RoundRepository,
     private val spinRepository: SpinRepository
@@ -30,6 +33,7 @@ class RollbackSpinSaga(
         steps = listOf(
             FindRoundWithSpinStep(roundRepository),
             WalletRefundStep(walletAdapter),
+            RestoreSpinBudgetStep(playerLimitAdapter),
             SaveRollbackSpinStep(spinRepository),
             PublishRollbackEventStep(eventPublisher, gameService)
         ),

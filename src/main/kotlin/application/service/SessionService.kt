@@ -32,7 +32,7 @@ data class OpenSessionCommand(
     val locale: Locale,
     val platform: Platform,
     val lobbyUrl: String,
-    val spinLimitAmount: Long? = null
+    val spinMaxAmount: Long? = null
 )
 
 /**
@@ -179,10 +179,10 @@ class SessionService(
         )
 
         // Save or clear spin limit
-        if (command.spinLimitAmount != null) {
-            playerLimitAdapter.saveSpinLimit(command.playerId, command.spinLimitAmount)
+        if (command.spinMaxAmount != null) {
+            playerLimitAdapter.saveSpinMax(command.playerId, command.spinMaxAmount)
         } else {
-            playerLimitAdapter.deleteSpinLimit(command.playerId)
+            playerLimitAdapter.deleteSpinMax(command.playerId)
         }
 
         // Save session

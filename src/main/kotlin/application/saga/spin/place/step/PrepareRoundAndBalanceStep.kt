@@ -66,6 +66,12 @@ class PrepareRoundAndBalanceStep(
         context.betRealAmount = balanceValidation.betRealAmount
         context.betBonusAmount = balanceValidation.betBonusAmount
 
+        // Decrease remaining spin budget
+        if (!context.isFreeSpin) {
+            playerLimitAdapter.decreaseSpinMax(context.session.playerId, context.amount)
+            context.spinMaxAmount = balanceValidation.spinMaxAmountBefore
+        }
+
         return Result.success(Unit)
     }
 
@@ -78,7 +84,7 @@ class PrepareRoundAndBalanceStep(
             return BalanceValidation(error = it)
         }
 
-        val spinLimitAmount = playerLimitAdapter.getSpinLimitAmount(context.session.playerId)
+        val spinMaxAmount = playerLimitAdapter.getSpinMaxAmount(context.session.playerId)
 
         // Adjust balance if bonus bet is disabled
         val adjustedBalance = if (!game.bonusBetEnable) {
@@ -88,10 +94,10 @@ class PrepareRoundAndBalanceStep(
         }
 
         // Validate spin limit
-        if (spinLimitAmount != null && spinLimitAmount < context.amount) {
-            Logger.warn("[PrepareRoundAndBalanceStep] spin limit exceeded for player=${context.session.playerId} amount=${context.amount} limit=$spinLimitAmount")
+        if (spinMaxAmount != null && spinMaxAmount < context.amount) {
+            Logger.warn("[PrepareRoundAndBalanceStep] spin limit exceeded for player=${context.session.playerId} amount=${context.amount} limit=$spinMaxAmount")
             return BalanceValidation(
-                error = SpinLimitExceededError(context.session.playerId, context.amount, spinLimitAmount)
+                error = SpinLimitExceededError(context.session.playerId, context.amount, spinMaxAmount)
             )
         }
 
@@ -110,15 +116,15 @@ class PrepareRoundAndBalanceStep(
         return BalanceValidation(
             betRealAmount = betRealAmount,
             betBonusAmount = betBonusAmount,
-            balance = adjustedBalance
+            balance = adjustedBalance,
+            spinMaxAmountBefore = spinMaxAmount
         )
     }
 
     override suspend fun compensate(context: PlaceSpinContext): Result<Unit> {
-        // Round compensation: keep round but could mark as cancelled if needed
-        val roundCreated = context.get<Boolean>(PlaceSpinContext.KEY_ROUND_CREATED) ?: false
-        if (roundCreated && context.spin == null) {
-            // Round was created but no spin saved - leave as-is
+        // Restore spin budget if it was decreased
+        if (!context.isFreeSpin && context.spinMaxAmount != null) {
+            playerLimitAdapter.increaseSpinMax(context.session.playerId, context.amount)
         }
         return Result.success(Unit)
     }
@@ -127,6 +133,7 @@ class PrepareRoundAndBalanceStep(
         val betRealAmount: Long = 0L,
         val betBonusAmount: Long = 0L,
         val balance: domain.session.model.Balance? = null,
+        val spinMaxAmountBefore: Long? = null,
         val error: Throwable? = null
     )
 }

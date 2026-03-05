@@ -131,6 +131,7 @@ Open a game session for real money play. Returns a launch URL.
 | `locale` | `string` | Yes | Locale code (e.g., "en", "de") |
 | `platform` | `PlatformDto` | Yes | Platform type |
 | `lobby_url` | `string` | Yes | URL to return to lobby |
+| `spin_max_amount` | `int64` | No | Max spin amount for this player (cached with 1h TTL) |
 
 **Response: `PlayGameResult`**
 
@@ -1080,7 +1081,7 @@ Error codes are organized into ranges by category:
 | 1002 | `DUPLICATE_ENTITY` | Entity already exists |
 | 1003 | `ILLEGAL_STATE` | Operation not allowed in current state |
 | 2000 | `INSUFFICIENT_BALANCE` | Insufficient funds |
-| 2001 | `BET_LIMIT_EXCEEDED` | Bet exceeds limit |
+| 2001 | `SPIN_LIMIT_EXCEEDED` | Spin amount exceeds limit |
 | 3000 | `SESSION_INVALID` | Session expired/invalid |
 | 4000 | `GAME_UNAVAILABLE` | Game not available |
 | 4001 | `ROUND_FINISHED` | Round already completed |
@@ -1103,7 +1104,7 @@ Each domain error code maps to a specific gRPC status code:
 | `INVALID_PRESET` (4003) | `INVALID_ARGUMENT` | 400 |
 | `DUPLICATE_ENTITY` (1002) | `ALREADY_EXISTS` | 409 |
 | `INSUFFICIENT_BALANCE` (2000) | `FAILED_PRECONDITION` | 412 |
-| `BET_LIMIT_EXCEEDED` (2001) | `FAILED_PRECONDITION` | 412 |
+| `SPIN_LIMIT_EXCEEDED` (2001) | `FAILED_PRECONDITION` | 412 |
 | `ROUND_FINISHED` (4001) | `FAILED_PRECONDITION` | 412 |
 | `ILLEGAL_STATE` (1003) | `FAILED_PRECONDITION` | 412 |
 | `SESSION_INVALID` (3000) | `UNAUTHENTICATED` | 401 |
@@ -1132,11 +1133,11 @@ All errors include metadata headers in gRPC trailers. These provide structured e
 | `x-identifier` | `NOT_FOUND`, `ROUND_NOT_FOUND`, `SESSION_INVALID`, `GAME_UNAVAILABLE`, `ROUND_FINISHED`, `INVALID_PRESET`, `AGGREGATOR_NOT_SUPPORTED` | Entity identifier |
 | `x-field` | `VALIDATION_ERROR`, `ILLEGAL_STATE` | Field or operation name |
 | `x-reason` | `VALIDATION_ERROR`, `SESSION_INVALID`, `GAME_UNAVAILABLE`, `INVALID_PRESET`, `EXTERNAL_SERVICE_ERROR`, `ILLEGAL_STATE` | Additional context |
-| `x-player-id` | `INSUFFICIENT_BALANCE`, `BET_LIMIT_EXCEEDED` | Player identifier |
+| `x-player-id` | `INSUFFICIENT_BALANCE`, `SPIN_LIMIT_EXCEEDED` | Player identifier |
 | `x-required-amount` | `INSUFFICIENT_BALANCE` | Amount required (in minor units) |
 | `x-available-amount` | `INSUFFICIENT_BALANCE` | Available balance (in minor units) |
-| `x-bet-amount` | `BET_LIMIT_EXCEEDED` | Attempted bet amount |
-| `x-limit` | `BET_LIMIT_EXCEEDED` | Configured bet limit |
+| `x-spin-amount` | `SPIN_LIMIT_EXCEEDED` | Attempted spin amount |
+| `x-limit` | `SPIN_LIMIT_EXCEEDED` | Configured spin limit |
 | `x-service` | `EXTERNAL_SERVICE_ERROR` | External service name |
 
 ### Error Types Reference
@@ -1222,18 +1223,18 @@ Metadata:
   x-available-amount: <available balance in minor units>
 ```
 
-#### BET_LIMIT_EXCEEDED (2001)
+#### SPIN_LIMIT_EXCEEDED (2001)
 
-Bet amount exceeds configured limit.
+Spin amount exceeds configured limit.
 
 ```
 gRPC Status: FAILED_PRECONDITION
 Metadata:
-  x-error-code: BET_LIMIT_EXCEEDED
+  x-error-code: SPIN_LIMIT_EXCEEDED
   x-error-code-value: 2001
   x-player-id: <player_id>
-  x-bet-amount: <attempted bet amount>
-  x-limit: <configured limit>
+  x-spin-amount: <attempted spin amount>
+  x-limit: <configured spin limit>
 ```
 
 #### SESSION_INVALID (3000)

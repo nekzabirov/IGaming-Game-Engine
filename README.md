@@ -45,7 +45,7 @@ The service follows **Hexagonal Architecture** (Ports & Adapters) with clean sep
 │  ┌────────────────┐  ┌──────────────┐  ┌───────────────────────────┐│
 │  │   Aggregators  │  │  Persistence │  │  Adapters (YOU IMPLEMENT) ││
 │  │ (Pragmatic,    │  │  (Exposed)   │  │  - WalletAdapter          ││
-│  │  OneGameHub,   │  │              │  │  - PlayerAdapter          ││
+│  │  OneGameHub,   │  │              │  │  - PlayerLimitAdapter          ││
 │  │  Pateplay)     │  │              │  │  - CacheAdapter           ││
 │  └────────────────┘  └──────────────┘  └───────────────────────────┘│
 └─────────────────────────────────────────────────────────────────────┘
@@ -933,17 +933,17 @@ interface WalletAdapter {
 }
 ```
 
-### PlayerAdapter
+### PlayerLimitAdapter
 
-Interface: `application/port/outbound/PlayerAdapter.kt`
+Interface: `application/port/outbound/PlayerLimitAdapter.kt`
+
+A cache-backed implementation is provided in `infrastructure/external/CachePlayerLimitAdapter.kt` with 1-hour TTL.
 
 ```kotlin
-interface PlayerAdapter {
-    /**
-     * Get player's current bet limit.
-     * Returns null if no limit is set.
-     */
-    suspend fun findCurrentBetLimit(playerId: String): Result<BigInteger?>
+interface PlayerLimitAdapter {
+    suspend fun saveSpinMax(playerId: String, amount: Long)
+    suspend fun deleteSpinMax(playerId: String)
+    suspend fun getSpinMaxAmount(playerId: String): Long?
 }
 ```
 
@@ -980,7 +980,7 @@ Update `infrastructure/DependencyInjection.kt`:
 private val adapterModule = module {
     // Replace fake adapters with your implementations
     single<WalletAdapter> { YourWalletAdapter(/* dependencies */) }
-    single<PlayerAdapter> { YourPlayerAdapter(/* dependencies */) }
+    single<PlayerLimitAdapter> { YourPlayerLimitAdapter(/* dependencies */) }
     single<CacheAdapter> { YourCacheAdapter(/* dependencies */) }
 }
 ```
@@ -1155,7 +1155,7 @@ The service uses typed domain errors:
 | `NotFoundError` | `NOT_FOUND` | Entity not found |
 | `ValidationError` | `VALIDATION_ERROR` | Input validation failed |
 | `InsufficientBalanceError` | `INSUFFICIENT_BALANCE` | Not enough funds |
-| `BetLimitExceededError` | `BET_LIMIT_EXCEEDED` | Bet exceeds limit |
+| `SpinLimitExceededError` | `SPIN_LIMIT_EXCEEDED` | Spin amount exceeds limit |
 | `SessionInvalidError` | `SESSION_INVALID` | Session expired/invalid |
 | `GameUnavailableError` | `GAME_UNAVAILABLE` | Game not playable |
 | `RoundFinishedError` | `ROUND_FINISHED` | Round already closed |

@@ -18,7 +18,7 @@ class PlayGameCommandHandler(
             locale = command.locale,
             platform = command.platform,
             lobbyUrl = command.lobbyUrl,
-            spinLimitAmount = command.spinLimitAmount
+            spinMaxAmount = command.spinMaxAmount
         )
 
         return sessionService.open(openCommand)

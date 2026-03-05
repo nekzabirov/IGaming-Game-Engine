@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/post-source-change.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/post-grpc-change.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/post-commit.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

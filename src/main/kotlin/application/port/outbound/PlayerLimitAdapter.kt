@@ -1,7 +1,9 @@
 package application.port.outbound
 
 interface PlayerLimitAdapter {
-    suspend fun saveSpinLimit(playerId: String, amount: Long)
-    suspend fun deleteSpinLimit(playerId: String)
-    suspend fun getSpinLimitAmount(playerId: String): Long?
+    suspend fun saveSpinMax(playerId: String, amount: Long)
+    suspend fun deleteSpinMax(playerId: String)
+    suspend fun getSpinMaxAmount(playerId: String): Long?
+    suspend fun decreaseSpinMax(playerId: String, amount: Long)
+    suspend fun increaseSpinMax(playerId: String, amount: Long)
 }

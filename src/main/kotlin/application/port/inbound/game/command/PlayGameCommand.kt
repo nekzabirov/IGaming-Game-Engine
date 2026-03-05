@@ -12,7 +12,7 @@ data class PlayGameCommand(
     val locale: Locale,
     val platform: Platform,
     val lobbyUrl: String,
-    val spinLimitAmount: Long? = null
+    val spinMaxAmount: Long? = null
 ) : Command<PlayGameResponse>
 
 data class PlayGameResponse(
