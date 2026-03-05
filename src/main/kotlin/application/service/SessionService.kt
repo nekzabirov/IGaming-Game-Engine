@@ -1,8 +1,9 @@
 package application.service
 
 import application.port.outbound.AggregatorAdapterRegistry
-import com.nekgamebling.application.port.outbound.storage.CacheAdapter
 import application.port.outbound.EventPublisherAdapter
+import application.port.outbound.PlayerLimitAdapter
+import com.nekgamebling.application.port.outbound.storage.CacheAdapter
 import domain.common.error.AggregatorNotSupportedError
 import domain.common.error.NotFoundError
 import domain.common.error.SessionInvalidError
@@ -30,7 +31,8 @@ data class OpenSessionCommand(
     val currency: Currency,
     val locale: Locale,
     val platform: Platform,
-    val lobbyUrl: String
+    val lobbyUrl: String,
+    val spinLimitAmount: Long? = null
 )
 
 /**
@@ -50,6 +52,7 @@ class SessionService(
     private val gameService: GameService,
     private val eventPublisher: EventPublisherAdapter,
     private val aggregatorRegistry: AggregatorAdapterRegistry,
+    private val playerLimitAdapter: PlayerLimitAdapter,
     cacheAdapter: CacheAdapter
 ) {
     companion object {
@@ -174,6 +177,13 @@ class SessionService(
             locale = command.locale,
             platform = command.platform
         )
+
+        // Save or clear spin limit
+        if (command.spinLimitAmount != null) {
+            playerLimitAdapter.saveSpinLimit(command.playerId, command.spinLimitAmount)
+        } else {
+            playerLimitAdapter.deleteSpinLimit(command.playerId)
+        }
 
         // Save session
         val savedSession = createSession(session).getOrElse {

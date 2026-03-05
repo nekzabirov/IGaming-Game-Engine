@@ -1,7 +1,7 @@
 package application.saga.spin.place
 
 import application.port.outbound.EventPublisherAdapter
-import application.port.outbound.PlayerAdapter
+import application.port.outbound.PlayerLimitAdapter
 import application.port.outbound.RoundRepository
 import application.port.outbound.SpinRepository
 import application.port.outbound.external.WalletAdapter
@@ -32,7 +32,7 @@ class PlaceSpinSaga(
     private val aggregatorService: AggregatorService,
     private val gameService: GameService,
     private val walletAdapter: WalletAdapter,
-    private val playerAdapter: PlayerAdapter,
+    private val playerLimitAdapter: PlayerLimitAdapter,
     private val eventPublisher: EventPublisherAdapter,
     private val roundRepository: RoundRepository,
     private val spinRepository: SpinRepository
@@ -41,7 +41,7 @@ class PlaceSpinSaga(
         sagaName = "PlaceSpinSaga",
         steps = listOf(
             ValidateGameStep(aggregatorService, gameService),
-            PrepareRoundAndBalanceStep(roundRepository, walletAdapter, playerAdapter),
+            PrepareRoundAndBalanceStep(roundRepository, walletAdapter, playerLimitAdapter),
             WalletWithdrawStep(walletAdapter),
             SavePlaceSpinStep(spinRepository),
             PublishSpinPlacedEventStep(eventPublisher)

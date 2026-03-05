@@ -118,6 +118,7 @@ message PlayGameCommand {
   string locale = 4;
   dto.PlatformDto platform = 5;
   string lobby_url = 6;
+  optional int64 spin_limit_amount = 7;
 }
 
 message PlayGameResult {

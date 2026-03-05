@@ -23,7 +23,7 @@ enum class ErrorCode(val value: Int, val description: String) {
 
     // Balance/Betting errors (2xxx)
     INSUFFICIENT_BALANCE(2000, "Insufficient balance"),
-    BET_LIMIT_EXCEEDED(2001, "Bet limit exceeded"),
+    SPIN_LIMIT_EXCEEDED(2001, "Spin limit exceeded"),
 
     // Session errors (3xxx)
     SESSION_INVALID(3000, "Session invalid or expired"),

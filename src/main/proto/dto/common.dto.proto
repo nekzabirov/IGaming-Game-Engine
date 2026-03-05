@@ -56,7 +56,7 @@ enum ErrorCodeDto {
 
   // Balance/Betting errors (2xxx)
   ERROR_CODE_INSUFFICIENT_BALANCE = 2000;
-  ERROR_CODE_BET_LIMIT_EXCEEDED = 2001;
+  ERROR_CODE_SPIN_LIMIT_EXCEEDED = 2001;
 
   // Session errors (3xxx)
   ERROR_CODE_SESSION_INVALID = 3000;

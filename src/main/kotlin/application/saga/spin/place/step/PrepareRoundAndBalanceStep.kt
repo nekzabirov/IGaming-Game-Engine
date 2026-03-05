@@ -1,13 +1,13 @@
 package application.saga.spin.place.step
 
-import application.port.outbound.PlayerAdapter
+import application.port.outbound.PlayerLimitAdapter
 import application.port.outbound.RoundRepository
 import application.port.outbound.external.WalletAdapter
 import application.saga.SagaStep
 import application.saga.spin.place.PlaceSpinContext
-import domain.common.error.BetLimitExceededError
 import domain.common.error.IllegalStateError
 import domain.common.error.InsufficientBalanceError
+import domain.common.error.SpinLimitExceededError
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import shared.Logger
@@ -19,7 +19,7 @@ import shared.Logger
 class PrepareRoundAndBalanceStep(
     private val roundRepository: RoundRepository,
     private val walletAdapter: WalletAdapter,
-    private val playerAdapter: PlayerAdapter
+    private val playerLimitAdapter: PlayerLimitAdapter
 ) : SagaStep<PlaceSpinContext> {
 
     override val stepId = "prepare_round_and_balance"
@@ -73,21 +73,12 @@ class PrepareRoundAndBalanceStep(
         context: PlaceSpinContext,
         game: domain.game.model.Game
     ): BalanceValidation {
-        // Fetch balance and bet limit in parallel
-        val (balanceResult, betLimitResult) = coroutineScope {
-            val balanceDeferred = async { walletAdapter.findBalance(context.session.playerId, context.session.currency) }
-            val betLimitDeferred = async { playerAdapter.findCurrentBetLimit(context.session.playerId) }
-            balanceDeferred.await() to betLimitDeferred.await()
-        }
-
-        val balance = balanceResult.getOrElse {
+        val balance = walletAdapter.findBalance(context.session.playerId, context.session.currency).getOrElse {
             Logger.error("[PrepareRoundAndBalanceStep] balance fetch failed for player=${context.session.playerId}: ${it.message}")
             return BalanceValidation(error = it)
         }
-        val betLimit = betLimitResult.getOrElse {
-            Logger.error("[PrepareRoundAndBalanceStep] bet limit fetch failed for player=${context.session.playerId}: ${it.message}")
-            return BalanceValidation(error = it)
-        }
+
+        val spinLimitAmount = playerLimitAdapter.getSpinLimitAmount(context.session.playerId)
 
         // Adjust balance if bonus bet is disabled
         val adjustedBalance = if (!game.bonusBetEnable) {
@@ -96,11 +87,11 @@ class PrepareRoundAndBalanceStep(
             balance
         }
 
-        // Validate bet limit
-        if (betLimit != null && betLimit < context.amount) {
-            Logger.warn("[PrepareRoundAndBalanceStep] bet limit exceeded for player=${context.session.playerId} amount=${context.amount} limit=$betLimit")
+        // Validate spin limit
+        if (spinLimitAmount != null && spinLimitAmount < context.amount) {
+            Logger.warn("[PrepareRoundAndBalanceStep] spin limit exceeded for player=${context.session.playerId} amount=${context.amount} limit=$spinLimitAmount")
             return BalanceValidation(
-                error = BetLimitExceededError(context.session.playerId, context.amount, betLimit)
+                error = SpinLimitExceededError(context.session.playerId, context.amount, spinLimitAmount)
             )
         }
 

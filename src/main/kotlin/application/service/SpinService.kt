@@ -1,6 +1,6 @@
 package application.service
 
-import application.port.outbound.PlayerAdapter
+import application.port.outbound.PlayerLimitAdapter
 import application.port.outbound.RoundRepository
 import application.port.outbound.SpinRepository
 import application.port.outbound.external.WalletAdapter
@@ -9,8 +9,6 @@ import domain.common.value.SpinType
 import domain.game.model.Game
 import domain.session.model.Session
 import domain.session.model.Spin
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import shared.Logger
 import java.util.UUID
 
@@ -48,7 +46,7 @@ data class SpinCommand(
  */
 class SpinService(
     private val walletAdapter: WalletAdapter,
-    private val playerAdapter: PlayerAdapter,
+    private val playerLimitAdapter: PlayerLimitAdapter,
     private val roundRepository: RoundRepository,
     private val spinRepository: SpinRepository
 ) {
@@ -80,46 +78,39 @@ class SpinService(
         }
 
         // Normal mode: use wallet
-        // Fetch balance and bet limit in parallel
-        val (balance, betLimit) = coroutineScope {
-            val balanceDeferred = async { walletAdapter.findBalance(session.playerId, session.currency) }
-            val betLimitDeferred = async { playerAdapter.findCurrentBetLimit(session.playerId) }
+        // Fetch balance
+        val balance = walletAdapter.findBalance(session.playerId, session.currency).getOrElse {
+            return Result.failure(it)
+        }
 
-            val balanceResult = balanceDeferred.await().getOrElse {
-                return@coroutineScope Result.failure(it)
-            }
-            val betLimitResult = betLimitDeferred.await().getOrElse {
-                return@coroutineScope Result.failure(it)
-            }
+        // Fetch spin limit
+        val spinLimitAmount = playerLimitAdapter.getSpinLimitAmount(session.playerId)
 
-            // Adjust balance if bonus bet is disabled
-            val adjustedBalance = if (!game.bonusBetEnable) {
-                balanceResult.copy(bonus = 0L)
-            } else {
-                balanceResult
-            }
+        // Adjust balance if bonus bet is disabled
+        val adjustedBalance = if (!game.bonusBetEnable) {
+            balance.copy(bonus = 0L)
+        } else {
+            balance
+        }
 
-            Result.success(adjustedBalance to betLimitResult)
-        }.getOrElse { return Result.failure(it) }
-
-        // Validate bet limit
-        if (betLimit != null && betLimit < command.amount) {
-            Logger.warn("[SpinService] place: bet limit exceeded for player=${session.playerId} amount=${command.amount} limit=$betLimit")
+        // Validate spin limit
+        if (spinLimitAmount != null && spinLimitAmount < command.amount) {
+            Logger.warn("[SpinService] place: spin limit exceeded for player=${session.playerId} amount=${command.amount} limit=$spinLimitAmount")
             return Result.failure(
-                BetLimitExceededError(session.playerId, command.amount, betLimit)
+                SpinLimitExceededError(session.playerId, command.amount, spinLimitAmount)
             )
         }
 
         // Validate sufficient balance
-        if (command.amount > balance.totalAmount) {
-            Logger.warn("[SpinService] place: insufficient balance for player=${session.playerId} required=${command.amount} available=${balance.totalAmount}")
+        if (command.amount > adjustedBalance.totalAmount) {
+            Logger.warn("[SpinService] place: insufficient balance for player=${session.playerId} required=${command.amount} available=${adjustedBalance.totalAmount}")
             return Result.failure(
-                InsufficientBalanceError(session.playerId, command.amount, balance.totalAmount)
+                InsufficientBalanceError(session.playerId, command.amount, adjustedBalance.totalAmount)
             )
         }
 
         // Calculate real and bonus amounts
-        val betRealAmount = minOf(command.amount, balance.real)
+        val betRealAmount = minOf(command.amount, adjustedBalance.real)
         val betBonusAmount = command.amount - betRealAmount
 
         // Create spin record

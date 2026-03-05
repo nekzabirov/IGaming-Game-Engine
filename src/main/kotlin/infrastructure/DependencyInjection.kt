@@ -2,17 +2,17 @@ package infrastructure
 
 import application.port.outbound.CurrencyAdapter
 import application.port.outbound.FileAdapter
-import application.port.outbound.PlayerAdapter
+import application.port.outbound.PlayerLimitAdapter
 import application.port.outbound.external.WalletAdapter
 import application.saga.spin.end.EndSpinSaga
 import application.saga.spin.place.PlaceSpinSaga
 import application.saga.spin.rollback.RollbackSpinSaga
 import application.saga.spin.settle.SettleSpinSaga
 import application.service.*
-import com.nekgamebling.infrastructure.external.stub.StubPlayerAdapter
 import com.nekgamebling.infrastructure.handler.handlerModule
 import infrastructure.aggregator.AggregatorModule
 import infrastructure.api.grpc.grpcModule
+import infrastructure.external.CachePlayerLimitAdapter
 import infrastructure.external.UnitCurrencyAdapter
 import infrastructure.external.s3.S3FileAdapter
 import infrastructure.external.walletEngine.WalletEngineAdapter
@@ -46,7 +46,7 @@ private val adapterModule = module {
             port = (System.getenv("WALLET_GRPC_PORT") ?: "5051").toInt()
         )
     }
-    single<PlayerAdapter> { StubPlayerAdapter() }
+    single<PlayerLimitAdapter> { CachePlayerLimitAdapter(get()) }
     single<CurrencyAdapter> { UnitCurrencyAdapter() }
     single<FileAdapter> {
         S3FileAdapter(
@@ -64,7 +64,7 @@ private val serviceModule = module {
     // Application Services
     // ==========================================
     single { GameService(get(), get(), get()) }
-    single { SessionService(get(), get(), get(), get(), get()) }
+    single { SessionService(get(), get(), get(), get(), get(), get()) }
     single { SpinService(get(), get(), get(), get()) }
     single { AggregatorService(get(), get()) }
     single { FreespinService(get(), get()) }

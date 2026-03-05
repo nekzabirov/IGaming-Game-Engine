@@ -1,4 +1,4 @@
-rootProject.name = "game-core"
+rootProject.name = "casino-engine"
 
 pluginManagement {
     repositories {

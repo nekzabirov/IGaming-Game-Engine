@@ -47,11 +47,11 @@ object GrpcErrorMetadata {
     val AVAILABLE_AMOUNT_KEY: Metadata.Key<String> =
         Metadata.Key.of("x-available-amount", Metadata.ASCII_STRING_MARSHALLER)
 
-    /** Limit amount (for BetLimitExceededError) */
+    /** Limit amount (for SpinLimitExceededError) */
     val LIMIT_KEY: Metadata.Key<String> =
         Metadata.Key.of("x-limit", Metadata.ASCII_STRING_MARSHALLER)
 
-    /** Bet amount (for BetLimitExceededError) */
-    val BET_AMOUNT_KEY: Metadata.Key<String> =
-        Metadata.Key.of("x-bet-amount", Metadata.ASCII_STRING_MARSHALLER)
+    /** Spin amount (for SpinLimitExceededError) */
+    val SPIN_AMOUNT_KEY: Metadata.Key<String> =
+        Metadata.Key.of("x-spin-amount", Metadata.ASCII_STRING_MARSHALLER)
 }

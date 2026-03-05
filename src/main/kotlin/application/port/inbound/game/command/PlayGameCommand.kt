@@ -11,7 +11,8 @@ data class PlayGameCommand(
     val currency: Currency,
     val locale: Locale,
     val platform: Platform,
-    val lobbyUrl: String
+    val lobbyUrl: String,
+    val spinLimitAmount: Long? = null
 ) : Command<PlayGameResponse>
 
 data class PlayGameResponse(

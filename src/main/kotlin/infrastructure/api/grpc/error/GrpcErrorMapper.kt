@@ -30,7 +30,7 @@ object GrpcErrorMapper {
         val baseStatus = when (error.errorCode) {
             ErrorCode.NOT_FOUND, ErrorCode.ROUND_NOT_FOUND -> Status.NOT_FOUND
             ErrorCode.VALIDATION_ERROR, ErrorCode.INVALID_PRESET -> Status.INVALID_ARGUMENT
-            ErrorCode.INSUFFICIENT_BALANCE, ErrorCode.BET_LIMIT_EXCEEDED,
+            ErrorCode.INSUFFICIENT_BALANCE, ErrorCode.SPIN_LIMIT_EXCEEDED,
             ErrorCode.ROUND_FINISHED, ErrorCode.ILLEGAL_STATE -> Status.FAILED_PRECONDITION
             ErrorCode.SESSION_INVALID -> Status.UNAUTHENTICATED
             ErrorCode.GAME_UNAVAILABLE, ErrorCode.EXTERNAL_SERVICE_ERROR -> Status.UNAVAILABLE
@@ -71,9 +71,9 @@ object GrpcErrorMapper {
                     put(GrpcErrorMetadata.REQUIRED_AMOUNT_KEY, error.required.toString())
                     put(GrpcErrorMetadata.AVAILABLE_AMOUNT_KEY, error.available.toString())
                 }
-                is BetLimitExceededError -> {
+                is SpinLimitExceededError -> {
                     put(GrpcErrorMetadata.PLAYER_ID_KEY, error.playerId)
-                    put(GrpcErrorMetadata.BET_AMOUNT_KEY, error.betAmount.toString())
+                    put(GrpcErrorMetadata.SPIN_AMOUNT_KEY, error.spinAmount.toString())
                     put(GrpcErrorMetadata.LIMIT_KEY, error.limit.toString())
                 }
                 is SessionInvalidError -> {

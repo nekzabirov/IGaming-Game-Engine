@@ -51,15 +51,15 @@ data class InsufficientBalanceError(
 }
 
 /**
- * Bet amount exceeds the configured limit.
+ * Spin amount exceeds the configured limit.
  */
-data class BetLimitExceededError(
+data class SpinLimitExceededError(
     val playerId: String,
-    val betAmount: Long,
+    val spinAmount: Long,
     val limit: Long,
     override val cause: Throwable? = null
-) : DomainError("Bet limit exceeded for player $playerId: bet $betAmount, limit $limit") {
-    override val errorCode: ErrorCode = ErrorCode.BET_LIMIT_EXCEEDED
+) : DomainError("Spin limit exceeded for player $playerId: spin $spinAmount, limit $limit") {
+    override val errorCode: ErrorCode = ErrorCode.SPIN_LIMIT_EXCEEDED
 }
 
 /**

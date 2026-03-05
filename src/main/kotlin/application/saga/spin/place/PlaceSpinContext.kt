@@ -25,7 +25,7 @@ class PlaceSpinContext(
     var game: Game? = null
     var round: Round? = null
     var balance: Balance? = null
-    var betLimit: Long? = null
+    var spinLimitAmount: Long? = null
     var spin: Spin? = null
     var betRealAmount: Long = 0L
     var betBonusAmount: Long = 0L

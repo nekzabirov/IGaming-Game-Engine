@@ -12,7 +12,7 @@ import application.saga.spin.settle.SettleSpinSaga
 import application.service.SessionService
 import infrastructure.aggregator.onegamehub.adapter.OneGameHubCurrencyAdapter
 import infrastructure.aggregator.onegamehub.handler.dto.OneGameHubBetDto
-import domain.common.error.BetLimitExceededError
+import domain.common.error.SpinLimitExceededError
 import domain.common.error.DomainError
 import domain.common.error.GameUnavailableError
 import domain.common.error.InsufficientBalanceError
@@ -168,7 +168,7 @@ class OneGameHubHandler(
 
     private val DomainError.toErrorResponse: OneGameHubResponse.Error
         get() = when (this) {
-            is BetLimitExceededError -> OneGameHubResponse.Error.EXCEED_WAGER_LIMIT
+            is SpinLimitExceededError -> OneGameHubResponse.Error.EXCEED_WAGER_LIMIT
             is GameUnavailableError -> OneGameHubResponse.Error.UNAUTHORIZED
             is InsufficientBalanceError -> OneGameHubResponse.Error.INSUFFICIENT_FUNDS
             is InvalidPresetError -> OneGameHubResponse.Error.BONUS_BET_MAX_RESTRICTION
