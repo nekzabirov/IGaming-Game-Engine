@@ -1,15 +1,15 @@
 syntax = "proto3";
 
-package game.service;
+package game.v1;
 
-option java_package = "com.nekgamebling.game.service";
+option java_package = "com.nekgamebling.game.v1";
 option java_multiple_files = true;
 
-import "dto/common.dto.proto";
-import "dto/provider.dto.proto";
-import "dto/game.dto.proto";
-import "dto/aggregator.dto.proto";
-import "dto/collection.dto.proto";
+import "game/v1/common.dto.proto";
+import "game/v1/provider.dto.proto";
+import "game/v1/game.dto.proto";
+import "game/v1/aggregator.dto.proto";
+import "game/v1/collection.dto.proto";
 
 service GameService {
   rpc Find(FindGameQuery) returns (FindGameResult);
@@ -36,15 +36,15 @@ message FindGameQuery {
 }
 
 message FindGameResult {
-  dto.GameDto game = 1;
+  GameDto game = 1;
 
-  dto.ProviderDto provider = 2;
+  ProviderDto provider = 2;
 
-  dto.GameVariantDto active_variant = 3;
+  GameVariantDto active_variant = 3;
 
-  dto.AggregatorInfoDto aggregator = 4;
+  AggregatorInfoDto aggregator = 4;
 
-  repeated dto.CollectionDto collections = 5;
+  repeated CollectionDto collections = 5;
 }
 
 // ============================================
@@ -53,7 +53,7 @@ message FindGameResult {
 
 message FindAllGameQuery {
   // Pagination
-  dto.PaginationRequestDto pagination = 1;
+  PaginationRequestDto pagination = 1;
 
   // Search query (matches game name or identity)
   string query = 2;
@@ -77,17 +77,17 @@ message FindAllGameQuery {
 message FindAllGameResult {
   // Paginated game items
   repeated GameItemDto items = 1;
-  dto.PaginationMetaDto pagination = 2;
+  PaginationMetaDto pagination = 2;
 
   // Related entities from results
-  repeated dto.ProviderDto providers = 3;
-  repeated dto.AggregatorInfoDto aggregators = 4;
-  repeated dto.CollectionDto collections = 5;
+  repeated ProviderDto providers = 3;
+  repeated AggregatorInfoDto aggregators = 4;
+  repeated CollectionDto collections = 5;
 }
 
 message GameItemDto {
-  dto.GameDto game = 1;
-  dto.GameVariantDto active_variant = 2;
+  GameDto game = 1;
+  GameVariantDto active_variant = 2;
   repeated string collection_identities = 3;
 }
 
@@ -99,7 +99,7 @@ message GameDemoUrlQuery {
   string identity = 1;
   string currency = 2;
   string locale = 3;
-  dto.PlatformDto platform = 4;
+  PlatformDto platform = 4;
   string lobby_url = 5;
 }
 
@@ -116,7 +116,7 @@ message PlayGameCommand {
   string player_id = 2;
   string currency = 3;
   string locale = 4;
-  dto.PlatformDto platform = 5;
+  PlatformDto platform = 5;
   string lobby_url = 6;
   optional int64 spin_max_amount = 7;
 }
@@ -204,8 +204,8 @@ message CreateFreespinCommand {
   string player_id = 2;
   string reference_id = 3;
   string currency = 4;
-  dto.TimestampDto start_at = 5;
-  dto.TimestampDto end_at = 6;
+  TimestampDto start_at = 5;
+  TimestampDto end_at = 6;
   // Preset values selected by the operator (key -> value)
   map<string, int32> preset_values = 7;
 }

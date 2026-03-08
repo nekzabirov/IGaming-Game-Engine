@@ -1,6 +1,6 @@
 package infrastructure.api.grpc.mapper
 
-import com.nekgamebling.game.dto.*
+import com.nekgamebling.game.v1.*
 import domain.aggregator.AggregatorInfo
 import domain.collection.model.Collection
 import domain.common.value.Aggregator

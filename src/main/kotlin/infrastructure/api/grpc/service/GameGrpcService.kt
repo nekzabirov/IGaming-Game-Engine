@@ -15,9 +15,9 @@ import com.nekgamebling.application.port.inbound.game.query.FindGameQuery
 import com.nekgamebling.application.port.inbound.game.query.FindGameResponse
 import com.nekgamebling.application.port.inbound.game.query.GameDemoUrlQuery
 import com.nekgamebling.application.port.inbound.game.query.GameDemoUrlResponse
-import com.nekgamebling.game.dto.PaginationMetaDto
-import com.nekgamebling.game.dto.PlatformDto
-import com.nekgamebling.game.service.*
+import com.nekgamebling.game.v1.PaginationMetaDto
+import com.nekgamebling.game.v1.PlatformDto
+import com.nekgamebling.game.v1.*
 import domain.common.value.Locale
 import domain.common.value.Platform
 import infrastructure.api.grpc.error.GrpcErrorMapper
@@ -28,14 +28,14 @@ import shared.value.Currency
 import shared.value.Pageable
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
-import com.nekgamebling.game.service.FindAllGameQuery as FindAllGameQueryProto
-import com.nekgamebling.game.service.FindGameQuery as FindGameQueryProto
-import com.nekgamebling.game.service.UpdateGameCommand as UpdateGameCommandProto
-import com.nekgamebling.game.service.UpdateGameImageCommand as UpdateGameImageCommandProto
-import com.nekgamebling.game.service.AddGameTagCommand as AddGameTagCommandProto
-import com.nekgamebling.game.service.RemoveGameTagCommand as RemoveGameTagCommandProto
-import com.nekgamebling.game.service.GameDemoUrlQuery as GameDemoUrlQueryProto
-import com.nekgamebling.game.service.PlayGameCommand as PlayGameCommandProto
+import com.nekgamebling.game.v1.FindAllGameQuery as FindAllGameQueryProto
+import com.nekgamebling.game.v1.FindGameQuery as FindGameQueryProto
+import com.nekgamebling.game.v1.UpdateGameCommand as UpdateGameCommandProto
+import com.nekgamebling.game.v1.UpdateGameImageCommand as UpdateGameImageCommandProto
+import com.nekgamebling.game.v1.AddGameTagCommand as AddGameTagCommandProto
+import com.nekgamebling.game.v1.RemoveGameTagCommand as RemoveGameTagCommandProto
+import com.nekgamebling.game.v1.GameDemoUrlQuery as GameDemoUrlQueryProto
+import com.nekgamebling.game.v1.PlayGameCommand as PlayGameCommandProto
 
 class GameGrpcService(
     private val findGameQueryHandler: QueryHandler<FindGameQuery, FindGameResponse>,

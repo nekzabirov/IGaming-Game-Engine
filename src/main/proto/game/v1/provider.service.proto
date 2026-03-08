@@ -1,13 +1,13 @@
 syntax = "proto3";
 
-package game.service;
+package game.v1;
 
-option java_package = "com.nekgamebling.game.service";
+option java_package = "com.nekgamebling.game.v1";
 option java_multiple_files = true;
 
-import "dto/common.dto.proto";
-import "dto/provider.dto.proto";
-import "dto/aggregator.dto.proto";
+import "game/v1/common.dto.proto";
+import "game/v1/provider.dto.proto";
+import "game/v1/aggregator.dto.proto";
 
 service ProviderService {
   rpc Find(FindProviderQuery) returns (FindProviderResult);
@@ -25,8 +25,8 @@ message FindProviderQuery {
 }
 
 message FindProviderResult {
-  dto.ProviderDto provider = 1;
-  dto.AggregatorInfoDto aggregator = 2;
+  ProviderDto provider = 1;
+  AggregatorInfoDto aggregator = 2;
   int32 active_games = 3;
   int32 total_games = 4;
 }
@@ -37,7 +37,7 @@ message FindProviderResult {
 
 message FindAllProviderQuery {
   // Pagination
-  dto.PaginationRequestDto pagination = 1;
+  PaginationRequestDto pagination = 1;
 
   // Search query (matches provider name or identity)
   string query = 2;
@@ -50,14 +50,14 @@ message FindAllProviderQuery {
 message FindAllProviderResult {
   // Paginated provider items
   repeated ProviderItemDto items = 1;
-  dto.PaginationMetaDto pagination = 2;
+  PaginationMetaDto pagination = 2;
 
   // Related entities from results
-  repeated dto.AggregatorInfoDto aggregators = 3;
+  repeated AggregatorInfoDto aggregators = 3;
 }
 
 message ProviderItemDto {
-  dto.ProviderDto provider = 1;
+  ProviderDto provider = 1;
   string aggregator_identity = 2;
   int32 active_games = 3;
   int32 total_games = 4;

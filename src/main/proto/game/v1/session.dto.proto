@@ -1,12 +1,12 @@
 syntax = "proto3";
 
-package game.dto;
+package game.v1;
 
 option java_multiple_files = true;
-option java_package = "com.nekgamebling.game.dto";
+option java_package = "com.nekgamebling.game.v1";
 
-import "dto/common.dto.proto";
-import "dto/game.dto.proto";
+import "game/v1/common.dto.proto";
+import "game/v1/game.dto.proto";
 
 // ============================================
 // SESSION DOMAIN DTOs
@@ -43,7 +43,7 @@ message SpinDto {
   SpinTypeDto type = 3;                   // Spin type (PLACE, SETTLE, ROLLBACK)
   string amount = 4;                      // BigInteger as string
   string real_amount = 5;                 // BigInteger as string
-  string bonus_amount = 6;                // BigInteger as string
+  string bonus_amount = 6;               // BigInteger as string
   string ext_id = 7;                      // External/transaction ID
   optional string reference_id = 8;       // UUID as string (nullable)
   optional string free_spin_id = 9;       // Free spin ID (nullable)
@@ -81,7 +81,7 @@ message SpinEntityDto {
   SpinTypeDto type = 3;                   // Spin type
   string amount = 4;                      // BigInteger as string
   string real_amount = 5;                 // BigInteger as string
-  string bonus_amount = 6;                // BigInteger as string
+  string bonus_amount = 6;               // BigInteger as string
   string transaction_id = 7;              // Transaction ID
   optional string reference_id = 8;       // UUID as string (nullable)
   optional string free_spin_id = 9;       // Free spin ID (nullable)

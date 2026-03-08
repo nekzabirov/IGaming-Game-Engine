@@ -5,11 +5,11 @@ import com.nekgamebling.application.port.inbound.spin.FindAllRoundQuery
 import com.nekgamebling.application.port.inbound.spin.FindAllRoundQueryResult
 import com.nekgamebling.application.port.inbound.spin.FindRoundQuery
 import com.nekgamebling.application.port.inbound.spin.FindRoundQueryResult
-import com.nekgamebling.game.dto.PaginationMetaDto
-import com.nekgamebling.game.service.FindAllRoundResult
-import com.nekgamebling.game.service.FindRoundResult
-import com.nekgamebling.game.service.RoundItemDto
-import com.nekgamebling.game.service.RoundServiceGrpcKt
+import com.nekgamebling.game.v1.PaginationMetaDto
+import com.nekgamebling.game.v1.FindAllRoundResult
+import com.nekgamebling.game.v1.FindRoundResult
+import com.nekgamebling.game.v1.RoundItemDto
+import com.nekgamebling.game.v1.RoundServiceGrpcKt
 import infrastructure.api.grpc.error.mapOrThrowGrpc
 import infrastructure.api.grpc.mapper.toProto
 import kotlinx.datetime.Instant
@@ -18,8 +18,8 @@ import kotlinx.datetime.toLocalDateTime
 import shared.value.Pageable
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
-import com.nekgamebling.game.service.FindRoundQuery as FindRoundQueryProto
-import com.nekgamebling.game.service.FindAllRoundQuery as FindAllRoundQueryProto
+import com.nekgamebling.game.v1.FindRoundQuery as FindRoundQueryProto
+import com.nekgamebling.game.v1.FindAllRoundQuery as FindAllRoundQueryProto
 
 class RoundGrpcService(
     private val findRoundQueryHandler: QueryHandler<FindRoundQuery, FindRoundQueryResult>,

@@ -1,0 +1,123 @@
+[versions]
+kotlin = "2.0.21"
+ktor = "3.0.3"
+exposed = "0.57.0"
+koin = "4.0.3"
+grpc = "1.68.2"
+grpc-kotlin = "1.4.1"
+protobuf = "4.29.2"
+logback = "1.4.14"
+h2 = "2.3.232"
+postgresql = "42.7.4"
+hikari = "5.1.0"
+rabbitmq = "1.3.6"
+kotlinx-datetime = "0.6.1"
+aws-sdk = "1.3.99"
+wallet-grpc-client = "1.0.0"
+
+[libraries]
+# Ktor Server
+ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
+ktor-server-cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
+ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
+ktor-server-call-logging = { module = "io.ktor:ktor-server-call-logging-jvm", version.ref = "ktor" }
+ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
+
+# Ktor Client
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
+ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+
+# Ktor Serialization
+ktor-serialization-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+
+# Exposed ORM
+exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
+exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
+exposed-datetime = { module = "org.jetbrains.exposed:exposed-kotlin-datetime", version.ref = "exposed" }
+exposed-json = { module = "org.jetbrains.exposed:exposed-json", version.ref = "exposed" }
+
+# Database Drivers
+h2 = { module = "com.h2database:h2", version.ref = "h2" }
+postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
+hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikari" }
+
+# Koin DI
+koin-ktor = { module = "io.insert-koin:koin-ktor", version.ref = "koin" }
+koin-logger-slf4j = { module = "io.insert-koin:koin-logger-slf4j", version.ref = "koin" }
+
+# Logging
+logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+
+# DateTime
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
+
+# RabbitMQ
+rabbitmq = { module = "io.github.damirdenis-tudor:ktor-server-rabbitmq", version.ref = "rabbitmq" }
+
+# gRPC
+grpc-netty-shaded = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc" }
+grpc-services = { module = "io.grpc:grpc-services", version.ref = "grpc" }
+grpc-kotlin-stub = { module = "io.grpc:grpc-kotlin-stub", version.ref = "grpc-kotlin" }
+grpc-stub = { module = "io.grpc:grpc-stub", version.ref = "grpc" }
+grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
+protobuf-kotlin = { module = "com.google.protobuf:protobuf-kotlin", version.ref = "protobuf" }
+
+# Protobuf Compiler
+protoc = { module = "com.google.protobuf:protoc", version.ref = "protobuf" }
+grpc-protoc-gen-java = { module = "io.grpc:protoc-gen-grpc-java", version.ref = "grpc" }
+grpc-protoc-gen-kotlin = { module = "io.grpc:protoc-gen-grpc-kotlin", version.ref = "grpc-kotlin" }
+
+# Testing
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+mockk = { module = "io.mockk:mockk", version = "1.13.13" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version = "1.9.0" }
+
+# AWS SDK for Kotlin
+aws-s3 = { module = "aws.sdk.kotlin:s3", version.ref = "aws-sdk" }
+
+# Wallet gRPC Client
+wallet-grpc-client = { module = "com.nekgamebling:wallet-grpc-client", version.ref = "wallet-grpc-client" }
+
+[bundles]
+ktor-server = [
+    "ktor-server-core",
+    "ktor-server-cio",
+    "ktor-server-content-negotiation",
+    "ktor-server-call-logging"
+]
+ktor-client = [
+    "ktor-client-core",
+    "ktor-client-cio",
+    "ktor-client-logging",
+    "ktor-client-content-negotiation"
+]
+exposed = [
+    "exposed-core",
+    "exposed-jdbc",
+    "exposed-datetime",
+    "exposed-json"
+]
+koin = [
+    "koin-ktor",
+    "koin-logger-slf4j"
+]
+grpc = [
+    "grpc-netty-shaded",
+    "grpc-services",
+    "grpc-kotlin-stub",
+    "grpc-stub",
+    "grpc-protobuf"
+]
+testing = [
+    "ktor-server-test-host",
+    "kotlin-test",
+    "mockk",
+    "kotlinx-coroutines-test"
+]
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+protobuf = { id = "com.google.protobuf", version = "0.9.4" }

@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-package game.dto;
+package game.v1;
 
 option java_multiple_files = true;
-option java_package = "com.nekgamebling.game.dto";
+option java_package = "com.nekgamebling.game.v1";
 
-import "dto/common.dto.proto";
+import "game/v1/common.dto.proto";
 
 // ============================================
 // DOMAIN EVENT DTOs
@@ -30,7 +30,7 @@ message BetPlacedEventDto {
   string spin_id = 5;                     // UUID as string
   string amount = 6;                      // BigInteger as string
   string real_amount = 7;                 // BigInteger as string
-  string bonus_amount = 8;                // BigInteger as string
+  string bonus_amount = 8;               // BigInteger as string
   string player_id = 9;                   // Player identifier
   string currency = 10;                   // Currency code
   optional string free_spin_id = 11;      // Free spin ID (nullable)

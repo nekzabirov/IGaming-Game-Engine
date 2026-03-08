@@ -9,22 +9,22 @@ import com.nekgamebling.application.port.inbound.aggregator.FindAggregatorRespon
 import com.nekgamebling.application.port.inbound.aggregator.FindAllAggregatorQuery
 import com.nekgamebling.application.port.inbound.aggregator.FindAllAggregatorResponse
 import com.nekgamebling.application.port.inbound.aggregator.UpdateAggregatorCommand
-import com.nekgamebling.game.dto.PaginationMetaDto
-import com.nekgamebling.game.service.AggregatorServiceGrpcKt
-import com.nekgamebling.game.service.CreateAggregatorResult
-import com.nekgamebling.game.service.FindAggregatorResult
-import com.nekgamebling.game.service.FindAllAggregatorResult
-import com.nekgamebling.game.service.UpdateAggregatorResult
+import com.nekgamebling.game.v1.PaginationMetaDto
+import com.nekgamebling.game.v1.AggregatorServiceGrpcKt
+import com.nekgamebling.game.v1.CreateAggregatorResult
+import com.nekgamebling.game.v1.FindAggregatorResult
+import com.nekgamebling.game.v1.FindAllAggregatorResult
+import com.nekgamebling.game.v1.UpdateAggregatorResult
 import infrastructure.api.grpc.error.mapOrThrowGrpc
 import infrastructure.api.grpc.mapper.toDomain
 import infrastructure.api.grpc.mapper.toProto
 import shared.value.Pageable
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
-import com.nekgamebling.game.service.CreateAggregatorCommand as CreateAggregatorCommandProto
-import com.nekgamebling.game.service.FindAggregatorQuery as FindAggregatorQueryProto
-import com.nekgamebling.game.service.FindAllAggregatorQuery as FindAllAggregatorQueryProto
-import com.nekgamebling.game.service.UpdateAggregatorCommand as UpdateAggregatorCommandProto
+import com.nekgamebling.game.v1.CreateAggregatorCommand as CreateAggregatorCommandProto
+import com.nekgamebling.game.v1.FindAggregatorQuery as FindAggregatorQueryProto
+import com.nekgamebling.game.v1.FindAllAggregatorQuery as FindAllAggregatorQueryProto
+import com.nekgamebling.game.v1.UpdateAggregatorCommand as UpdateAggregatorCommandProto
 
 class AggregatorGrpcService(
     private val createAggregatorCommandHandler: CommandHandler<CreateAggregatorCommand, CreateAggregatorResponse>,

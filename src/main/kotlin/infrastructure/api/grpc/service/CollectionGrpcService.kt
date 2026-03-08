@@ -10,25 +10,25 @@ import com.nekgamebling.application.port.inbound.collection.query.FindAllCollect
 import com.nekgamebling.application.port.inbound.collection.query.FindAllCollectionsResponse
 import com.nekgamebling.application.port.inbound.collection.query.FindCollectionQuery
 import com.nekgamebling.application.port.inbound.collection.query.FindCollectionResponse
-import com.nekgamebling.game.dto.PaginationMetaDto
-import com.nekgamebling.game.service.CollectionItemDto
-import com.nekgamebling.game.service.CollectionServiceGrpcKt
-import com.nekgamebling.game.service.CreateCollectionResult
-import com.nekgamebling.game.service.FindAllCollectionResult
-import com.nekgamebling.game.service.FindCollectionResult
-import com.nekgamebling.game.service.UpdateCollectionResult
-import com.nekgamebling.game.service.UpdateCollectionGamesResult
+import com.nekgamebling.game.v1.PaginationMetaDto
+import com.nekgamebling.game.v1.CollectionItemDto
+import com.nekgamebling.game.v1.CollectionServiceGrpcKt
+import com.nekgamebling.game.v1.CreateCollectionResult
+import com.nekgamebling.game.v1.FindAllCollectionResult
+import com.nekgamebling.game.v1.FindCollectionResult
+import com.nekgamebling.game.v1.UpdateCollectionResult
+import com.nekgamebling.game.v1.UpdateCollectionGamesResult
 import shared.value.LocaleName
 import infrastructure.api.grpc.error.mapOrThrowGrpc
 import infrastructure.api.grpc.mapper.toProto
 import shared.value.Pageable
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
-import com.nekgamebling.game.service.CreateCollectionCommand as CreateCollectionCommandProto
-import com.nekgamebling.game.service.FindCollectionQuery as FindCollectionQueryProto
-import com.nekgamebling.game.service.FindAllCollectionQuery as FindAllCollectionQueryProto
-import com.nekgamebling.game.service.UpdateCollectionCommand as UpdateCollectionCommandProto
-import com.nekgamebling.game.service.UpdateCollectionGamesCommand as UpdateCollectionGamesCommandProto
+import com.nekgamebling.game.v1.CreateCollectionCommand as CreateCollectionCommandProto
+import com.nekgamebling.game.v1.FindCollectionQuery as FindCollectionQueryProto
+import com.nekgamebling.game.v1.FindAllCollectionQuery as FindAllCollectionQueryProto
+import com.nekgamebling.game.v1.UpdateCollectionCommand as UpdateCollectionCommandProto
+import com.nekgamebling.game.v1.UpdateCollectionGamesCommand as UpdateCollectionGamesCommandProto
 
 class CollectionGrpcService(
     private val createCollectionCommandHandler: CommandHandler<CreateCollectionCommand, CreateCollectionResponse>,

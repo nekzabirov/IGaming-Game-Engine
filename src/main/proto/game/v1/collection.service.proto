@@ -1,12 +1,12 @@
 syntax = "proto3";
 
-package game.service;
+package game.v1;
 
-option java_package = "com.nekgamebling.game.service";
+option java_package = "com.nekgamebling.game.v1";
 option java_multiple_files = true;
 
-import "dto/common.dto.proto";
-import "dto/collection.dto.proto";
+import "game/v1/common.dto.proto";
+import "game/v1/collection.dto.proto";
 
 service CollectionService {
   rpc Create(CreateCollectionCommand) returns (CreateCollectionResult);
@@ -22,13 +22,13 @@ service CollectionService {
 
 message CreateCollectionCommand {
   string identity = 1;                    // Unique identifier for the collection
-  dto.LocaleNameDto name = 2;             // Localized name
+  LocaleNameDto name = 2;                 // Localized name
   optional bool active = 3;               // Active status (default: true)
   optional int32 order = 4;               // Display order (default: 100)
 }
 
 message CreateCollectionResult {
-  dto.CollectionDto collection = 1;       // The created collection
+  CollectionDto collection = 1;           // The created collection
 }
 
 // ============================================
@@ -40,7 +40,7 @@ message FindCollectionQuery {
 }
 
 message FindCollectionResult {
-  dto.CollectionDto collection = 1;
+  CollectionDto collection = 1;
   int32 provider_count = 2;
   int32 game_count = 3;
 }
@@ -51,7 +51,7 @@ message FindCollectionResult {
 
 message FindAllCollectionQuery {
   // Pagination
-  dto.PaginationRequestDto pagination = 1;
+  PaginationRequestDto pagination = 1;
 
   // Search query (matches collection identity)
   string query = 2;
@@ -63,11 +63,11 @@ message FindAllCollectionQuery {
 message FindAllCollectionResult {
   // Paginated collection items
   repeated CollectionItemDto items = 1;
-  dto.PaginationMetaDto pagination = 2;
+  PaginationMetaDto pagination = 2;
 }
 
 message CollectionItemDto {
-  dto.CollectionDto collection = 1;
+  CollectionDto collection = 1;
   int32 provider_count = 2;
   int32 game_count = 3;
 }

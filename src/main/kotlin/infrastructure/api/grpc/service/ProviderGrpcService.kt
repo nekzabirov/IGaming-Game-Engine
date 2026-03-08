@@ -8,22 +8,22 @@ import com.nekgamebling.application.port.inbound.provider.query.FindaProviderQue
 import com.nekgamebling.application.port.inbound.provider.query.FindaProviderResponse
 import com.nekgamebling.application.port.inbound.provider.command.UpdateProviderCommand
 import com.nekgamebling.application.port.inbound.provider.command.UpdateProviderImageCommand
-import com.nekgamebling.game.dto.PaginationMetaDto
-import com.nekgamebling.game.service.FindAllProviderResult
-import com.nekgamebling.game.service.FindProviderResult
-import com.nekgamebling.game.service.ProviderItemDto
-import com.nekgamebling.game.service.ProviderServiceGrpcKt
-import com.nekgamebling.game.service.UpdateProviderResult
-import com.nekgamebling.game.service.UpdateProviderImageResult
+import com.nekgamebling.game.v1.PaginationMetaDto
+import com.nekgamebling.game.v1.FindAllProviderResult
+import com.nekgamebling.game.v1.FindProviderResult
+import com.nekgamebling.game.v1.ProviderItemDto
+import com.nekgamebling.game.v1.ProviderServiceGrpcKt
+import com.nekgamebling.game.v1.UpdateProviderResult
+import com.nekgamebling.game.v1.UpdateProviderImageResult
 import infrastructure.api.grpc.error.mapOrThrowGrpc
 import infrastructure.api.grpc.mapper.toProto
 import shared.value.Pageable
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
-import com.nekgamebling.game.service.FindProviderQuery as FindProviderQueryProto
-import com.nekgamebling.game.service.FindAllProviderQuery as FindAllProviderQueryProto
-import com.nekgamebling.game.service.UpdateProviderCommand as UpdateProviderCommandProto
-import com.nekgamebling.game.service.UpdateProviderImageCommand as UpdateProviderImageCommandProto
+import com.nekgamebling.game.v1.FindProviderQuery as FindProviderQueryProto
+import com.nekgamebling.game.v1.FindAllProviderQuery as FindAllProviderQueryProto
+import com.nekgamebling.game.v1.UpdateProviderCommand as UpdateProviderCommandProto
+import com.nekgamebling.game.v1.UpdateProviderImageCommand as UpdateProviderImageCommandProto
 
 class ProviderGrpcService(
     private val findProviderQueryHandler: QueryHandler<FindaProviderQuery, FindaProviderResponse>,

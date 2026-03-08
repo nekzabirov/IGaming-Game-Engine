@@ -1,7 +1,7 @@
 package infrastructure.external.walletEngine
 
 import application.port.outbound.external.WalletAdapter
-import com.nekgamebling.wallet.*
+import com.nekgamebling.wallet.v1.*
 import domain.common.value.SpinType
 import domain.session.model.Balance
 import com.nekgamebling.infrastructure.external.BalanceCache

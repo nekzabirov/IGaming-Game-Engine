@@ -1,12 +1,12 @@
 syntax = "proto3";
 
-package game.service;
+package game.v1;
 
-option java_package = "com.nekgamebling.game.service";
+option java_package = "com.nekgamebling.game.v1";
 option java_multiple_files = true;
 
-import "dto/common.dto.proto";
-import "dto/aggregator.dto.proto";
+import "game/v1/common.dto.proto";
+import "game/v1/aggregator.dto.proto";
 
 service AggregatorService {
   rpc Create(CreateAggregatorCommand) returns (CreateAggregatorResult);
@@ -21,13 +21,13 @@ service AggregatorService {
 
 message CreateAggregatorCommand {
   string identity = 1;
-  dto.AggregatorTypeDto aggregator = 2;
+  AggregatorTypeDto aggregator = 2;
   map<string, string> config = 3;
   optional bool active = 4;
 }
 
 message CreateAggregatorResult {
-  dto.AggregatorInfoDto aggregator = 1;
+  AggregatorInfoDto aggregator = 1;
 }
 
 // ============================================
@@ -39,7 +39,7 @@ message FindAggregatorQuery {
 }
 
 message FindAggregatorResult {
-  dto.AggregatorInfoDto aggregator = 1;
+  AggregatorInfoDto aggregator = 1;
 }
 
 // ============================================
@@ -48,7 +48,7 @@ message FindAggregatorResult {
 
 message FindAllAggregatorQuery {
   // Pagination
-  dto.PaginationRequestDto pagination = 1;
+  PaginationRequestDto pagination = 1;
 
   // Search query (matches aggregator identity)
   string query = 2;
@@ -59,8 +59,8 @@ message FindAllAggregatorQuery {
 
 message FindAllAggregatorResult {
   // Paginated aggregator items
-  repeated dto.AggregatorInfoDto items = 1;
-  dto.PaginationMetaDto pagination = 2;
+  repeated AggregatorInfoDto items = 1;
+  PaginationMetaDto pagination = 2;
 }
 
 // ============================================

@@ -1,14 +1,14 @@
 syntax = "proto3";
 
-package game.dto;
+package game.v1;
 
 option java_multiple_files = true;
-option java_package = "com.nekgamebling.game.dto";
+option java_package = "com.nekgamebling.game.v1";
 
-import "dto/common.dto.proto";
-import "dto/provider.dto.proto";
-import "dto/aggregator.dto.proto";
-import "dto/collection.dto.proto";
+import "game/v1/common.dto.proto";
+import "game/v1/provider.dto.proto";
+import "game/v1/aggregator.dto.proto";
+import "game/v1/collection.dto.proto";
 
 // ============================================
 // GAME DOMAIN DTOs

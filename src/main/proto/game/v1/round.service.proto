@@ -1,15 +1,15 @@
 syntax = "proto3";
 
-package game.service;
+package game.v1;
 
-option java_package = "com.nekgamebling.game.service";
+option java_package = "com.nekgamebling.game.v1";
 option java_multiple_files = true;
 
 import "google/protobuf/timestamp.proto";
-import "dto/common.dto.proto";
-import "dto/session.dto.proto";
-import "dto/game.dto.proto";
-import "dto/provider.dto.proto";
+import "game/v1/common.dto.proto";
+import "game/v1/session.dto.proto";
+import "game/v1/game.dto.proto";
+import "game/v1/provider.dto.proto";
 
 service RoundService {
   rpc Find(FindRoundQuery) returns (FindRoundResult);
@@ -34,7 +34,7 @@ message FindRoundResult {
 
 message FindAllRoundQuery {
   // Pagination
-  dto.PaginationRequestDto pagination = 1;
+  PaginationRequestDto pagination = 1;
 
   // Filters
   optional string game_identity = 2;
@@ -59,15 +59,15 @@ message FindAllRoundQuery {
 message FindAllRoundResult {
   // Paginated round items
   repeated RoundItemDto items = 1;
-  dto.PaginationMetaDto pagination = 2;
+  PaginationMetaDto pagination = 2;
 
   // Related entities from results
-  repeated dto.ProviderDto providers = 3;
-  repeated dto.GameDto games = 4;
+  repeated ProviderDto providers = 3;
+  repeated GameDto games = 4;
 }
 
 message RoundItemDto {
-  dto.RoundDto round = 1;
+  RoundDto round = 1;
 
   string provider_identity = 2;
   string game_identity = 3;
