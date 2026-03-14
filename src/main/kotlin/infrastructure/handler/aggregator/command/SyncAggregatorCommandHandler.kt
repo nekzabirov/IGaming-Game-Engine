@@ -16,6 +16,8 @@ class SyncAggregatorCommandHandler(private val syncService: GameSyncService) :
             AggregatorInfoTable.selectAll().where { AggregatorInfoTable.active eq true }.toList()
         }
 
+        println("Aggregators: ${aggregators.size}")
+
         var total = 0
 
         for (row in aggregators) {

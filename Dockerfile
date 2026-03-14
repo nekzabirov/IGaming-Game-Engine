@@ -12,11 +12,11 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 WORKDIR /app
 
 # Copy pre-built distribution
-COPY build/distributions/game-core-*.tar /tmp/
+COPY build/distributions/casino-engine-*.tar /tmp/
 
 # Extract and setup
-RUN tar -xf /tmp/game-core-*.tar -C /app --strip-components=1 && \
-    rm /tmp/game-core-*.tar && \
+RUN tar -xf /tmp/casino-engine-*.tar -C /app --strip-components=1 && \
+    rm /tmp/casino-engine-*.tar && \
     chmod +x /app/bin/game-core && \
     chmod +x /app/bin/sync-aggregators && \
     chown -R appuser:appgroup /app
