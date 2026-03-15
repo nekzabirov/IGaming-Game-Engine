@@ -10,6 +10,8 @@ import com.nekgamebling.application.port.inbound.game.query.FindAllGameQuery
 import com.nekgamebling.application.port.inbound.game.query.FindAllGameResponse
 import com.nekgamebling.application.port.inbound.game.query.FindGameQuery
 import com.nekgamebling.application.port.inbound.game.query.FindGameResponse
+import com.nekgamebling.application.port.inbound.game.query.FindAllGameWinsQuery
+import com.nekgamebling.application.port.inbound.game.query.FindAllGameWinsResponse
 import com.nekgamebling.application.port.inbound.game.query.GameDemoUrlQuery
 import com.nekgamebling.application.port.inbound.game.query.GameDemoUrlResponse
 import com.nekgamebling.application.port.inbound.aggregator.CreateAggregatorCommand
@@ -52,6 +54,7 @@ import com.nekgamebling.infrastructure.handler.spin.query.FindRoundQueryHandler
 import com.nekgamebling.infrastructure.handler.collection.query.FindAllCollectionsQueryHandler
 import com.nekgamebling.infrastructure.handler.collection.query.FindCollectionQueryHandler
 import com.nekgamebling.infrastructure.handler.game.query.FindAllGameQueryHandler
+import com.nekgamebling.infrastructure.handler.game.query.FindAllGameWinsQueryHandler
 import com.nekgamebling.infrastructure.handler.aggregator.command.CreateAggregatorCommandHandler
 import com.nekgamebling.infrastructure.handler.aggregator.command.SyncAggregatorCommandHandler
 import com.nekgamebling.infrastructure.handler.aggregator.command.UpdateAggregatorCommandHandler
@@ -60,8 +63,14 @@ import com.nekgamebling.infrastructure.handler.aggregator.query.FindAllAggregato
 import com.nekgamebling.infrastructure.handler.provider.query.FindAllProvidersQueryHandler
 import com.nekgamebling.infrastructure.handler.provider.query.FindaProviderQueryHandler
 import com.nekgamebling.infrastructure.handler.game.query.FindGameQueryHandler
+import application.port.inbound.command.AddFavouriteGameCommand
+import application.port.inbound.command.AddGameWonCommand
+import application.port.inbound.command.RemoveFavouriteGameCommand
+import infrastructure.handler.AddFavouriteGameCommandHandler
+import infrastructure.handler.AddGameWonCommandHandler
 import infrastructure.handler.AddGameTagCommandHandler
 import infrastructure.handler.GameDemoUrlQueryHandler
+import infrastructure.handler.RemoveFavouriteGameCommandHandler
 import infrastructure.handler.RemoveGameTagCommandHandler
 import infrastructure.handler.UpdateGameCommandHandler
 import infrastructure.handler.UpdateGameImageCommandHandler
@@ -87,6 +96,7 @@ val handlerModule = module {
     single<QueryHandler<FindAllCollectionsQuery, FindAllCollectionsResponse>>(named("findAllCollections")) { FindAllCollectionsQueryHandler() }
     single<QueryHandler<FindRoundQuery, FindRoundQueryResult>>(named("findRound")) { FindRoundQueryHandler() }
     single<QueryHandler<FindAllRoundQuery, FindAllRoundQueryResult>>(named("findAllRounds")) { FindAllRoundQueryHandler() }
+    single<QueryHandler<FindAllGameWinsQuery, FindAllGameWinsResponse>>(named("findAllGameWins")) { FindAllGameWinsQueryHandler() }
 
     // ==========================================
     // Command Handlers
@@ -97,6 +107,9 @@ val handlerModule = module {
     single<CommandHandler<UpdateGameImageCommand, Unit>>(named("updateGameImage")) { UpdateGameImageCommandHandler(get()) }
     single<CommandHandler<AddGameTagCommand, Unit>>(named("addGameTag")) { AddGameTagCommandHandler() }
     single<CommandHandler<RemoveGameTagCommand, Unit>>(named("removeGameTag")) { RemoveGameTagCommandHandler() }
+    single<CommandHandler<AddFavouriteGameCommand, Unit>>(named("addFavouriteGame")) { AddFavouriteGameCommandHandler() }
+    single<CommandHandler<RemoveFavouriteGameCommand, Unit>>(named("removeFavouriteGame")) { RemoveFavouriteGameCommandHandler() }
+    single<CommandHandler<AddGameWonCommand, Unit>>(named("addGameWon")) { AddGameWonCommandHandler() }
     single<CommandHandler<UpdateProviderCommand, Unit>>(named("updateProvider")) { UpdateProviderCommandHandler() }
     single<CommandHandler<UpdateProviderImageCommand, Unit>>(named("updateProviderImage")) { UpdateProviderImageCommandHandler(get()) }
     single<CommandHandler<CreateCollectionCommand, CreateCollectionResponse>>(named("createCollection")) { CreateCollectionCommandHandler() }

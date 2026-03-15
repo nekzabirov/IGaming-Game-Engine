@@ -1,9 +1,8 @@
 package infrastructure.persistence.exposed.table
 
-import infrastructure.persistence.exposed.table.IdentityTable
-import shared.value.ImageMap
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.json.jsonb
+import shared.value.ImageMap
 
 object GameTable : BaseTable("games"), IdentityTable {
     override val identity = varchar("identity", 100).uniqueIndex()

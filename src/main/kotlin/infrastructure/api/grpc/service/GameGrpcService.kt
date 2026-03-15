@@ -2,7 +2,9 @@ package infrastructure.api.grpc.service
 
 import application.port.inbound.CommandHandler
 import application.port.inbound.QueryHandler
+import application.port.inbound.command.AddFavouriteGameCommand
 import application.port.inbound.command.AddGameTagCommand
+import application.port.inbound.command.RemoveFavouriteGameCommand
 import application.port.inbound.command.RemoveGameTagCommand
 import application.port.inbound.command.UpdateGameCommand
 import application.port.inbound.command.UpdateGameImageCommand
@@ -13,6 +15,8 @@ import com.nekgamebling.application.port.inbound.game.query.FindAllGameQuery
 import com.nekgamebling.application.port.inbound.game.query.FindAllGameResponse
 import com.nekgamebling.application.port.inbound.game.query.FindGameQuery
 import com.nekgamebling.application.port.inbound.game.query.FindGameResponse
+import com.nekgamebling.application.port.inbound.game.query.FindAllGameWinsQuery
+import com.nekgamebling.application.port.inbound.game.query.FindAllGameWinsResponse
 import com.nekgamebling.application.port.inbound.game.query.GameDemoUrlQuery
 import com.nekgamebling.application.port.inbound.game.query.GameDemoUrlResponse
 import com.nekgamebling.game.v1.PaginationMetaDto
@@ -34,8 +38,11 @@ import com.nekgamebling.game.v1.UpdateGameCommand as UpdateGameCommandProto
 import com.nekgamebling.game.v1.UpdateGameImageCommand as UpdateGameImageCommandProto
 import com.nekgamebling.game.v1.AddGameTagCommand as AddGameTagCommandProto
 import com.nekgamebling.game.v1.RemoveGameTagCommand as RemoveGameTagCommandProto
+import com.nekgamebling.game.v1.AddGameFavouriteCommand as AddGameFavouriteCommandProto
+import com.nekgamebling.game.v1.RemoveGameFavouriteCommand as RemoveGameFavouriteCommandProto
 import com.nekgamebling.game.v1.GameDemoUrlQuery as GameDemoUrlQueryProto
 import com.nekgamebling.game.v1.PlayGameCommand as PlayGameCommandProto
+import com.nekgamebling.game.v1.FindAllGameWinsQuery as FindAllGameWinsQueryProto
 
 class GameGrpcService(
     private val findGameQueryHandler: QueryHandler<FindGameQuery, FindGameResponse>,
@@ -46,6 +53,9 @@ class GameGrpcService(
     private val updateGameImageCommandHandler: CommandHandler<UpdateGameImageCommand, Unit>,
     private val addGameTagCommandHandler: CommandHandler<AddGameTagCommand, Unit>,
     private val removeGameTagCommandHandler: CommandHandler<RemoveGameTagCommand, Unit>,
+    private val addFavouriteGameCommandHandler: CommandHandler<AddFavouriteGameCommand, Unit>,
+    private val removeFavouriteGameCommandHandler: CommandHandler<RemoveFavouriteGameCommand, Unit>,
+    private val findAllGameWinsQueryHandler: QueryHandler<FindAllGameWinsQuery, FindAllGameWinsResponse>,
     private val freespinService: FreespinService,
     coroutineContext: CoroutineContext = EmptyCoroutineContext
 ) : GameServiceGrpcKt.GameServiceCoroutineImplBase(coroutineContext) {
@@ -212,6 +222,70 @@ class GameGrpcService(
 
         return removeGameTagCommandHandler.handle(command)
             .mapOrThrowGrpc { RemoveGameTagResult.newBuilder().build() }
+    }
+
+    override suspend fun addFavourite(request: AddGameFavouriteCommandProto): AddGameFavouriteResult {
+        val command = AddFavouriteGameCommand(
+            gameIdentity = request.gameIdentity,
+            playerId = request.playerId
+        )
+
+        return addFavouriteGameCommandHandler.handle(command)
+            .mapOrThrowGrpc { AddGameFavouriteResult.newBuilder().build() }
+    }
+
+    override suspend fun removeFavourite(request: RemoveGameFavouriteCommandProto): RemoveGameFavouriteResult {
+        val command = RemoveFavouriteGameCommand(
+            gameIdentity = request.gameIdentity,
+            playerId = request.playerId
+        )
+
+        return removeFavouriteGameCommandHandler.handle(command)
+            .mapOrThrowGrpc { RemoveGameFavouriteResult.newBuilder().build() }
+    }
+
+    override suspend fun findAllGameWins(request: FindAllGameWinsQueryProto): FindAllGameWinsResult {
+        val query = FindAllGameWinsQuery(
+            pageable = if (request.hasPagination()) {
+                Pageable(
+                    page = request.pagination.page,
+                    size = request.pagination.size
+                )
+            } else {
+                Pageable.DEFAULT
+            },
+            gameIdentity = if (request.hasGameIdentity()) request.gameIdentity else null,
+            playerId = if (request.hasPlayerId()) request.playerId else null,
+            currency = if (request.hasCurrency()) request.currency else null,
+            minAmount = if (request.hasMinAmount()) request.minAmount else null,
+            maxAmount = if (request.hasMaxAmount()) request.maxAmount else null,
+            startAt = if (request.hasStartAt()) request.startAt.toDomain() else null,
+            endAt = if (request.hasEndAt()) request.endAt.toDomain() else null
+        )
+
+        return findAllGameWinsQueryHandler.handle(query)
+            .mapOrThrowGrpc { response ->
+                FindAllGameWinsResult.newBuilder()
+                    .addAllItems(response.items.items.map { item ->
+                        GameWonItemDto.newBuilder()
+                            .setId(item.id)
+                            .setGameIdentity(item.gameIdentity)
+                            .setPlayerId(item.playerId)
+                            .setAmount(item.amount)
+                            .setCurrency(item.currency)
+                            .setCreatedAt(item.createdAt.toProto())
+                            .build()
+                    })
+                    .setPagination(
+                        PaginationMetaDto.newBuilder()
+                            .setPage(response.items.currentPage)
+                            .setSize(query.pageable.sizeReal)
+                            .setTotalElements(response.items.totalItems)
+                            .setTotalPages(response.items.totalPages.toInt())
+                            .build()
+                    )
+                    .build()
+            }
     }
 
     override suspend fun getFreespinPreset(request: GetFreespinPresetQuery): GetFreespinPresetResult {

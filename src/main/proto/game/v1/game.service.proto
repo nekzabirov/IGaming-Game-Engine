@@ -21,6 +21,13 @@ service GameService {
   rpc AddTag(AddGameTagCommand) returns (AddGameTagResult);
   rpc RemoveTag(RemoveGameTagCommand) returns (RemoveGameTagResult);
 
+  // Favourite operations
+  rpc AddFavourite(AddGameFavouriteCommand) returns (AddGameFavouriteResult);
+  rpc RemoveFavourite(RemoveGameFavouriteCommand) returns (RemoveGameFavouriteResult);
+
+  // Game wins
+  rpc FindAllGameWins(FindAllGameWinsQuery) returns (FindAllGameWinsResult);
+
   // Freespin operations
   rpc GetFreespinPreset(GetFreespinPresetQuery) returns (GetFreespinPresetResult);
   rpc CreateFreespin(CreateFreespinCommand) returns (CreateFreespinResult);
@@ -179,6 +186,66 @@ message RemoveGameTagCommand {
 
 message RemoveGameTagResult {
   // Empty response - success indicated by no error
+}
+
+// ============================================
+// Add Game Favourite
+// ============================================
+
+message AddGameFavouriteCommand {
+  string game_identity = 1;
+  string player_id = 2;
+}
+
+message AddGameFavouriteResult {
+  // Empty response - success indicated by no error
+}
+
+// ============================================
+// Remove Game Favourite
+// ============================================
+
+message RemoveGameFavouriteCommand {
+  string game_identity = 1;
+  string player_id = 2;
+}
+
+message RemoveGameFavouriteResult {
+  // Empty response - success indicated by no error
+}
+
+// ============================================
+// Find All Game Wins (Paginated)
+// ============================================
+
+message FindAllGameWinsQuery {
+  PaginationRequestDto pagination = 1;
+
+  optional string game_identity = 2;
+  optional string player_id = 3;
+  optional string currency = 4;
+
+  // Amount range
+  optional int64 min_amount = 5;
+  optional int64 max_amount = 6;
+
+  // Date range
+  optional TimestampDto start_at = 7;
+  optional TimestampDto end_at = 8;
+}
+
+message FindAllGameWinsResult {
+  repeated GameWonItemDto items = 1;
+  PaginationMetaDto pagination = 2;
+}
+
+message GameWonItemDto {
+  string id = 1;
+  string game_identity = 2;
+  string player_id = 3;
+  int64 amount = 4;
+  string currency = 5;
+  TimestampDto created_at = 6;
 }
 
 // ============================================

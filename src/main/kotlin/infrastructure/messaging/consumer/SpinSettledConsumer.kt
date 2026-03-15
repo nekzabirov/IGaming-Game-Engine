@@ -1,9 +1,12 @@
 package infrastructure.messaging.consumer
 
+import application.port.inbound.CommandHandler
+import application.port.inbound.command.AddGameWonCommand
 import domain.common.event.SpinSettledEvent
 import io.github.damir.denis.tudor.ktor.server.rabbitmq.dsl.*
 import io.ktor.server.application.*
 import kotlinx.serialization.json.Json
+import org.koin.core.qualifier.named
 import org.koin.ktor.ext.getKoin
 
 private const val SPIN_EVENTS_QUEUE = "spin.events"
@@ -14,7 +17,10 @@ private val json = Json { ignoreUnknownKeys = true }
 /**
  * Configures RabbitMQ consumer for SpinSettledEvent messages.
  */
-fun Application.consumeSpinSettled(exchangeName: String) = rabbitmq {
+fun Application.consumeSpinSettled(exchangeName: String) {
+    val addGameWonHandler = getKoin().get<CommandHandler<AddGameWonCommand, Unit>>(named("addGameWon"))
+
+    rabbitmq {
     queueBind {
         queue = SPIN_EVENTS_QUEUE
         exchange = exchangeName
@@ -42,8 +48,15 @@ fun Application.consumeSpinSettled(exchangeName: String) = rabbitmq {
 
             // Skip free spins
             if (event.freeSpinId == null) {
-                //TODO: Add Game won
+                val command = AddGameWonCommand(
+                    gameIdentity = event.gameIdentity,
+                    playerId = event.playerId,
+                    amount = event.amount,
+                    currency = event.currency.value
+                )
+                addGameWonHandler.handle(command)
             }
         }
     }
+}
 }
