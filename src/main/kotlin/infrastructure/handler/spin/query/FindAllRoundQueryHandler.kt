@@ -1,18 +1,14 @@
 package com.nekgamebling.infrastructure.handler.spin.query
 
 import application.port.inbound.QueryHandler
+import com.nekgamebling.application.port.inbound.game.query.GameItemView
 import com.nekgamebling.application.port.inbound.spin.FindAllRoundQuery
 import com.nekgamebling.application.port.inbound.spin.FindAllRoundQueryResult
 import com.nekgamebling.application.port.inbound.spin.RoundItem
 import domain.common.value.SpinType
-import domain.game.model.Game
-import domain.provider.model.Provider
 import domain.session.model.Round
-import infrastructure.persistence.exposed.table.GameTable
-import infrastructure.persistence.exposed.table.ProviderTable
-import infrastructure.persistence.exposed.table.RoundTable
-import infrastructure.persistence.exposed.table.SessionTable
-import infrastructure.persistence.exposed.table.SpinTable
+import infrastructure.persistence.exposed.mapper.*
+import infrastructure.persistence.exposed.table.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greaterEq
@@ -210,49 +206,74 @@ class FindAllRoundQueryHandler : QueryHandler<FindAllRoundQuery, FindAllRoundQue
                 FindAllRoundQueryResult(
                     items = Page.empty(),
                     providers = emptyList(),
-                    games = emptyList()
+                    aggregators = emptyList(),
+                    collections = emptyList()
                 )
             )
         }
 
-        // Data class to hold round with related identities
+        // Data class to hold round with related details
         data class RoundWithDetails(
             val round: Round,
             val gameId: UUID,
             val providerId: UUID,
-            val gameIdentity: String,
-            val providerIdentity: String,
+            val game: GameItemView,
             val playerId: String,
             val currency: Currency
         )
 
-        // Get rounds with all details
+        // Get rounds with all details (including variant and aggregator)
         val roundsWithDetails = RoundTable
             .innerJoin(SessionTable, { RoundTable.sessionId }, { SessionTable.id })
             .innerJoin(GameTable, { RoundTable.gameId }, { GameTable.id })
             .innerJoin(ProviderTable, { GameTable.providerId }, { ProviderTable.id })
+            .innerJoin(AggregatorInfoTable, { AggregatorInfoTable.id }, { ProviderTable.aggregatorId })
+            .innerJoin(GameVariantTable, { GameVariantTable.gameId }, { GameTable.id }) {
+                GameVariantTable.aggregator eq AggregatorInfoTable.aggregator
+            }
             .selectAll()
             .where { RoundTable.id inList roundIds }
             .orderBy(RoundTable.createdAt to SortOrder.DESC)
-            .map { row ->
-                RoundWithDetails(
-                    round = Round(
-                        id = row[RoundTable.id].value,
-                        sessionId = row[RoundTable.sessionId].value,
-                        gameId = row[RoundTable.gameId].value,
-                        extId = row[RoundTable.extId],
-                        finished = row[RoundTable.finished],
-                        createdAt = row[RoundTable.createdAt],
-                        finishedAt = row[RoundTable.finishedAt]
-                    ),
-                    gameId = row[GameTable.id].value,
-                    providerId = row[ProviderTable.id].value,
-                    gameIdentity = row[GameTable.identity],
-                    providerIdentity = row[ProviderTable.identity],
-                    playerId = row[SessionTable.playerId],
-                    currency = Currency(row[SessionTable.currency])
-                )
-            }
+            .toList()
+
+        // Get game IDs for collection lookup
+        val gameIds = roundsWithDetails.map { it[GameTable.id].value }.distinct()
+
+        // Fetch collection identities for all games in one query
+        val gameCollections = if (gameIds.isNotEmpty()) {
+            CollectionGameTable
+                .innerJoin(CollectionTable, { CollectionTable.id }, { CollectionGameTable.categoryId })
+                .select(CollectionGameTable.gameId, CollectionTable.identity)
+                .where { CollectionGameTable.gameId inList gameIds }
+                .groupBy { it[CollectionGameTable.gameId].value }
+                .mapValues { entry -> entry.value.map { it[CollectionTable.identity] } }
+        } else {
+            emptyMap()
+        }
+
+        val roundDetails = roundsWithDetails.map { row ->
+            val gameId = row[GameTable.id].value
+            RoundWithDetails(
+                round = Round(
+                    id = row[RoundTable.id].value,
+                    sessionId = row[RoundTable.sessionId].value,
+                    gameId = row[RoundTable.gameId].value,
+                    extId = row[RoundTable.extId],
+                    finished = row[RoundTable.finished],
+                    createdAt = row[RoundTable.createdAt],
+                    finishedAt = row[RoundTable.finishedAt]
+                ),
+                gameId = gameId,
+                providerId = row[ProviderTable.id].value,
+                game = GameItemView(
+                    game = row.toGame(),
+                    activeVariant = row.toGameVariant(),
+                    collectionIdentities = gameCollections[gameId] ?: emptyList()
+                ),
+                playerId = row[SessionTable.playerId],
+                currency = Currency(row[SessionTable.currency])
+            )
+        }
 
         // Get spin aggregations per round
         val placeAmounts = SpinTable
@@ -286,13 +307,12 @@ class FindAllRoundQueryHandler : QueryHandler<FindAllRoundQuery, FindAllRoundQue
             }
 
         // Build round items
-        val items = roundsWithDetails.map { details ->
+        val items = roundDetails.map { details ->
             val placeAmt = placeAmounts[details.round.id] ?: Pair(0L, 0L)
             val settleAmt = settleAmounts[details.round.id] ?: Pair(0L, 0L)
             RoundItem(
                 round = details.round,
-                providerIdentity = details.providerIdentity,
-                gameIdentity = details.gameIdentity,
+                game = details.game,
                 playerId = details.playerId,
                 currency = details.currency,
                 totalPlaceReal = placeAmt.first,
@@ -302,43 +322,38 @@ class FindAllRoundQueryHandler : QueryHandler<FindAllRoundQuery, FindAllRoundQue
             )
         }
 
-        // Get distinct game IDs and provider IDs
-        val gameIds = roundsWithDetails.map { it.gameId }.distinct()
-        val providerIds = roundsWithDetails.map { it.providerId }.distinct()
+        // Fetch distinct providers from results
+        val providerIds = roundsWithDetails.map { it[ProviderTable.id].value }.distinct()
+        val providers = if (providerIds.isNotEmpty()) {
+            ProviderTable
+                .selectAll()
+                .where { ProviderTable.id inList providerIds }
+                .map { it.toProvider() }
+        } else {
+            emptyList()
+        }
 
-        // Load games
-        val games = GameTable
-            .selectAll()
-            .where { GameTable.id inList gameIds }
-            .map { row ->
-                Game(
-                    id = row[GameTable.id].value,
-                    identity = row[GameTable.identity],
-                    name = row[GameTable.name],
-                    providerId = row[GameTable.providerId].value,
-                    images = row[GameTable.images],
-                    bonusBetEnable = row[GameTable.bonusBetEnable],
-                    bonusWageringEnable = row[GameTable.bonusWageringEnable],
-                    tags = row[GameTable.tags],
-                    active = row[GameTable.active]
-                )
-            }
+        // Fetch distinct aggregators from results
+        val aggregatorIds = roundsWithDetails.map { it[AggregatorInfoTable.id].value }.distinct()
+        val aggregators = if (aggregatorIds.isNotEmpty()) {
+            AggregatorInfoTable
+                .selectAll()
+                .where { AggregatorInfoTable.id inList aggregatorIds }
+                .map { it.toAggregatorInfo() }
+        } else {
+            emptyList()
+        }
 
-        // Load providers
-        val providers = ProviderTable
-            .selectAll()
-            .where { ProviderTable.id inList providerIds }
-            .map { row ->
-                Provider(
-                    id = row[ProviderTable.id].value,
-                    identity = row[ProviderTable.identity],
-                    name = row[ProviderTable.name],
-                    images = row[ProviderTable.images],
-                    order = row[ProviderTable.order],
-                    aggregatorId = row[ProviderTable.aggregatorId]?.value,
-                    active = row[ProviderTable.active]
-                )
-            }
+        // Fetch collections that appear in the results
+        val allCollectionIdentities = gameCollections.values.flatten().distinct()
+        val collections = if (allCollectionIdentities.isNotEmpty()) {
+            CollectionTable
+                .selectAll()
+                .where { CollectionTable.identity inList allCollectionIdentities }
+                .map { it.toCollection() }
+        } else {
+            emptyList()
+        }
 
         Result.success(
             FindAllRoundQueryResult(
@@ -349,7 +364,8 @@ class FindAllRoundQueryHandler : QueryHandler<FindAllRoundQuery, FindAllRoundQue
                     currentPage = query.pageable.pageReal
                 ),
                 providers = providers,
-                games = games
+                aggregators = aggregators,
+                collections = collections
             )
         )
     }

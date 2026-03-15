@@ -1,6 +1,9 @@
 package com.nekgamebling.application.port.inbound.game.query
 
 import application.port.inbound.Query
+import domain.aggregator.AggregatorInfo
+import domain.collection.model.Collection
+import domain.provider.model.Provider
 import kotlinx.datetime.LocalDateTime
 import shared.value.Page
 import shared.value.Pageable
@@ -17,12 +20,16 @@ data class FindAllGameWinsQuery(
 ) : Query<FindAllGameWinsResponse>
 
 data class FindAllGameWinsResponse(
-    val items: Page<GameWonItem>
+    val items: Page<GameWonItem>,
+
+    val providers: List<Provider>,
+    val aggregators: List<AggregatorInfo>,
+    val collections: List<Collection>
 )
 
 data class GameWonItem(
     val id: String,
-    val gameIdentity: String,
+    val game: GameItemView,
     val playerId: String,
     val amount: Long,
     val currency: String,

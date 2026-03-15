@@ -1,6 +1,7 @@
 package infrastructure.api.grpc.service
 
 import application.port.inbound.QueryHandler
+import com.nekgamebling.application.port.inbound.game.query.GameItemView
 import com.nekgamebling.application.port.inbound.spin.FindAllRoundQuery
 import com.nekgamebling.application.port.inbound.spin.FindAllRoundQueryResult
 import com.nekgamebling.application.port.inbound.spin.FindRoundQuery
@@ -8,8 +9,11 @@ import com.nekgamebling.application.port.inbound.spin.FindRoundQueryResult
 import com.nekgamebling.game.v1.PaginationMetaDto
 import com.nekgamebling.game.v1.FindAllRoundResult
 import com.nekgamebling.game.v1.FindRoundResult
+import com.nekgamebling.game.v1.GameItemDto
 import com.nekgamebling.game.v1.RoundItemDto
 import com.nekgamebling.game.v1.RoundServiceGrpcKt
+import domain.aggregator.AggregatorInfo
+import domain.provider.model.Provider
 import infrastructure.api.grpc.error.mapOrThrowGrpc
 import infrastructure.api.grpc.mapper.toProto
 import kotlinx.datetime.Instant
@@ -27,17 +31,27 @@ class RoundGrpcService(
     coroutineContext: CoroutineContext = EmptyCoroutineContext
 ) : RoundServiceGrpcKt.RoundServiceCoroutineImplBase(coroutineContext) {
 
+    private fun GameItemView.toProto(providerIdentity: String): GameItemDto =
+        GameItemDto.newBuilder()
+            .setGame(game.toProto(providerIdentity))
+            .setActiveVariant(activeVariant.toProto(game.identity))
+            .addAllCollectionIdentities(collectionIdentities)
+            .build()
+
     override suspend fun find(request: FindRoundQueryProto): FindRoundResult {
         val query = FindRoundQuery(id = request.id)
 
         return findRoundQueryHandler.handle(query)
             .mapOrThrowGrpc { response ->
+                val providerIdentityById = response.providers.associate { it.id to it.identity }
+                val aggregatorIdentityById = response.aggregators.associate { it.id to it.identity }
+                val providerIdentity = providerIdentityById[response.game.game.providerId] ?: ""
+
                 FindRoundResult.newBuilder()
                     .setItem(
                         RoundItemDto.newBuilder()
                             .setRound(response.round.toProto())
-                            .setProviderIdentity(response.providerIdentity)
-                            .setGameIdentity(response.gameIdentity)
+                            .setGame(response.game.toProto(providerIdentity))
                             .setPlayerId(response.playerId)
                             .setCurrency(response.currency.value)
                             .setTotalPlaceReal(response.totalPlaceReal)
@@ -46,6 +60,12 @@ class RoundGrpcService(
                             .setTotalSettleBonus(response.totalSettleBonus)
                             .build()
                     )
+                    .addAllProviders(response.providers.map { provider ->
+                        val aggregatorIdentity = provider.aggregatorId?.let { aggregatorIdentityById[it] }
+                        provider.toProto(aggregatorIdentity)
+                    })
+                    .addAllAggregators(response.aggregators.map { it.toProto() })
+                    .addAllCollections(response.collections.map { it.toProto() })
                     .build()
             }
     }
@@ -81,12 +101,15 @@ class RoundGrpcService(
 
         return findAllRoundQueryHandler.handle(query)
             .mapOrThrowGrpc { response ->
+                val providerIdentityById = response.providers.associate { it.id to it.identity }
+                val aggregatorIdentityById = response.aggregators.associate { it.id to it.identity }
+
                 FindAllRoundResult.newBuilder()
                     .addAllItems(response.items.items.map { item ->
+                        val providerIdentity = providerIdentityById[item.game.game.providerId] ?: ""
                         RoundItemDto.newBuilder()
                             .setRound(item.round.toProto())
-                            .setProviderIdentity(item.providerIdentity)
-                            .setGameIdentity(item.gameIdentity)
+                            .setGame(item.game.toProto(providerIdentity))
                             .setPlayerId(item.playerId)
                             .setCurrency(item.currency.value)
                             .setTotalPlaceReal(item.totalPlaceReal)
@@ -103,12 +126,12 @@ class RoundGrpcService(
                             .setTotalPages(response.items.totalPages.toInt())
                             .build()
                     )
-                    .addAllProviders(response.providers.map { it.toProto(null) })
-                    .addAllGames(response.games.map { game ->
-                        val providerIdentity = response.providers
-                            .find { it.id == game.providerId }?.identity ?: ""
-                        game.toProto(providerIdentity)
+                    .addAllProviders(response.providers.map { provider ->
+                        val aggregatorIdentity = provider.aggregatorId?.let { aggregatorIdentityById[it] }
+                        provider.toProto(aggregatorIdentity)
                     })
+                    .addAllAggregators(response.aggregators.map { it.toProto() })
+                    .addAllCollections(response.collections.map { it.toProto() })
                     .build()
             }
     }

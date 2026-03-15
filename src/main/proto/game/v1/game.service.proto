@@ -92,12 +92,6 @@ message FindAllGameResult {
   repeated CollectionDto collections = 5;
 }
 
-message GameItemDto {
-  GameDto game = 1;
-  GameVariantDto active_variant = 2;
-  repeated string collection_identities = 3;
-}
-
 // ============================================
 // Game Demo URL
 // ============================================
@@ -237,11 +231,16 @@ message FindAllGameWinsQuery {
 message FindAllGameWinsResult {
   repeated GameWonItemDto items = 1;
   PaginationMetaDto pagination = 2;
+
+  // Related entities from results
+  repeated ProviderDto providers = 3;
+  repeated AggregatorInfoDto aggregators = 4;
+  repeated CollectionDto collections = 5;
 }
 
 message GameWonItemDto {
   string id = 1;
-  string game_identity = 2;
+  GameItemDto game = 2;
   string player_id = 3;
   int64 amount = 4;
   string currency = 5;

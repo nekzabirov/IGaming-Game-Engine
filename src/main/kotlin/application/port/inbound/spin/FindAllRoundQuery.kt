@@ -1,7 +1,9 @@
 package com.nekgamebling.application.port.inbound.spin
 
 import application.port.inbound.Query
-import domain.game.model.Game
+import com.nekgamebling.application.port.inbound.game.query.GameItemView
+import domain.aggregator.AggregatorInfo
+import domain.collection.model.Collection
 import domain.provider.model.Provider
 import domain.session.model.Round
 import shared.value.Currency
@@ -31,14 +33,14 @@ data class FindAllRoundQuery(
 data class FindAllRoundQueryResult(
     val items: Page<RoundItem>,
     val providers: List<Provider>,
-    val games: List<Game>
+    val aggregators: List<AggregatorInfo>,
+    val collections: List<Collection>
 )
 
 data class RoundItem(
     val round: Round,
 
-    val providerIdentity: String,
-    val gameIdentity: String,
+    val game: GameItemView,
 
     val playerId: String,
     val currency: Currency,

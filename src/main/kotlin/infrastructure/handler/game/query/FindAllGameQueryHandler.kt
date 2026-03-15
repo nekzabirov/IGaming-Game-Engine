@@ -3,7 +3,7 @@ package com.nekgamebling.infrastructure.handler.game.query
 import application.port.inbound.QueryHandler
 import com.nekgamebling.application.port.inbound.game.query.FindAllGameQuery
 import com.nekgamebling.application.port.inbound.game.query.FindAllGameResponse
-import com.nekgamebling.application.port.inbound.game.query.FindAllGameResponse.GameItem
+import com.nekgamebling.application.port.inbound.game.query.GameItemView
 import infrastructure.persistence.exposed.mapper.*
 import infrastructure.persistence.exposed.table.*
 import org.jetbrains.exposed.sql.*
@@ -42,7 +42,7 @@ class FindAllGameQueryHandler : QueryHandler<FindAllGameQuery, FindAllGameRespon
         // Map to GameItems
         val gameItems = gameRows.map { row ->
             val gameId = row[GameTable.id].value
-            GameItem(
+            GameItemView(
                 game = row.toGame(),
                 activeVariant = row.toGameVariant(),
                 collectionIdentities = gameCollections[gameId] ?: emptyList()

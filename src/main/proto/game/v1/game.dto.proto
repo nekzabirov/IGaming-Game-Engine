@@ -43,6 +43,13 @@ message GameVariantDto {
   int32 play_lines = 13;                  // Number of play lines
 }
 
+// Game item with variant and collection references (shared across queries)
+message GameItemDto {
+  GameDto game = 1;
+  GameVariantDto active_variant = 2;
+  repeated string collection_identities = 3;
+}
+
 // Game with full details (read model)
 message GameWithDetailsDto {
   string identity = 1;                    // Unique identifier

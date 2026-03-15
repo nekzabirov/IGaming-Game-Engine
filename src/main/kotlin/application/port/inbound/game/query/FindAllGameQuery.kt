@@ -3,8 +3,6 @@ package com.nekgamebling.application.port.inbound.game.query
 import application.port.inbound.Query
 import domain.aggregator.AggregatorInfo
 import domain.collection.model.Collection
-import domain.game.model.Game
-import domain.game.model.GameVariant
 import domain.provider.model.Provider
 import shared.value.Page
 import shared.value.Pageable
@@ -30,17 +28,11 @@ data class FindAllGameQuery(
 ) : Query<FindAllGameResponse>
 
 data class FindAllGameResponse(
-    val result: Page<GameItem>,
+    val result: Page<GameItemView>,
 
     val providers: List<Provider>,
 
     val aggregators: List<AggregatorInfo>,
 
     val collections: List<Collection>
-) {
-    data class GameItem(
-        val game: Game,
-        val activeVariant: GameVariant,
-        val collectionIdentities: List<String>
-    )
-}
+)

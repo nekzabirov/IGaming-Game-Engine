@@ -10,6 +10,8 @@ import "game/v1/common.dto.proto";
 import "game/v1/session.dto.proto";
 import "game/v1/game.dto.proto";
 import "game/v1/provider.dto.proto";
+import "game/v1/aggregator.dto.proto";
+import "game/v1/collection.dto.proto";
 
 service RoundService {
   rpc Find(FindRoundQuery) returns (FindRoundResult);
@@ -26,6 +28,11 @@ message FindRoundQuery {
 
 message FindRoundResult {
   RoundItemDto item = 1;
+
+  // Related entities
+  repeated ProviderDto providers = 2;
+  repeated AggregatorInfoDto aggregators = 3;
+  repeated CollectionDto collections = 4;
 }
 
 // ============================================
@@ -63,19 +70,19 @@ message FindAllRoundResult {
 
   // Related entities from results
   repeated ProviderDto providers = 3;
-  repeated GameDto games = 4;
+  repeated AggregatorInfoDto aggregators = 4;
+  repeated CollectionDto collections = 5;
 }
 
 message RoundItemDto {
   RoundDto round = 1;
 
-  string provider_identity = 2;
-  string game_identity = 3;
-  string player_id = 4;
-  string currency = 5;
+  GameItemDto game = 2;
+  string player_id = 3;
+  string currency = 4;
 
-  int64 total_place_real = 6;
-  int64 total_place_bonus = 7;
-  int64 total_settle_real = 8;
-  int64 total_settle_bonus = 9;
+  int64 total_place_real = 5;
+  int64 total_place_bonus = 6;
+  int64 total_settle_real = 7;
+  int64 total_settle_bonus = 8;
 }

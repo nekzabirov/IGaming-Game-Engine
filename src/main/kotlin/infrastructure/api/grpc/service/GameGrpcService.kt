@@ -265,11 +265,22 @@ class GameGrpcService(
 
         return findAllGameWinsQueryHandler.handle(query)
             .mapOrThrowGrpc { response ->
+                // Build lookup maps for provider/aggregator identity by id
+                val providerIdentityById = response.providers.associate { it.id to it.identity }
+                val aggregatorIdentityById = response.aggregators.associate { it.id to it.identity }
+
                 FindAllGameWinsResult.newBuilder()
                     .addAllItems(response.items.items.map { item ->
+                        val providerIdentity = providerIdentityById[item.game.game.providerId] ?: ""
                         GameWonItemDto.newBuilder()
                             .setId(item.id)
-                            .setGameIdentity(item.gameIdentity)
+                            .setGame(
+                                GameItemDto.newBuilder()
+                                    .setGame(item.game.game.toProto(providerIdentity))
+                                    .setActiveVariant(item.game.activeVariant.toProto(item.game.game.identity))
+                                    .addAllCollectionIdentities(item.game.collectionIdentities)
+                                    .build()
+                            )
                             .setPlayerId(item.playerId)
                             .setAmount(item.amount)
                             .setCurrency(item.currency)
@@ -284,6 +295,12 @@ class GameGrpcService(
                             .setTotalPages(response.items.totalPages.toInt())
                             .build()
                     )
+                    .addAllProviders(response.providers.map { provider ->
+                        val aggregatorIdentity = provider.aggregatorId?.let { aggregatorIdentityById[it] }
+                        provider.toProto(aggregatorIdentity)
+                    })
+                    .addAllAggregators(response.aggregators.map { it.toProto() })
+                    .addAllCollections(response.collections.map { it.toProto() })
                     .build()
             }
     }
