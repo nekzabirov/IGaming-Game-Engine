@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package game.v1;
+
+option java_package = "com.nekgamebling.game.v1";
+option java_multiple_files = true;
+
+import "game/v1/dto/aggregator.dto.proto";
+import "game/v1/dto/provider.dto.proto";
+import "game/v1/dto/common.dto.proto";
+
+service ProviderService {
+  rpc Save(ProviderDto) returns (Empty);
+
+  rpc Find(FindProviderQuery) returns (FindProviderQuery.Result);
+
+  rpc FindAll(FindAllProviderQuery) returns (FindAllProviderQuery.Result);
+
+  rpc UpdateImage(UpdateProviderImageCommand) returns (Empty);
+}
+
+message FindProviderQuery {
+  string identity = 1;
+
+  message Result {
+    ProviderDto item = 1;
+
+    AggregatorDto aggregator = 2;
+
+    int32 active_game_count = 3;
+    int32 deactivate_game_count = 4;
+  }
+}
+
+message FindAllProviderQuery {
+  string query = 1;
+
+  optional bool active = 2;
+
+  optional string aggregator_identity = 3;
+
+  int32 page_num = 4;
+
+  int32 page_size = 5;
+
+  message Result {
+    repeated Item items = 1;
+
+    repeated AggregatorDto aggregators = 2;
+
+    int32 total_items = 3;
+
+    message Item {
+      ProviderDto provider = 1;
+
+      int32 active_game_count = 3;
+      int32 deactivate_game_count = 4;
+    }
+  }
+}
+
+message UpdateProviderImageCommand {
+  string identity = 1;
+
+  string key = 2;
+
+  bytes file = 3;
+
+  string extension = 4;
+}

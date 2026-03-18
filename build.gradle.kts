@@ -15,25 +15,25 @@ kotlin {
 }
 
 application {
-    mainClass.set("com.nekgamebling.MainKt")
+    mainClass.set("MainKt")
 }
 
 // Task to run the sync aggregators CLI
 tasks.register<JavaExec>("runSync") {
     group = "application"
     description = "Run the sync all aggregators CLI"
-    mainClass.set("com.nekgamebling.SyncMainKt")
+    mainClass.set("SyncJobKt")
     classpath = sourceSets.main.get().runtimeClasspath
 }
 
 // Create additional start scripts for sync CLI
 tasks.named<CreateStartScripts>("startScripts") {
-    applicationName = "game-core"
+    applicationName = "casino-engine"
 }
 
 val syncStartScripts by tasks.registering(CreateStartScripts::class) {
     applicationName = "sync-aggregators"
-    mainClass.set("com.nekgamebling.SyncMainKt")
+    mainClass.set("SyncJobKt")
     outputDir = layout.buildDirectory.dir("syncScripts").get().asFile
     classpath = tasks.named<Jar>("jar").get().outputs.files + configurations.runtimeClasspath.get()
 }
@@ -82,6 +82,9 @@ dependencies {
 
     // AWS S3
     implementation(libs.aws.s3)
+
+    // Redis
+    implementation(libs.lettuce)
 
     // gRPC
     implementation(libs.bundles.grpc)

@@ -1,34 +1,13 @@
 package infrastructure.aggregator.pateplay
 
-import application.port.outbound.AggregatorAdapterFactory
-import application.port.outbound.AggregatorFreespinPort
-import application.port.outbound.AggregatorGameSyncPort
-import application.port.outbound.AggregatorLaunchUrlPort
-import domain.aggregator.AggregatorInfo
 import infrastructure.aggregator.pateplay.adapter.PateplayFreespinAdapter
-import infrastructure.aggregator.pateplay.adapter.PateplayGameSyncAdapter
-import infrastructure.aggregator.pateplay.adapter.PateplayLaunchUrlAdapter
-import infrastructure.aggregator.shared.ProviderCurrencyAdapter
-import domain.common.value.Aggregator
+import infrastructure.aggregator.pateplay.adapter.PateplayGameAdapter
 
-/**
- * Factory for creating Pateplay aggregator adapters.
- */
-class PateplayAdapterFactory(private val providerCurrencyAdapter: ProviderCurrencyAdapter) : AggregatorAdapterFactory {
+class PateplayAdapterFactory {
 
-    override fun supports(aggregator: Aggregator): Boolean {
-        return aggregator == Aggregator.PATEPLAY
-    }
+    fun createGameAdapter(config: Map<String, Any>) = PateplayGameAdapter(createConfig(config))
 
-    override fun createLaunchUrlAdapter(aggregatorInfo: AggregatorInfo): AggregatorLaunchUrlPort {
-        return PateplayLaunchUrlAdapter(aggregatorInfo)
-    }
+    fun createFreespinAdapter(config: Map<String, Any>) = PateplayFreespinAdapter(createConfig(config))
 
-    override fun createFreespinAdapter(aggregatorInfo: AggregatorInfo): AggregatorFreespinPort {
-        return PateplayFreespinAdapter(aggregatorInfo, providerCurrencyAdapter)
-    }
-
-    override fun createGameSyncAdapter(aggregatorInfo: AggregatorInfo): AggregatorGameSyncPort {
-        return PateplayGameSyncAdapter(aggregatorInfo)
-    }
+    private fun createConfig(config: Map<String, Any>) = PateplayConfig(config)
 }

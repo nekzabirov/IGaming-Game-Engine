@@ -1,0 +1,79 @@
+syntax = "proto3";
+
+package game.v1;
+
+option java_package = "com.nekgamebling.game.v1";
+option java_multiple_files = true;
+
+import "game/v1/dto/collection.dto.proto";
+import "game/v1/dto/common.dto.proto";
+
+service CollectionService {
+  rpc Save(CollectionDto) returns (Empty);
+
+  rpc Find(FindCollectionQuery) returns (FindCollectionQuery.Result);
+
+  rpc FindAll(FindAllCollectionQuery) returns (FindAllCollectionQuery.Result);
+
+  rpc UpdateGames(UpdateCollectionGamesCommand) returns (Empty);
+
+  rpc UpdateImage(UpdateCollectionImageCommand) returns (Empty);
+}
+
+message FindCollectionQuery {
+  string identity = 1;
+
+  message Result {
+    CollectionDto item = 1;
+
+    int32 game_active_count = 2;
+
+    int32 game_deactivate_count = 3;
+
+    int32 provider_count = 4;
+  }
+}
+
+message FindAllCollectionQuery {
+  string query = 1;
+
+  optional bool active = 2;
+
+  int32 page_num = 3;
+
+  int32 page_size = 4;
+
+  message Result {
+    repeated Item items = 1;
+
+    int32 total_items = 2;
+
+    message Item {
+      CollectionDto collection = 1;
+
+      int32 game_active_count = 2;
+
+      int32 game_deactivate_count = 3;
+
+      int32 provider_count = 4;
+    }
+  }
+}
+
+message UpdateCollectionGamesCommand {
+  string identity = 1;
+
+  repeated string add_games = 2;
+
+  repeated string remove_games = 3;
+}
+
+message UpdateCollectionImageCommand {
+  string identity = 1;
+
+  string key = 2;
+
+  bytes file = 3;
+
+  string extension = 4;
+}

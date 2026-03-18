@@ -21,9 +21,6 @@ data class GameDto(
     @SerialName("demoGameAvailable")
     val demoEnable: Boolean = false,
 
-    @SerialName("variableFrbAvailable")
-    val variableFrbAvailable: Boolean = false,
-
     val lines: Int = 0,
 
     val platform: String? = null,

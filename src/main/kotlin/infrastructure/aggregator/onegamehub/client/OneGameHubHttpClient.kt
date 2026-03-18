@@ -1,27 +1,33 @@
 package infrastructure.aggregator.onegamehub.client
 
-import domain.common.error.AggregatorError
-import infrastructure.aggregator.onegamehub.model.OneGameHubConfig
+import domain.model.Platform
+import infrastructure.aggregator.onegamehub.OneGameHubConfig
 import infrastructure.aggregator.onegamehub.client.dto.CancelFreespinDto
 import infrastructure.aggregator.onegamehub.client.dto.CreateFreespinDto
 import infrastructure.aggregator.onegamehub.client.dto.GameDto
 import infrastructure.aggregator.onegamehub.client.dto.GameUrlDto
 import infrastructure.aggregator.onegamehub.client.dto.ResponseDto
-import shared.value.Currency
-import domain.common.value.Locale
-import domain.common.value.Platform
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.plugins.logging.*
-import io.ktor.client.request.*
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.logging.DEFAULT
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
+import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
+import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
-internal class OneGameHubHttpClient(private val config: OneGameHubConfig) {
+class OneGameHubHttpClient(private val config: OneGameHubConfig) {
+
     private val client = HttpClient(CIO) {
         install(ContentNegotiation) {
             json(Json {
@@ -33,29 +39,23 @@ internal class OneGameHubHttpClient(private val config: OneGameHubConfig) {
         }
 
         install(HttpTimeout) {
-            requestTimeoutMillis = 30000  // 30 seconds
-            connectTimeoutMillis = 10000  // 10 seconds
-            socketTimeoutMillis = 30000   // 30 seconds
+            requestTimeoutMillis = 30_000
+            connectTimeoutMillis = 10_000
+            socketTimeoutMillis = 30_000
         }
 
         install(Logging) {
-            logger = Logger.Companion.DEFAULT
+            logger = Logger.DEFAULT
             level = LogLevel.ALL
         }
     }
 
     private val address = "https://${config.gateway}/integrations/${config.partner}/rpc"
 
-    suspend fun listGames(): Result<ResponseDto<List<GameDto>>> {
-        val response = client.get(address) {
+    suspend fun listGames(): ResponseDto<List<GameDto>> {
+        return client.get(address) {
             setAction("available_games")
-        }
-
-        if (!response.status.isSuccess()) {
-            return Result.failure(AggregatorError("Failed to fetch games from OneGameHub: ${response.status}"))
-        }
-
-        return Result.success(response.body())
+        }.body()
     }
 
     suspend fun getLaunchUrl(
@@ -67,8 +67,8 @@ internal class OneGameHubHttpClient(private val config: OneGameHubConfig) {
         currency: String,
         lobbyUrl: String,
         demo: Boolean
-    ): Result<ResponseDto<GameUrlDto>> {
-        val response = client.get(address) {
+    ): ResponseDto<GameUrlDto> {
+        return client.get(address) {
             setAction(if (demo) "demo_play" else "real_play")
 
             parameter("game_id", gameSymbol)
@@ -87,41 +87,23 @@ internal class OneGameHubHttpClient(private val config: OneGameHubConfig) {
 
             parameter("return_url", lobbyUrl)
             parameter("deposit_url", lobbyUrl)
-        }
-
-        if (!response.status.isSuccess()) {
-            return Result.failure(AggregatorError("Failed to fetch games from OneGameHub: ${response.status}"))
-        }
-
-        return Result.success(response.body())
+        }.body()
     }
 
-    suspend fun createFreespin(payload: CreateFreespinDto): Result<ResponseDto<String>> {
-        val response = client.post(address) {
+    suspend fun createFreespin(payload: CreateFreespinDto): ResponseDto<String> {
+        return client.post(address) {
             setAction("freerounds_create")
             contentType(ContentType.Application.Json)
             setBody(payload)
-        }
-
-        if (!response.status.isSuccess()) {
-            return Result.failure(AggregatorError("Failed to fetch games from OneGameHub: ${response.status}"))
-        }
-
-        return Result.success(response.body())
+        }.body()
     }
 
-    suspend fun cancelFreespin(payload: CancelFreespinDto): Result<ResponseDto<String>> {
-        val response = client.post(address) {
+    suspend fun cancelFreespin(payload: CancelFreespinDto): ResponseDto<String> {
+        return client.post(address) {
             setAction("freerounds_cancel")
             contentType(ContentType.Application.Json)
             setBody(payload)
-        }
-
-        if (!response.status.isSuccess()) {
-            return Result.failure(AggregatorError("Failed to cancel freespin from OneGameHub: ${response.status}"))
-        }
-
-        return Result.success(response.body())
+        }.body()
     }
 
     private fun HttpRequestBuilder.setAction(action: String) {

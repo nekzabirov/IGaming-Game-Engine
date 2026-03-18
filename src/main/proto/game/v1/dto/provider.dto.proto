@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package game.v1;
+
+option java_multiple_files = true;
+option java_package = "com.nekgamebling.game.v1";
+
+message ProviderDto {
+  string identity = 1;
+
+  string name = 2;
+
+  map<string, string> images = 3;
+
+  int32 order = 4;
+
+  bool active = 5;
+
+  string aggregator_identity = 6;
+}

@@ -1,75 +1,54 @@
 package infrastructure.aggregator.pragmatic.adapter
 
-import application.port.outbound.AggregatorFreespinPort
-import domain.aggregator.AggregatorInfo
+import application.port.external.IFreespinPort
+import domain.vo.Currency
+import domain.vo.PlayerId
+import infrastructure.aggregator.pragmatic.PragmaticConfig
 import infrastructure.aggregator.pragmatic.client.PragmaticHttpClient
 import infrastructure.aggregator.pragmatic.client.dto.CreateFreespinDto
 import infrastructure.aggregator.pragmatic.client.dto.FreespinBetValueDto
 import infrastructure.aggregator.pragmatic.client.dto.FreespinGameDto
-import infrastructure.aggregator.pragmatic.model.PragmaticConfig
-import infrastructure.aggregator.shared.FreespinPresetValidator
-import infrastructure.aggregator.shared.ProviderCurrencyAdapter
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
-import shared.value.Currency
 
-/**
- * Pragmatic implementation for freespin operations.
- */
 class PragmaticFreespinAdapter(
-    aggregatorInfo: AggregatorInfo,
-    private val providerCurrencyAdapter: ProviderCurrencyAdapter
-) : AggregatorFreespinPort {
+    config: PragmaticConfig,
+) : IFreespinPort {
 
-    private val client = PragmaticHttpClient(PragmaticConfig(aggregatorInfo.config))
+    private val client = PragmaticHttpClient(config)
 
-    override suspend fun getPreset(gameSymbol: String): Result<Map<String, Any>> {
-        return Result.success(
-            mapOf(
-                "totalBet" to mapOf(
-                    "minimal" to 100,
-                ),
-                "rounds" to mapOf(
-                    "minimal" to 10
-                )
+    override suspend fun getPreset(gameSymbol: String): Map<String, Any> {
+        return mapOf(
+            "totalBet" to mapOf(
+                "minimal" to 100
+            ),
+            "rounds" to mapOf(
+                "minimal" to 10
             )
         )
     }
 
-    override suspend fun createFreespin(
-        presetValue: Map<String, Int>,
+    override suspend fun create(
+        presetValue: Map<String, Any>,
         referenceId: String,
-        playerId: String,
+        playerId: PlayerId,
         gameSymbol: String,
         currency: Currency,
         startAt: LocalDateTime,
         endAt: LocalDateTime
-    ): Result<Unit> {
-        val mainPreset = getPreset(gameSymbol).getOrElse {
-            return Result.failure(it)
-        }
+    ) {
+        val rounds = (presetValue["rounds"] as? Number)?.toInt() ?: 10
+        val totalBet = (presetValue["totalBet"] as? Number)?.toInt() ?: 100
 
-        val validatedValues = FreespinPresetValidator.validate(presetValue, mainPreset).getOrElse {
-            return Result.failure(it)
-        }
+        val totalBetDecimal = totalBet.toDouble() / MINOR_UNIT_DIVISOR
 
-        val rounds = validatedValues["rounds"] ?: 0
-        val totalBet = validatedValues["totalBet"] ?: 0
-
-        // Convert totalBet from system format to provider format (real currency units)
-        val totalBetDecimal = providerCurrencyAdapter.convertSystemToProvider(
-            totalBet.toLong(),
-            currency
-        ).toDouble()
-
-        // Convert LocalDateTime to Unix timestamp (seconds)
         val startTimestamp = startAt.toInstant(TimeZone.UTC).epochSeconds
         val expirationTimestamp = endAt.toInstant(TimeZone.UTC).epochSeconds
 
         val payload = CreateFreespinDto(
             bonusCode = referenceId,
-            playerId = playerId,
+            playerId = playerId.value,
             currency = currency.value,
             rounds = rounds,
             startTimestamp = startTimestamp,
@@ -87,12 +66,14 @@ class PragmaticFreespinAdapter(
             )
         )
 
-        return client.createFreespin(payload)
+        client.createFreespin(payload)
     }
 
-    override suspend fun cancelFreespin(
-        referenceId: String,
-    ): Result<Unit> {
-        return client.cancelFreespin(referenceId)
+    override suspend fun cancel(referenceId: String) {
+        client.cancelFreespin(referenceId)
+    }
+
+    companion object {
+        private const val MINOR_UNIT_DIVISOR = 100.0
     }
 }

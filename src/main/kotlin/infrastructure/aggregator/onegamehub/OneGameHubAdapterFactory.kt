@@ -1,34 +1,14 @@
 package infrastructure.aggregator.onegamehub
 
-import application.port.outbound.AggregatorAdapterFactory
-import application.port.outbound.AggregatorFreespinPort
-import application.port.outbound.AggregatorGameSyncPort
-import application.port.outbound.AggregatorLaunchUrlPort
-import infrastructure.aggregator.onegamehub.adapter.OneGameHubCurrencyAdapter
-import domain.aggregator.AggregatorInfo
 import infrastructure.aggregator.onegamehub.adapter.OneGameHubFreespinAdapter
-import infrastructure.aggregator.onegamehub.adapter.OneGameHubGameSyncAdapter
-import infrastructure.aggregator.onegamehub.adapter.OneGameHubLaunchUrlAdapter
-import domain.common.value.Aggregator
+import infrastructure.aggregator.onegamehub.adapter.OneGameHubGameAdapter
 
-/**
- * Factory for creating OneGameHub aggregator adapters.
- */
-class OneGameHubAdapterFactory(private val providerCurrencyAdapter: OneGameHubCurrencyAdapter) : AggregatorAdapterFactory {
+class OneGamehubAdapterFactory {
 
-    override fun supports(aggregator: Aggregator): Boolean {
-        return aggregator == Aggregator.ONEGAMEHUB
-    }
+    fun createGameAdapter(config: Map<String, Any>) = OneGameHubGameAdapter(createConfig(config))
 
-    override fun createLaunchUrlAdapter(aggregatorInfo: AggregatorInfo): AggregatorLaunchUrlPort {
-        return OneGameHubLaunchUrlAdapter(aggregatorInfo)
-    }
+    fun createFreespinAdapter(config: Map<String, Any>) = OneGameHubFreespinAdapter(createConfig(config))
 
-    override fun createFreespinAdapter(aggregatorInfo: AggregatorInfo): AggregatorFreespinPort {
-        return OneGameHubFreespinAdapter(aggregatorInfo, providerCurrencyAdapter)
-    }
+    private fun createConfig(config: Map<String, Any>) = OneGameHubConfig(config)
 
-    override fun createGameSyncAdapter(aggregatorInfo: AggregatorInfo): AggregatorGameSyncPort {
-        return OneGameHubGameSyncAdapter(aggregatorInfo)
-    }
 }

@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package game.v1;
+
+option java_package = "com.nekgamebling.game.v1";
+option java_multiple_files = true;
+
+import "game/v1/dto/common.dto.proto";
+import "google/protobuf/struct.proto";
+
+service FreespinService {
+  rpc GetPreset(GetFreespinPresetQuery) returns (GetFreespinPresetQuery.Result);
+
+  rpc Create(CreateFreespinCommand) returns (Empty);
+
+  rpc Cancel(CancelFreespinCommand) returns (Empty);
+}
+
+message GetFreespinPresetQuery {
+  string game_identity = 1;
+
+  message Result {
+    google.protobuf.Struct preset = 1;
+  }
+}
+
+message CreateFreespinCommand {
+  string game_identity = 1;
+
+  string player_id = 2;
+
+  string reference_id = 3;
+
+  string currency = 4;
+
+  string start_at = 5;
+
+  string end_at = 6;
+
+  google.protobuf.Struct preset_values = 7;
+}
+
+message CancelFreespinCommand {
+  string game_identity = 1;
+
+  string reference_id = 2;
+}

@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package game.v1;
+
+option java_multiple_files = true;
+option java_package = "com.nekgamebling.game.v1";
+
+enum PlatformDto {
+  PLATFORM_UNSPECIFIED = 0;
+  PLATFORM_DESKTOP = 1;
+  PLATFORM_MOBILE = 2;
+  PLATFORM_DOWNLOAD = 3;
+}
+
+message GameDto {
+  string identity = 1;
+
+  string name = 2;
+
+  string provider_identity = 3;
+
+  repeated string collection_identities = 4;
+
+  bool bonus_bet_enable = 5;
+
+  bool bonus_wagering_enable = 6;
+
+  repeated string tags = 7;
+
+  bool active = 8;
+
+  map<string, string> images = 9;
+
+  int32 order = 10;
+
+  string symbol = 11;
+
+  string integration = 12;
+
+  bool free_spin_enable = 14;
+
+  bool free_chip_enable = 15;
+
+  bool jackpot_enable = 16;
+
+  bool demo_enable = 17;
+
+  bool bonus_buy_enable = 18;
+
+  repeated string locales = 19;
+
+  repeated PlatformDto platforms = 20;
+
+  int32 play_lines = 21;
+}

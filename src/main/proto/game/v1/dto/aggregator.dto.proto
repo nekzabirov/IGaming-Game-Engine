@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package game.v1;
+
+option java_multiple_files = true;
+option java_package = "com.nekgamebling.game.v1";
+
+import "google/protobuf/struct.proto";
+
+message AggregatorDto {
+  string identity = 1;
+
+  string integration = 2;
+
+  google.protobuf.Struct config = 3;
+
+  bool active = 4;
+}

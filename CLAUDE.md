@@ -2,162 +2,232 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## What This Is
+
+**casino-engine** — Kotlin/Ktor microservice serving as the casino game engine for the IGambling platform. Manages game catalog, sessions, betting rounds/spins, and aggregator integrations.
+
+Part of the IGambling platform — see the parent `CLAUDE.md` at `/IGambling/CLAUDE.md` for full platform context.
+
 ## Build Commands
 
 ```bash
-# Build the project
-./gradlew build
-
-# Run tests
-./gradlew test
-
-# Generate gRPC stubs from .proto files
-./gradlew generateProto
-
-# Build gRPC client JAR (for external service consumers)
-./gradlew grpcClientJar
-
-# Run the application
-./gradlew run
+./gradlew build                # Build (also runs installDist)
+./gradlew test                 # Run all tests
+./gradlew test --tests "com.nekgamebling.SomeTest"  # Single test
+./gradlew run                  # Run application (HTTP :8080, gRPC :5050)
+./gradlew generateProto        # Generate gRPC stubs from proto files
+./gradlew runSync              # Run aggregator sync CLI locally
 ```
 
-## Architecture Overview
+## Local Development
 
-This is a **Kotlin iGambling Core Service** following **Hexagonal Architecture** (Ports & Adapters) with DDD patterns.
+```bash
+# 1. Start infrastructure
+docker-compose up -d postgres rabbitmq redis minio minio-init
 
-### Layer Structure
+# 2. Configure environment
+cp .env.example .env           # Defaults point to localhost
+
+# 3. Run the application
+./gradlew run                  # Starts HTTP on :8080, gRPC on :5050
+```
+
+Full stack (infra + app in Docker):
+```bash
+./gradlew build                # Creates build/distributions/casino-engine-*.tar
+docker-compose up -d
+```
+
+Two application entrypoints in Docker:
+- `/app/bin/casino-engine` — main server (HTTP + gRPC + consumers)
+- `/app/bin/sync-aggregators` — one-shot aggregator game sync job
+
+## Architecture
+
+Hexagonal Architecture + DDD + CQRS.
 
 ```
 src/main/kotlin/
-├── application/           # Use cases, services, sagas (orchestration)
-│   ├── port/outbound/    # Adapter interfaces (WalletAdapter, PlayerLimitAdapter, CacheAdapter)
-│   ├── saga/spin/        # Distributed transaction sagas (PlaceSpinSaga, SettleSpinSaga, etc.)
-│   └── usecase/          # Application use cases organized by domain
-│
-├── domain/               # Pure business logic, no external dependencies
-│   ├── */                # Bounded contexts: session, game, provider, collection, aggregator
-│   └── common/           # Shared: DomainError sealed classes, events, value objects
-│
-├── infrastructure/       # Technical implementations
-│   ├── aggregator/       # Game aggregator integrations (pragmatic, onegamehub, pateplay)
-│   ├── api/grpc/         # gRPC service implementations
-│   ├── messaging/        # RabbitMQ event publishing
-│   └── persistence/      # Exposed ORM repositories
-│
-└── shared/               # Extensions, serializers, common value objects
+├── api/
+│   ├── grpc/                  # gRPC entry points
+│   │   ├── config/            # GrpcExceptionInterceptor (handleGrpcCall), GrpcModule (Koin)
+│   │   ├── mapper/            # Domain→Proto mappers
+│   │   └── service/           # gRPC service impls (Game, Provider, Collection, Aggregator, Freespin)
+│   └── rest/                  # REST endpoints (aggregator webhooks registered via Main.kt routing)
+├── application/
+│   ├── cqrs/                  # ICommand<R>, IQuery<R>, Bus, organized by domain
+│   ├── event/                 # ApplicationEvent sealed interface (SpinEvent, RoundEndEvent, SessionOpenEvent)
+│   ├── port/                  # Port interfaces: storage/ (repositories) + external/ (services) + factory/
+│   └── usecase/               # Orchestrators: OpenSession, ProcessSpin, FinishRound, SyncAggregator
+├── domain/
+│   ├── exception/             # DomainException hierarchy (notfound/, badrequest/, conflict/, forbidden/)
+│   ├── model/                 # Aggregates: Game, GameVariant, Session, Round, Spin, Provider, Collection, Aggregator
+│   ├── service/               # SessionFactory, RoundFactory, SpinFactory, SpinBalanceCalculator
+│   ├── util/                  # Mutable traits: Activatable, Imageable, Orderable
+│   └── vo/                    # Value objects: Identity, Currency, Locale, Amount, PlayerId, SessionToken, etc.
+└── infrastructure/
+    ├── aggregator/            # Aggregator adapters (OneGameHub, Pragmatic, Pateplay)
+    ├── handler/               # CQRS handler implementations organized by domain
+    ├── koin/                  # DI modules (Config, Persistence, External, Usecase, Handler, Bus, Aggregator)
+    ├── persistence/           # Exposed ORM: table/, entity/, mapper/, repository/
+    ├── rabbitmq/              # RabbitMqEventPublisher + PlaceSpinEventConsumer + event mappers
+    ├── redis/                 # PlayerLimitRedis
+    ├── s3/                    # S3FileAdapter
+    ├── unit/                  # CurrencyAdapter, BackgroundWorker
+    └── wallet/                # WalletAdapter (gRPC client to wallet-service)
 ```
 
-### Key Architectural Patterns
+## Entrypoints
 
-**Saga Pattern for Spin Operations**: All betting operations (place, settle, end, rollback) use sagas for distributed transactions with automatic compensation on failure. Each saga is in `application/saga/spin/` with dedicated step files.
+### Main Server (Main.kt)
 
-- `PlaceSpinSaga` (6 steps): validates game → creates round → validates balance → withdraws → saves spin → publishes event
-- `SettleSpinSaga` (6 steps): finds round → finds spin → calculates amounts → deposits → saves settle → publishes event
-- `EndSpinSaga` (3 steps): finds round → marks finished → publishes event
-- `RollbackSpinSaga` (5 steps): finds round → finds original spin → refunds → saves rollback → publishes event
+Boot sequence:
+1. Koin DI — registers `Application` instance, then installs 8 modules (config → persistence → external → usecase → handler → bus → aggregator → grpc)
+2. Database — initializes Exposed connection pool, creates tables
+3. Serialization — kotlinx.serialization JSON with `ignoreUnknownKeys`
+4. Call logging
+5. HTTP routing — registers aggregator webhook routes (OneGameHub, Pragmatic)
+6. gRPC server — launches on separate coroutine (IO dispatcher) with 5 services
+7. Consumers — starts RabbitMQ event consumers
 
-**Aggregator Factory Pattern**: Each game aggregator (Pragmatic, OneGameHub, Pateplay) has its own module in `infrastructure/aggregator/` with:
-- `*AdapterFactory` - creates port implementations
-- `*Handler` - processes aggregator callbacks using sagas
-- `*Config` - aggregator-specific configuration
+### Sync Job (SyncJob.kt)
 
-**Domain Errors**: Type-safe error handling via sealed classes in `domain/common/error/`. Errors include: `NotFoundError`, `InsufficientBalanceError`, `SpinLimitExceededError`, `SessionInvalidError`, etc.
+Standalone CLI entrypoint that syncs games from all active aggregators, then exits. Uses `startKoin` directly (not koin-ktor) with 8 modules (no gRPC module, no Application registration). Dispatches `SyncAllActiveAggregatorCommand` via the CQRS Bus.
 
-**Dependency Injection**: Koin modules in `infrastructure/DependencyInjection.kt`. Key modules: `coreModule()`, `adapterModule`, `sagaModule`, `AggregatorModule`.
+**Important**: SyncJob does NOT register `Application` in Koin. A `syncOverrideModule` is loaded after `externalModule` to replace `IEventPort` with a no-op implementation (sync doesn't publish events). `PlaceSpinEventConsumer` is still registered but never resolved during sync. If adding new singletons that depend on `Application`, ensure the sync code path doesn't resolve them, or add an override in `syncOverrideModule`.
 
-**Command/Query Handler Pattern**: Application layer uses typed handlers for all operations:
-- Commands: `application/port/inbound/*/command/` - Create, Update operations
-- Queries: `application/port/inbound/*/query/` - Find, FindAll operations
-- Handlers are registered in `infrastructure/handler/handlerModule.kt` with named qualifiers
-- gRPC services wire handlers via `infrastructure/api/grpc/grpcModule.kt`
+## CQRS Pattern
 
-**Proto-to-Handler Flow**:
-1. Proto message → gRPC service method (`infrastructure/api/grpc/service/*GrpcService.kt`)
-2. Maps to Command/Query data class (`application/port/inbound/`)
-3. Handler executes (`infrastructure/handler/`)
-4. Result mapped back to Proto response
+`Bus` dispatches commands and queries to handlers via class-to-handler maps wired in `BusModule`.
 
-## Technology Stack
+**Two handler styles coexist:**
 
-- Kotlin 2.0.21 (JVM 21)
-- Ktor Server 3.0.3
-- Exposed ORM 0.57.0 (H2 for dev, PostgreSQL for prod)
-- Koin 4.0.3 (DI)
-- gRPC + Protocol Buffers (API)
-- RabbitMQ (messaging)
+- **Repository-based** (domain logic needed): Handler calls repository port → domain model → usecase. Session handlers follow this: find session by token → find/create round → invoke usecase.
+- **Entity-direct** (simple CRUD): Handler works directly with Exposed Table/Entity inside `newSuspendedTransaction`. Examples: `SaveAggregatorCommandHandler`, `SaveProviderCommandHandler`.
 
-## Proto Files
+**Key difference**: Commands return `Result<R>` (wrapped in `runCatching`). Queries return `R` directly.
 
-gRPC service definitions are in `src/main/proto/`:
-- `service/` - Service definitions (Session, Game, Freespin, Collection, Provider, Round, Aggregator, Sync)
-- `dto/` - Data transfer objects
+**Adding a new command/query**: Define in `application/cqrs/<domain>/`, create handler in `infrastructure/handler/<domain>/`, register handler singleton in `HandlerModule`, wire command→handler mapping in `BusModule`.
 
-After modifying `.proto` files, run `./gradlew generateProto`.
+**Exception helpers**: `domainRequireNotNull(value) { ExceptionType() }` and `domainRequire(condition) { ExceptionType() }` throw categorized `DomainException` subclasses.
 
-## Environment Variables
+## Data Flow — Spin Lifecycle
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `DATABASE_URL` | JDBC database URL | `jdbc:h2:mem:test` |
-| `DATABASE_DRIVER` | JDBC driver class | `org.h2.Driver` |
-| `DATABASE_USER` | Database username | (empty) |
-| `DATABASE_PASSWORD` | Database password | (empty) |
-| `GRPC_PORT` | gRPC server port | `5050` |
-| `HTTP_PORT` | HTTP server port | `8080` |
-| `S3_ENDPOINT` | S3-compatible storage endpoint | (required for images) |
-| `S3_ACCESS_KEY` | S3 access key | (required for images) |
-| `S3_SECRET_KEY` | S3 secret key | (required for images) |
-| `S3_BUCKET` | S3 bucket name | (required for images) |
-| `S3_REGION` | S3 region | (required for images) |
+1. **OpenSessionUsecase** — aggregator creates game adapter → gets launch URL → saves session → publishes `SessionOpenEvent`
+2. **ProcessSpinUsecase** — for each spin (PLACE/SETTLE/ROLLBACK):
+   - Freespin rounds skip balance checks entirely
+   - Regular rounds: check player limits → calculate balance via `SpinBalanceCalculator` → withdraw/deposit via `IWalletPort` → save spin → publish `SpinEvent`
+3. **FinishRoundUsecase** — marks round finished → publishes `RoundEndEvent`
 
-## Performance Optimizations
+Use cases are callable via `operator fun invoke()`, return `Result<Response>`, and take domain models (not DTOs).
 
-**Balance Caching**: The service includes an in-memory balance cache (`BalanceCache`) with 10-second TTL to reduce redundant wallet HTTP calls during high-frequency betting operations.
+## Port Interfaces (application/port/)
 
-**Async Processing**: Wallet withdrawals support async processing with predicted balance for faster response times. Round creation and balance validation run in parallel where possible.
+**Repository ports** (storage/): `ISessionRepository`, `IRoundRepository`, `ISpinRepository`, `IGameRepository`, `IGameVariantRepository`, `IProviderRepository`, `ICollectionRepository`, `IAggregatorRepository`
 
-**Repository Pattern**: All persistence uses repository-based access with optimized single-query steps for round and spin handling.
+**External service ports** (external/):
+- `IWalletPort` — balance, withdraw, deposit → `WalletAdapter` (wallet-service gRPC)
+- `IGamePort` — aggregator game operations: `getAggregatorGames()`, `getDemoUrl()`, `getLunchUrl()`
+- `IFreespinPort` — freespin preset, create, cancel
+- `IPlayerLimitPort` — max place amount enforcement → `PlayerLimitRedis`
+- `ICurrencyPort` — unit conversion → `CurrencyAdapter`
+- `IEventPort` — publish domain events → `RabbitMqEventPublisher`
+- `IBackgroundTaskPort` — fire-and-forget coroutine launcher → `BackgroundWorker`
+- `FilePort` — file upload/storage → `S3FileAdapter`
 
-## Required Custom Adapters
+**Factory port**: `IAggregatoryFactory` — creates `IGamePort`/`IFreespinPort` per aggregator → `AggregatorFabricImpl`
 
-The service ships with default adapters. For production, implement:
+## Persistence
 
-- `WalletAdapter` - balance queries, withdrawals, deposits, rollbacks
-- `PlayerLimitAdapter` - spin limit storage per player (cache-backed implementation provided in `infrastructure/external/CachePlayerLimitAdapter.kt`)
-- `CacheAdapter` - session caching
-- `FileAdapter` - file storage operations (S3 implementation provided in `infrastructure/external/s3/`)
-- `EventPublisherAdapter` - domain event publishing (RabbitMQ implementation provided)
+Exposed ORM with `newSuspendedTransaction`. Entity ↔ domain conversion via mapper extension functions (`object XMapper { fun XEntity.toDomain(): X }`).
 
-Register custom implementations in `infrastructure/DependencyInjection.kt`.
+- **Long PK tables** (`LongIdTable`): SessionTable, RoundTable, SpinTable, GameTable, GameVariantTable, ProviderTable, AggregatorTable, CollectionTable, GameCollectionTable, GameFavouriteTable
+- **New entity detection**: `id == Long.MIN_VALUE` means unsaved
+- **JSON columns**: `config`, `tags`, `images`, `locales`, `platforms`, `name` (LocaleName) via `kotlinx.serialization`
 
-## Adding a New Aggregator
+See `.claude/rules/exposed-database.md` for detailed Exposed ORM conventions.
 
-1. Add enum value to `shared/value/Enums.kt`
-2. Create package `infrastructure/aggregator/youraggregator/` with:
-   - `model/YourConfig.kt` - configuration class
-   - `adapter/YourLaunchUrlAdapter.kt`, `YourFreespinAdapter.kt`, `YourGameSyncAdapter.kt`
-   - `YourAdapterFactory.kt` - implements `AggregatorAdapterFactory`
-   - `YourHandler.kt` - callback handler using sagas
-3. Create Koin module and register in `AggregatorModule`
-4. Add REST routes for callbacks
+## Proto / gRPC
 
-## Event Routing Keys
+Proto files in `src/main/proto/game/v1/`. Package: `game.v1` (Java: `com.nekgamebling.game.v1`).
 
-Events published to RabbitMQ:
-- `spin.placed`, `spin.settled`, `spin.end`, `spin.rollback`
-- `session.opened`
-- `game.favourite.added`, `game.favourite.removed`, `game.won`
+- DTOs in `dto/` subdirectory as `<name>.dto.proto` (see `.claude/rules/proto-dto.md`)
+- Services in `service/` subdirectory: GameService, CollectionService, ProviderService, AggregatorService, FreespinService
 
-## Adding a New gRPC Method
+Each gRPC service extends `*GrpcKt.*CoroutineImplBase`, takes `Bus` as constructor parameter, and wraps every method in `handleGrpcCall { }` which maps `DomainException` → gRPC status codes and stores the exception class name in an `x-exception-name` metadata header for downstream error identification.
 
-1. Define message types in `src/main/proto/service/*.proto` or `dto/*.proto`
-2. Run `./gradlew generateProto`
-3. Create Command/Query data class in `application/port/inbound/`
-4. Create Handler in `infrastructure/handler/`
-5. Register handler in `handlerModule.kt` with `named()` qualifier
-6. Add method to gRPC service in `infrastructure/api/grpc/service/`
-7. Wire handler in `grpcModule.kt`
+**Exception → Status mapping**: `NotFoundException` → `NOT_FOUND`, `BadRequestException` → `INVALID_ARGUMENT`, `ConflictException` → `ALREADY_EXISTS`, `ForbiddenException` → `PERMISSION_DENIED`, `SystemException` → `INTERNAL`.
 
-## Domain Error Mapping
+**Name collision**: Proto and CQRS classes share names (e.g., `SaveGameCommand`). Use Kotlin import aliases:
+```kotlin
+import com.nekgamebling.game.v1.SaveGameCommand as SaveGameProto
+import application.cqrs.game.SaveGameCommand as SaveGameCqrs
+```
 
-Errors in `domain/common/error/DomainError.kt` are mapped to gRPC status codes in `infrastructure/api/grpc/error/`. The `mapOrThrowGrpc` extension handles automatic conversion with structured metadata headers (`x-error-code`, `x-identifier`, etc.).
+## Aggregator Integration
+
+Currently implemented: **OneGameHub** (`infrastructure/aggregator/onegamehub/`), **Pragmatic Play** (`infrastructure/aggregator/pragmatic/`), and **Pateplay** (`infrastructure/aggregator/pateplay/`).
+
+`AggregatorFabricImpl` routes by `aggregator.integration` string (e.g., `"ONEGAMEHUB"`, `"PRAGMATIC"`, `"PATEPLAY"`) to create the appropriate `IGamePort`/`IFreespinPort` adapters.
+
+Each aggregator provides: Config, AdapterFactory, GameAdapter (IGamePort), FreespinAdapter (IFreespinPort), HttpClient, and Webhook (Ktor Route handler). See `.claude/skills/add-aggregator.md` for the step-by-step guide.
+
+**Pragmatic specifics**: Uses MD5 hash authentication (sorted params + secret key), form-encoded POST requests, GET webhook endpoints at `/pragmatic/*.html`, and decimal string amounts (converted to/from minor units via ×100).
+
+**Pateplay specifics**: Static game catalog (no game discovery API), launch URLs constructed locally (no API call), HMAC-SHA256 authentication for freespin API, no webhook handler (wallet callback not yet implemented).
+
+## Event System (RabbitMQ)
+
+**Event types** (sealed interface `ApplicationEvent`):
+- `SessionOpenEvent` → routing key `session.opened`
+- `SpinEvent` → routing key `spin.placed`, `spin.settled`, or `spin.rollback` (based on spin type)
+- `RoundEndEvent` → routing key `round.finished`
+
+`RabbitMqEventPublisher` (implements `IEventPort`) publishes domain events to the configured RabbitMQ exchange. Event mappers in `infrastructure/rabbitmq/mapper/` transform domain events to JSON payloads.
+
+**Consumer**: `PlaceSpinEventConsumer` subscribes to `spin.placed` events and enforces player betting limits by updating max place amounts via `IPlayerLimitPort` (Redis). Both `RabbitMqEventPublisher` and `PlaceSpinEventConsumer` depend on `Application` from Koin — this is why `SyncJob` overrides `IEventPort` with a no-op.
+
+## Koin Dependency Injection
+
+**Module install order matters** — dependencies must be installed before dependents.
+
+**Main server** (KoinInit.kt): Registers `Application` instance first, then 8 modules:
+`configModule → persistenceModule → externalModule → usecaseModule → handlerModule → busModule → aggregatorModule → grpcModule`
+
+**SyncJob** (SyncJob.kt): Uses `startKoin` directly with 8 modules (no grpcModule, no Application registration; includes `syncOverrideModule` for no-op `IEventPort`).
+
+**Application registration**: `RabbitMqEventPublisher` and `PlaceSpinEventConsumer` depend on `io.ktor.server.application.Application` via Koin `get()`. The `Application` instance is explicitly registered in `KoinInit.kt` as `module { single { application } }` because koin-ktor 4.0.3 does not auto-register it.
+
+## Key Design Decisions
+
+- **Value objects**: `@JvmInline value class` with `init` block validation via `require()`
+- **Amount**: wraps `Long` in minor units (cents) with operator overloads; `Amount.ZERO` constant
+- **Domain traits** (Activatable, Imageable, Orderable): mutable interfaces. Game overrides via `copy()` for immutability; Provider/Collection/Aggregator mutate directly
+- **Monetary values**: `Long` in minor units internally, `string` in proto for BigInteger precision
+- **Factories**: `object` singletons with validation (e.g., `SessionFactory.create()` checks active status and locale/platform support)
+- **SpinBalanceCalculator**: PLACE deducts (real-first when bonusBet), SETTLE deposits to same pool as original bet, ROLLBACK refunds to original pools
+- **Wallet dependency**: wallet-grpc-client resolved via Gradle `includeBuild` from `../wallete-engine/wallet-grpc-client` (note the "wallete" spelling)
+- **Dependency versions**: Managed via Gradle version catalog in `gradle/libs.versions.toml`
+
+## Tech Stack
+
+| Component | Technology |
+|-----------|-----------|
+| Language | Kotlin 2.0.21, JDK 21 |
+| Server | Ktor 3.0.3 (CIO engine) |
+| ORM | Exposed 0.57.0 + PostgreSQL |
+| DI | Koin 4.0.3 |
+| gRPC | io.grpc 1.68.2, protobuf 4.29.2 |
+| Messaging | RabbitMQ (ktor-server-rabbitmq) |
+| Caching | Redis (Lettuce 6.5.3) |
+| Storage | AWS S3 SDK for Kotlin |
+| Testing | kotlin-test, MockK, kotlinx-coroutines-test |
+
+## Ports
+
+- HTTP: 8080 (dev) / 80 (Docker)
+- gRPC: 5050
+
+## CI/CD
+
+GitHub Actions workflow (`publish-grpc-client.yml`) publishes `com.nekgamebling:game-grpc-client` to GitHub Packages on tag push (`v*`) or manual dispatch. Version can be overridden with `-PgrpcClientVersion=x.y.z`.

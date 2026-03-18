@@ -1,0 +1,177 @@
+syntax = "proto3";
+
+package game.v1;
+
+option java_package = "com.nekgamebling.game.v1";
+option java_multiple_files = true;
+
+import "game/v1/dto/game.dto.proto";
+import "game/v1/dto/provider.dto.proto";
+import "game/v1/dto/aggregator.dto.proto";
+import "game/v1/dto/collection.dto.proto";
+import "game/v1/dto/common.dto.proto";
+
+service GameService {
+  rpc Save(SaveGameCommand) returns (Empty);
+
+  rpc Find(FindGameQuery) returns (FindGameQuery.Result);
+
+  rpc FindAll(FindAllGameQuery) returns (FindAllGameQuery.Result);
+
+  rpc Batch(BatchGameQuery) returns (BatchGameQuery.Result);
+
+  rpc UpdateImage(UpdateGameImageCommand) returns (Empty);
+
+  rpc Play(PlayGameCommand) returns (PlayGameCommand.Result);
+
+  rpc OpenDemo(OpenDemoQuery) returns (OpenDemoQuery.Result);
+
+  rpc AddFavourite(GameFavouriteCommand) returns (Empty);
+
+  rpc RemoveFavourite(GameFavouriteCommand) returns (Empty);
+}
+
+message SaveGameCommand {
+  string identity = 1;
+
+  string name = 2;
+
+  bool bonus_bet_enable = 3;
+
+  bool bonus_wagering_enable = 4;
+
+  repeated string tags = 5;
+
+  string provider_identity = 6;
+}
+
+message FindGameQuery {
+  string identity = 1;
+
+  message Result {
+    GameDto item = 1;
+
+    ProviderDto provider = 2;
+
+    AggregatorDto aggregator = 3;
+
+    repeated CollectionDto collections = 4;
+  }
+}
+
+message FindAllGameQuery {
+  string query = 1;
+
+  optional bool active = 2;
+
+  repeated string provider_identities = 3;
+
+  repeated string collection_identities = 4;
+
+  repeated string tags = 5;
+
+  optional bool bonus_bet_enable = 6;
+
+  optional bool bonus_wagering_enable = 7;
+
+  optional bool free_spin_enable = 8;
+
+  optional bool free_chip_enable = 9;
+
+  optional bool jackpot_enable = 10;
+
+  optional bool demo_enable = 11;
+
+  optional bool bonus_buy_enable = 12;
+
+  int32 page_num = 13;
+
+  int32 page_size = 14;
+
+  message Result {
+    repeated Item items = 1;
+
+    repeated ProviderDto providers = 2;
+
+    repeated AggregatorDto aggregators = 3;
+
+    repeated CollectionDto collections = 4;
+
+    int32 total_items = 5;
+
+    message Item {
+      GameDto game = 1;
+
+      ProviderDto provider = 2;
+    }
+  }
+}
+
+message BatchGameQuery {
+  message Result {
+    repeated Item items = 1;
+
+    repeated ProviderDto providers = 2;
+
+    repeated AggregatorDto aggregators = 3;
+
+    repeated CollectionDto collections = 4;
+
+    message Item {
+      GameDto game = 1;
+
+      ProviderDto provider = 2;
+    }
+  }
+}
+
+message PlayGameCommand {
+  string identity = 1;
+
+  string player_id = 2;
+
+  string locale = 3;
+
+  PlatformDto platform = 4;
+
+  string currency = 5;
+
+  optional int64 max_spin_place_amount = 6;
+
+  message Result {
+    string launch_url = 1;
+  }
+}
+
+message OpenDemoQuery {
+  string identity = 1;
+
+  string currency = 2;
+
+  string locale = 3;
+
+  PlatformDto platform = 4;
+
+  string lobby_url = 5;
+
+  message Result {
+    string launch_url = 1;
+  }
+}
+
+message GameFavouriteCommand {
+  string identity = 1;
+
+  string player_id = 2;
+}
+
+message UpdateGameImageCommand {
+  string identity = 1;
+
+  string key = 2;
+
+  bytes file = 3;
+
+  string extension = 4;
+}
+

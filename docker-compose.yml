@@ -1,0 +1,176 @@
+services:
+  # ============================================
+  # INFRASTRUCTURE
+  # ============================================
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: casino-engine-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: game_core
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d game_core"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - casino-engine-network
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: casino-engine-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - casino-engine-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: casino-engine-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - casino-engine-network
+
+  minio:
+    image: minio/minio:latest
+    container_name: casino-engine-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - casino-engine-network
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: casino-engine-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set myminio http://minio:9000 minioadmin minioadmin;
+      mc mb myminio/casino-engine --ignore-existing;
+      mc anonymous set download myminio/casino-engine;
+      exit 0;
+      "
+    networks:
+      - casino-engine-network
+
+  # ============================================
+  # APPLICATION
+  # ============================================
+
+  casino-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: casino-engine
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      - HTTP_PORT=${HTTP_PORT:-80}
+      - GRPC_PORT=${GRPC_PORT:-5050}
+      - DATABASE_URL=${DATABASE_URL:-jdbc:postgresql://postgres:5432/game_core}
+      - DATABASE_USER=${DATABASE_USER:-postgres}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres}
+      - WALLET_GRPC_HOST=${WALLET_GRPC_HOST:-host.docker.internal}
+      - WALLET_GRPC_PORT=${WALLET_GRPC_PORT:-5555}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - S3_ENDPOINT=${S3_ENDPOINT:-http://minio:9000}
+      - S3_REGION=${S3_REGION:-us-east-1}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY:-minioadmin}
+      - S3_SECRET_KEY=${S3_SECRET_KEY:-minioadmin}
+      - S3_BUCKET=${S3_BUCKET:-casino-engine}
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
+      - RABBITMQ_EXCHANGE=${RABBITMQ_EXCHANGE:-casino-engine}
+    entrypoint: /app/bin/casino-engine
+    ports:
+      - "${HTTP_PORT:-8080}:${HTTP_PORT:-80}"
+      - "${GRPC_PORT:-5050}:${GRPC_PORT:-5050}"
+    networks:
+      - casino-engine-network
+
+  casino-engine-sync:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: casino-engine-sync
+    depends_on:
+      - casino-engine
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-jdbc:postgresql://postgres:5432/game_core}
+      - DATABASE_USER=${DATABASE_USER:-postgres}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres}
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
+      - RABBITMQ_EXCHANGE=${RABBITMQ_EXCHANGE:-casino-engine}
+      - S3_ENDPOINT=${S3_ENDPOINT:-http://minio:9000}
+      - S3_REGION=${S3_REGION:-us-east-1}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY:-minioadmin}
+      - S3_SECRET_KEY=${S3_SECRET_KEY:-minioadmin}
+      - S3_BUCKET=${S3_BUCKET:-casino-engine}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+    entrypoint: /app/bin/sync-aggregators
+    networks:
+      - casino-engine-network
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
+  redis_data:
+  minio_data:
+
+networks:
+  casino-engine-network:
+    driver: bridge

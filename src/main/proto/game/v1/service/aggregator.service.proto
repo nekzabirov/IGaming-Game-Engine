@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package game.v1;
+
+option java_package = "com.nekgamebling.game.v1";
+option java_multiple_files = true;
+
+import "game/v1/dto/aggregator.dto.proto";
+import "game/v1/dto/common.dto.proto";
+
+service AggregatorService {
+  rpc Save(AggregatorDto) returns (Empty);
+
+  rpc Find(FindAggregatorQuery) returns (AggregatorDto);
+
+  rpc FindAll(FindAllAggregatorQuery) returns (FindAllAggregatorResult);
+}
+
+message FindAggregatorQuery {
+  string identity = 1;
+}
+
+message FindAllAggregatorQuery {
+  string query = 1;
+
+  optional bool active = 2;
+
+  optional string integration = 3;
+
+  int32 page_num = 4;
+
+  int32 page_size = 5;
+}
+
+message FindAllAggregatorResult {
+  repeated AggregatorDto items = 1;
+
+  int32 total_items = 2;
+}

@@ -1,102 +1,70 @@
 package infrastructure.aggregator.onegamehub.adapter
 
-import application.port.outbound.AggregatorFreespinPort
-import domain.aggregator.AggregatorInfo
-import domain.common.error.AggregatorError
-import infrastructure.aggregator.onegamehub.model.OneGameHubConfig
-import infrastructure.aggregator.shared.FreespinPresetValidator
+import application.port.external.IFreespinPort
+import domain.vo.Currency
+import domain.vo.PlayerId
+import infrastructure.aggregator.onegamehub.OneGameHubConfig
 import infrastructure.aggregator.onegamehub.client.OneGameHubHttpClient
 import infrastructure.aggregator.onegamehub.client.dto.CancelFreespinDto
 import infrastructure.aggregator.onegamehub.client.dto.CreateFreespinDto
-import shared.value.Currency
 import kotlinx.datetime.LocalDateTime
 
-/**
- * OneGameHub implementation for freespin operations.
- */
 class OneGameHubFreespinAdapter(
-    private val aggregatorInfo: AggregatorInfo,
-    private val providerCurrencyAdapter: OneGameHubCurrencyAdapter
-) : AggregatorFreespinPort {
+    config: OneGameHubConfig,
+) : IFreespinPort {
 
-    private val config = OneGameHubConfig(aggregatorInfo.config)
     private val client = OneGameHubHttpClient(config)
 
-    override suspend fun getPreset(gameSymbol: String): Result<Map<String, Any>> {
-        return Result.success(
-            mapOf(
-                "quantity" to mapOf(
-                    "minimal" to 1,
-                ),
-                "betAmount" to mapOf(
-                    "minimal" to 10
-                ),
-                "lines" to mapOf(
-                    "default" to 10,
-                    "minimum" to 1,
-                    "maximum" to 10
-                )
-            )
+    override suspend fun getPreset(gameSymbol: String): Map<String, Any> {
+        val response = client.listGames()
+
+        check(response.success) { "OneGameHub listGames failed with status ${response.status}" }
+
+        val game = response.response
+            ?.firstOrNull { it.id == gameSymbol }
+            ?: error("Game $gameSymbol not found in OneGameHub")
+
+        return mapOf(
+            "paylines" to game.paylines,
+            "freespinEnable" to game.freespinEnable
         )
     }
 
-    override suspend fun createFreespin(
-        presetValue: Map<String, Int>,
+    override suspend fun create(
+        presetValue: Map<String, Any>,
         referenceId: String,
-        playerId: String,
+        playerId: PlayerId,
         gameSymbol: String,
         currency: Currency,
         startAt: LocalDateTime,
         endAt: LocalDateTime
-    ): Result<Unit> {
-        val mainPreset = getPreset(gameSymbol).getOrElse {
-            return Result.failure(it)
-        }
+    ) {
+        val bet = (presetValue["bet"] as? Number)?.toInt() ?: 0
+        val number = (presetValue["number"] as? Number)?.toInt() ?: 0
+        val lineNumber = (presetValue["paylines"] as? Number)?.toInt() ?: 0
 
-        val validatedValues = FreespinPresetValidator.validate(presetValue, mainPreset).getOrElse {
-            return Result.failure(it)
-        }
-
-        val quantity = validatedValues["quantity"] ?: 0
-        val betAmount = validatedValues["betAmount"] ?: 0
-        val lines = validatedValues["lines"] ?: 0
-
-        val response = client.createFreespin(
-            CreateFreespinDto(
-                id = referenceId,
-
-                startAt = startAt,
-                endAt = endAt,
-
-                number = quantity,
-
-                playerId = playerId,
-
-                currency = currency.value,
-
-                gameId = gameSymbol,
-
-                bet = providerCurrencyAdapter.convertSystemToProvider(betAmount.toLong(), currency).toInt(),
-
-                lineNumber = lines
-            )
-        ).getOrElse {
-            return Result.failure(it)
-        }
-
-        if (!response.success) return Result.failure(
-            AggregatorError("Cannot load game from aggregator OneGameHub. status : ${response.status}")
+        val payload = CreateFreespinDto(
+            id = referenceId,
+            startAt = startAt,
+            endAt = endAt,
+            number = number,
+            playerId = playerId.value,
+            currency = currency.value,
+            gameId = gameSymbol,
+            bet = bet,
+            lineNumber = lineNumber
         )
 
-        return Result.success(Unit)
+        val response = client.createFreespin(payload)
+
+        check(response.success) { "OneGameHub createFreespin failed with status ${response.status}" }
     }
 
-    override suspend fun cancelFreespin(
-        referenceId: String,
-    ): Result<Unit> {
-        return client.cancelFreespin(CancelFreespinDto(referenceId))
-            .map {
-                Unit
-            }
+    override suspend fun cancel(referenceId: String) {
+        val payload = CancelFreespinDto(id = referenceId)
+
+        val response = client.cancelFreespin(payload)
+
+        check(response.success) { "OneGameHub cancelFreespin failed with status ${response.status}" }
     }
 }
