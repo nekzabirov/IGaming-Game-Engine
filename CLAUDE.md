@@ -44,38 +44,11 @@ Two application entrypoints in Docker:
 
 ## Architecture
 
-Hexagonal Architecture + DDD + CQRS.
+Hexagonal Architecture + DDD + CQRS. Kotlin 2.0.21, JDK 21, Ktor 3.0.3 (CIO), Exposed ORM, Koin DI, gRPC + protobuf, RabbitMQ, Redis (Lettuce), AWS S3. Dependency versions managed in `gradle/libs.versions.toml`.
 
-```
-src/main/kotlin/
-├── api/
-│   ├── grpc/                  # gRPC entry points
-│   │   ├── config/            # GrpcExceptionInterceptor (handleGrpcCall), GrpcModule (Koin)
-│   │   ├── mapper/            # Domain→Proto mappers
-│   │   └── service/           # gRPC service impls (Game, Provider, Collection, Aggregator, Freespin)
-│   └── rest/                  # REST endpoints (aggregator webhooks registered via Main.kt routing)
-├── application/
-│   ├── cqrs/                  # ICommand<R>, IQuery<R>, Bus, organized by domain
-│   ├── event/                 # ApplicationEvent sealed interface (SpinEvent, RoundEndEvent, SessionOpenEvent)
-│   ├── port/                  # Port interfaces: storage/ (repositories) + external/ (services) + factory/
-│   └── usecase/               # Orchestrators: OpenSession, ProcessSpin, FinishRound, SyncAggregator
-├── domain/
-│   ├── exception/             # DomainException hierarchy (notfound/, badrequest/, conflict/, forbidden/)
-│   ├── model/                 # Aggregates: Game, GameVariant, Session, Round, Spin, Provider, Collection, Aggregator
-│   ├── service/               # SessionFactory, RoundFactory, SpinFactory, SpinBalanceCalculator
-│   ├── util/                  # Mutable traits: Activatable, Imageable, Orderable
-│   └── vo/                    # Value objects: Identity, Currency, Locale, Amount, PlayerId, SessionToken, etc.
-└── infrastructure/
-    ├── aggregator/            # Aggregator adapters (OneGameHub, Pragmatic, Pateplay)
-    ├── handler/               # CQRS handler implementations organized by domain
-    ├── koin/                  # DI modules (Config, Persistence, External, Usecase, Handler, Bus, Aggregator)
-    ├── persistence/           # Exposed ORM: table/, entity/, mapper/, repository/
-    ├── rabbitmq/              # RabbitMqEventPublisher + PlaceSpinEventConsumer + event mappers
-    ├── redis/                 # PlayerLimitRedis
-    ├── s3/                    # S3FileAdapter
-    ├── unit/                  # CurrencyAdapter, BackgroundWorker
-    └── wallet/                # WalletAdapter (gRPC client to wallet-service)
-```
+Four layers: `api/` (gRPC services + REST webhooks) → `application/` (CQRS commands/queries, use cases, ports, events) → `domain/` (models, value objects, factories, exceptions) → `infrastructure/` (adapters, persistence, aggregators, messaging).
+
+Ports: HTTP 8080 (dev) / 80 (Docker), gRPC 5050.
 
 ## Entrypoints
 
@@ -94,7 +67,7 @@ Boot sequence:
 
 Standalone CLI entrypoint that syncs games from all active aggregators, then exits. Uses `startKoin` directly (not koin-ktor) with 8 modules (no gRPC module, no Application registration). Dispatches `SyncAllActiveAggregatorCommand` via the CQRS Bus.
 
-**Important**: SyncJob does NOT register `Application` in Koin. A `syncOverrideModule` is loaded after `externalModule` to replace `IEventPort` with a no-op implementation (sync doesn't publish events). `PlaceSpinEventConsumer` is still registered but never resolved during sync. If adding new singletons that depend on `Application`, ensure the sync code path doesn't resolve them, or add an override in `syncOverrideModule`.
+**Important**: SyncJob does NOT register `Application` in Koin. A `syncOverrideModule` is loaded after `externalModule` to replace `IEventPort` with a no-op implementation (sync doesn't publish events). If adding new singletons that depend on `Application`, ensure the sync code path doesn't resolve them, or add an override in `syncOverrideModule`.
 
 ## CQRS Pattern
 
@@ -120,22 +93,6 @@ Standalone CLI entrypoint that syncs games from all active aggregators, then exi
 3. **FinishRoundUsecase** — marks round finished → publishes `RoundEndEvent`
 
 Use cases are callable via `operator fun invoke()`, return `Result<Response>`, and take domain models (not DTOs).
-
-## Port Interfaces (application/port/)
-
-**Repository ports** (storage/): `ISessionRepository`, `IRoundRepository`, `ISpinRepository`, `IGameRepository`, `IGameVariantRepository`, `IProviderRepository`, `ICollectionRepository`, `IAggregatorRepository`
-
-**External service ports** (external/):
-- `IWalletPort` — balance, withdraw, deposit → `WalletAdapter` (wallet-service gRPC)
-- `IGamePort` — aggregator game operations: `getAggregatorGames()`, `getDemoUrl()`, `getLunchUrl()`
-- `IFreespinPort` — freespin preset, create, cancel
-- `IPlayerLimitPort` — max place amount enforcement → `PlayerLimitRedis`
-- `ICurrencyPort` — unit conversion → `CurrencyAdapter`
-- `IEventPort` — publish domain events → `RabbitMqEventPublisher`
-- `IBackgroundTaskPort` — fire-and-forget coroutine launcher → `BackgroundWorker`
-- `FilePort` — file upload/storage → `S3FileAdapter`
-
-**Factory port**: `IAggregatoryFactory` — creates `IGamePort`/`IFreespinPort` per aggregator → `AggregatorFabricImpl`
 
 ## Persistence
 
@@ -194,7 +151,7 @@ Each aggregator provides: Config, AdapterFactory, GameAdapter (IGamePort), Frees
 **Main server** (KoinInit.kt): Registers `Application` instance first, then 8 modules:
 `configModule → persistenceModule → externalModule → usecaseModule → handlerModule → busModule → aggregatorModule → grpcModule`
 
-**SyncJob** (SyncJob.kt): Uses `startKoin` directly with 8 modules (no grpcModule, no Application registration; includes `syncOverrideModule` for no-op `IEventPort`).
+**SyncJob** (SyncJob.kt): Same modules minus `grpcModule`, no `Application` registration, includes `syncOverrideModule` for no-op `IEventPort`.
 
 **Application registration**: `RabbitMqEventPublisher` and `PlaceSpinEventConsumer` depend on `io.ktor.server.application.Application` via Koin `get()`. The `Application` instance is explicitly registered in `KoinInit.kt` as `module { single { application } }` because koin-ktor 4.0.3 does not auto-register it.
 
@@ -207,26 +164,7 @@ Each aggregator provides: Config, AdapterFactory, GameAdapter (IGamePort), Frees
 - **Factories**: `object` singletons with validation (e.g., `SessionFactory.create()` checks active status and locale/platform support)
 - **SpinBalanceCalculator**: PLACE deducts (real-first when bonusBet), SETTLE deposits to same pool as original bet, ROLLBACK refunds to original pools
 - **Wallet dependency**: wallet-grpc-client resolved via Gradle `includeBuild` from `../wallete-engine/wallet-grpc-client` (note the "wallete" spelling)
-- **Dependency versions**: Managed via Gradle version catalog in `gradle/libs.versions.toml`
-
-## Tech Stack
-
-| Component | Technology |
-|-----------|-----------|
-| Language | Kotlin 2.0.21, JDK 21 |
-| Server | Ktor 3.0.3 (CIO engine) |
-| ORM | Exposed 0.57.0 + PostgreSQL |
-| DI | Koin 4.0.3 |
-| gRPC | io.grpc 1.68.2, protobuf 4.29.2 |
-| Messaging | RabbitMQ (ktor-server-rabbitmq) |
-| Caching | Redis (Lettuce 6.5.3) |
-| Storage | AWS S3 SDK for Kotlin |
-| Testing | kotlin-test, MockK, kotlinx-coroutines-test |
-
-## Ports
-
-- HTTP: 8080 (dev) / 80 (Docker)
-- gRPC: 5050
+- **File storage interface**: Named `FileAdapter` (not `FilePort`), located in `application/port/external/`
 
 ## CI/CD
 
