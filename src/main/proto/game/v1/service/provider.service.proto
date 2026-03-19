@@ -17,6 +17,8 @@ service ProviderService {
   rpc FindAll(FindAllProviderQuery) returns (FindAllProviderQuery.Result);
 
   rpc UpdateImage(UpdateProviderImageCommand) returns (Empty);
+
+  rpc Batch(BatchProviderQuery) returns (BatchProviderQuery.Result);
 }
 
 message FindProviderQuery {
@@ -55,6 +57,20 @@ message FindAllProviderQuery {
 
       int32 active_game_count = 3;
       int32 deactivate_game_count = 4;
+    }
+  }
+}
+
+message BatchProviderQuery {
+  repeated string identities = 1;
+
+  message Result {
+    repeated Item items = 1;
+
+    repeated AggregatorDto aggregators = 2;
+
+    message Item {
+      ProviderDto provider = 1;
     }
   }
 }

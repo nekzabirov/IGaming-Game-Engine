@@ -6,6 +6,7 @@ import application.cqrs.Bus
 import application.cqrs.collection.SaveCollectionCommand
 import application.cqrs.collection.SetCollectionImageCommand
 import application.cqrs.collection.UpdateCollectionGameCommand
+import com.nekgamebling.game.v1.BatchCollectionQueryKt
 import com.nekgamebling.game.v1.CollectionDto
 import com.nekgamebling.game.v1.CollectionServiceGrpcKt
 import com.nekgamebling.game.v1.Empty
@@ -18,8 +19,10 @@ import domain.vo.LocaleName
 import domain.vo.Pageable
 import io.grpc.Status
 import io.grpc.StatusException
+import com.nekgamebling.game.v1.BatchCollectionQuery as BatchCollectionProto
 import com.nekgamebling.game.v1.FindAllCollectionQuery as FindAllCollectionProto
 import com.nekgamebling.game.v1.FindCollectionQuery as FindCollectionProto
+import application.cqrs.collection.BatchCollectionQuery as BatchCollectionCqrs
 import application.cqrs.collection.FindAllCollectionQuery as FindAllCollectionCqrs
 import application.cqrs.collection.FindCollectionQuery as FindCollectionCqrs
 
@@ -70,6 +73,20 @@ class CollectionGrpcService(
                 }
             })
             totalItems = page.totalItems.toInt()
+        }
+    }
+
+    override suspend fun batch(request: BatchCollectionProto): BatchCollectionProto.Result = handleGrpcCall {
+        val collections = bus(BatchCollectionCqrs(
+            identities = request.identitiesList.map { Identity(it) },
+        ))
+
+        BatchCollectionQueryKt.result {
+            items.addAll(collections.map { collection ->
+                BatchCollectionQueryKt.ResultKt.item {
+                    this.collection = collection.toProto()
+                }
+            })
         }
     }
 

@@ -6,6 +6,7 @@ import api.grpc.mapper.ProviderProtoMapper.toProto
 import application.cqrs.Bus
 import application.cqrs.provider.SaveProviderCommand
 import application.cqrs.provider.SetProviderImageCommand
+import com.nekgamebling.game.v1.BatchProviderQueryKt
 import com.nekgamebling.game.v1.Empty
 import com.nekgamebling.game.v1.FindAllProviderQueryKt
 import com.nekgamebling.game.v1.FindProviderQueryKt
@@ -17,8 +18,10 @@ import domain.vo.Identity
 import domain.vo.Pageable
 import io.grpc.Status
 import io.grpc.StatusException
+import com.nekgamebling.game.v1.BatchProviderQuery as BatchProviderProto
 import com.nekgamebling.game.v1.FindAllProviderQuery as FindAllProviderProto
 import com.nekgamebling.game.v1.FindProviderQuery as FindProviderProto
+import application.cqrs.provider.BatchProviderQuery as BatchProviderCqrs
 import application.cqrs.provider.FindAllProviderQuery as FindAllProviderCqrs
 import application.cqrs.provider.FindProviderQuery as FindProviderCqrs
 
@@ -75,6 +78,23 @@ class ProviderGrpcService(
             })
             aggregators.addAll(uniqueAggregators.map { it.toProto() })
             totalItems = page.totalItems.toInt()
+        }
+    }
+
+    override suspend fun batch(request: BatchProviderProto): BatchProviderProto.Result = handleGrpcCall {
+        val providers = bus(BatchProviderCqrs(
+            identities = request.identitiesList.map { Identity(it) },
+        ))
+
+        val uniqueAggregators = providers.map { it.aggregator }.distinctBy { it.identity.value }
+
+        BatchProviderQueryKt.result {
+            items.addAll(providers.map { provider ->
+                BatchProviderQueryKt.ResultKt.item {
+                    this.provider = provider.toProto()
+                }
+            })
+            aggregators.addAll(uniqueAggregators.map { it.toProto() })
         }
     }
 

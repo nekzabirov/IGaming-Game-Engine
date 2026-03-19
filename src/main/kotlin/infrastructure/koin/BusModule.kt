@@ -7,6 +7,7 @@ import application.cqrs.aggregator.FindAggregatorQuery
 import application.cqrs.aggregator.FindAllAggregatorQuery
 import application.cqrs.aggregator.SaveAggregatorCommand
 import application.cqrs.aggregator.SyncAllActiveAggregatorCommand
+import application.cqrs.collection.BatchCollectionQuery
 import application.cqrs.collection.FindAllCollectionQuery
 import application.cqrs.collection.FindCollectionQuery
 import application.cqrs.collection.SaveCollectionCommand
@@ -25,6 +26,7 @@ import application.cqrs.game.PlayGameCommand
 import application.cqrs.game.RemoveGameFavouriteCommand
 import application.cqrs.game.SaveGameCommand
 import application.cqrs.game.SetGameImageCommand
+import application.cqrs.provider.BatchProviderQuery
 import application.cqrs.provider.FindAllProviderQuery
 import application.cqrs.provider.FindProviderQuery
 import application.cqrs.provider.SaveProviderCommand
@@ -40,6 +42,7 @@ import infrastructure.handler.aggregator.FindAggregatorQueryHandler
 import infrastructure.handler.aggregator.FindAllAggregatorQueryHandler
 import infrastructure.handler.aggregator.SaveAggregatorCommandHandler
 import infrastructure.handler.aggregator.SyncAllActiveAggregatorCommandHandler
+import infrastructure.handler.collection.BatchCollectionQueryHandler
 import infrastructure.handler.collection.FindAllCollectionQueryHandler
 import infrastructure.handler.collection.FindCollectionQueryHandler
 import infrastructure.handler.collection.SaveCollectionCommandHandler
@@ -58,6 +61,7 @@ import infrastructure.handler.game.PlayGameCommandHandler
 import infrastructure.handler.game.RemoveGameFavouriteCommandHandler
 import infrastructure.handler.game.SaveGameCommandHandler
 import infrastructure.handler.game.SetGameImageCommandHandler
+import infrastructure.handler.provider.BatchProviderQueryHandler
 import infrastructure.handler.provider.FindAllProviderQueryHandler
 import infrastructure.handler.provider.FindProviderQueryHandler
 import infrastructure.handler.provider.SaveProviderCommandHandler
@@ -103,8 +107,10 @@ val busModule = module {
                 GetFreespinPresetsQuery::class.java to get<GetFreespinPresetsQueryHandler>(),
                 FindProviderQuery::class.java to get<FindProviderQueryHandler>(),
                 FindAllProviderQuery::class.java to get<FindAllProviderQueryHandler>(),
+                BatchProviderQuery::class.java to get<BatchProviderQueryHandler>(),
                 FindCollectionQuery::class.java to get<FindCollectionQueryHandler>(),
                 FindAllCollectionQuery::class.java to get<FindAllCollectionQueryHandler>(),
+                BatchCollectionQuery::class.java to get<BatchCollectionQueryHandler>(),
                 FindAggregatorQuery::class.java to get<FindAggregatorQueryHandler>(),
                 FindAllAggregatorQuery::class.java to get<FindAllAggregatorQueryHandler>(),
                 FindRoundQuery::class.java to get<FindRoundQueryHandler>(),

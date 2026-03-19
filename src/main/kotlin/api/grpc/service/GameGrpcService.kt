@@ -108,7 +108,9 @@ class GameGrpcService(
     }
 
     override suspend fun batch(request: BatchGameProto): BatchGameProto.Result = handleGrpcCall {
-        val games = bus(BatchGameQuery())
+        val games = bus(BatchGameQuery(
+            identities = request.identitiesList.map { Identity(it) },
+        ))
 
         val uniqueProviders = games.map { it.provider }.distinctBy { it.identity.value }
         val uniqueAggregators = uniqueProviders.map { it.aggregator }.distinctBy { it.identity.value }

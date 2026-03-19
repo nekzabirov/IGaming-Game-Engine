@@ -62,7 +62,7 @@ Boot sequence:
 3. Serialization — kotlinx.serialization JSON with `ignoreUnknownKeys`
 4. Call logging
 5. HTTP routing — registers aggregator webhook routes (OneGameHub, Pragmatic)
-6. gRPC server — launches on separate coroutine (IO dispatcher) with 5 services
+6. gRPC server — launches on separate coroutine (IO dispatcher) with 6 services
 7. Consumers — starts RabbitMQ event consumers
 
 ### Sync Job (SyncJob.kt)
@@ -111,7 +111,7 @@ See `.claude/rules/exposed-database.md` for detailed Exposed ORM conventions.
 Proto files in `src/main/proto/game/v1/`. Package: `game.v1` (Java: `com.nekgamebling.game.v1`).
 
 - DTOs in `dto/` subdirectory as `<name>.dto.proto` (see `.claude/rules/proto-dto.md`)
-- Services in `service/` subdirectory: GameService, CollectionService, ProviderService, AggregatorService, FreespinService
+- Services in `service/` subdirectory: GameService, CollectionService, ProviderService, AggregatorService, FreespinService, WinnerService
 - Full gRPC client API reference: `src/main/proto/API.md`
 
 Each gRPC service extends `*GrpcKt.*CoroutineImplBase`, takes `Bus` as constructor parameter, and wraps every method in `handleGrpcCall { }` which maps `DomainException` → gRPC status codes and stores the exception class name in an `x-exception-name` metadata header for downstream error identification.

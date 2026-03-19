@@ -94,11 +94,13 @@ message FindAllGameQuery.Result {
 
 ### Batch
 
-Fetch all games without filters. Response structure matches `FindAll`.
+Fetch games by identities. Response structure matches `FindAll`.
 
 ```protobuf
 // Request
-message BatchGameQuery {}
+message BatchGameQuery {
+  repeated string identities = 1;  // game identities to fetch
+}
 
 // Response
 message BatchGameQuery.Result {
@@ -190,6 +192,7 @@ Game provider management (e.g. "Pragmatic Play", "NetEnt").
 | `Save` | `ProviderDto` | `Empty` | Create or update a provider |
 | `Find` | `FindProviderQuery` | `FindProviderQuery.Result` | Get provider with game counts |
 | `FindAll` | `FindAllProviderQuery` | `FindAllProviderQuery.Result` | List/filter providers with pagination |
+| `Batch` | `BatchProviderQuery` | `BatchProviderQuery.Result` | Batch fetch providers by identities |
 | `UpdateImage` | `UpdateProviderImageCommand` | `Empty` | Upload/replace a provider image |
 
 ### Save
@@ -250,6 +253,27 @@ message FindAllProviderQuery.Result {
     ProviderDto provider = 1;
     int32 active_game_count = 3;
     int32 deactivate_game_count = 4;
+  }
+}
+```
+
+### Batch
+
+Fetch providers by identities. Returns providers with their aggregators.
+
+```protobuf
+// Request
+message BatchProviderQuery {
+  repeated string identities = 1;  // provider identities to fetch
+}
+
+// Response
+message BatchProviderQuery.Result {
+  repeated Item items = 1;
+  repeated AggregatorDto aggregators = 2;
+
+  message Item {
+    ProviderDto provider = 1;
   }
 }
 ```
@@ -329,6 +353,7 @@ Game collection management (e.g. "Hot Games", "New Releases") with multi-languag
 | `Save` | `CollectionDto` | `Empty` | Create or update a collection |
 | `Find` | `FindCollectionQuery` | `FindCollectionQuery.Result` | Get collection with game/provider counts |
 | `FindAll` | `FindAllCollectionQuery` | `FindAllCollectionQuery.Result` | List/filter collections with pagination |
+| `Batch` | `BatchCollectionQuery` | `BatchCollectionQuery.Result` | Batch fetch collections by identities |
 | `UpdateGames` | `UpdateCollectionGamesCommand` | `Empty` | Add/remove games from a collection |
 | `UpdateImage` | `UpdateCollectionImageCommand` | `Empty` | Upload/replace a collection image |
 
@@ -382,6 +407,26 @@ message FindAllCollectionQuery.Result {
     int32 game_active_count = 2;
     int32 game_deactivate_count = 3;
     int32 provider_count = 4;
+  }
+}
+```
+
+### Batch
+
+Fetch collections by identities.
+
+```protobuf
+// Request
+message BatchCollectionQuery {
+  repeated string identities = 1;  // collection identities to fetch
+}
+
+// Response
+message BatchCollectionQuery.Result {
+  repeated Item items = 1;
+
+  message Item {
+    CollectionDto collection = 1;
   }
 }
 ```

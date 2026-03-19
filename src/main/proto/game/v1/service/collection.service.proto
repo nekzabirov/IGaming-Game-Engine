@@ -18,6 +18,8 @@ service CollectionService {
   rpc UpdateGames(UpdateCollectionGamesCommand) returns (Empty);
 
   rpc UpdateImage(UpdateCollectionImageCommand) returns (Empty);
+
+  rpc Batch(BatchCollectionQuery) returns (BatchCollectionQuery.Result);
 }
 
 message FindCollectionQuery {
@@ -56,6 +58,18 @@ message FindAllCollectionQuery {
       int32 game_deactivate_count = 3;
 
       int32 provider_count = 4;
+    }
+  }
+}
+
+message BatchCollectionQuery {
+  repeated string identities = 1;
+
+  message Result {
+    repeated Item items = 1;
+
+    message Item {
+      CollectionDto collection = 1;
     }
   }
 }

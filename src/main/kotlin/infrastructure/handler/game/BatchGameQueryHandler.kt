@@ -18,7 +18,9 @@ import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransacti
 class BatchGameQueryHandler : IQueryHandler<BatchGameQuery, List<Game>> {
 
     override suspend fun handle(query: BatchGameQuery): List<Game> = newSuspendedTransaction {
-        val entities = GameEntity.all()
+        val identityValues = query.identities.map { it.value }
+
+        val entities = GameEntity.find { GameTable.identity inList identityValues }
             .orderBy(GameTable.sortOrder to SortOrder.ASC)
             .with(GameEntity::provider, GameEntity::collections, ProviderEntity::aggregator)
             .toList()

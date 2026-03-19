@@ -8,6 +8,7 @@ import infrastructure.handler.aggregator.FindAggregatorQueryHandler
 import infrastructure.handler.aggregator.FindAllAggregatorQueryHandler
 import infrastructure.handler.aggregator.SaveAggregatorCommandHandler
 import infrastructure.handler.aggregator.SyncAllActiveAggregatorCommandHandler
+import infrastructure.handler.collection.BatchCollectionQueryHandler
 import infrastructure.handler.collection.FindAllCollectionQueryHandler
 import infrastructure.handler.collection.FindCollectionQueryHandler
 import infrastructure.handler.collection.SaveCollectionCommandHandler
@@ -26,6 +27,7 @@ import infrastructure.handler.game.PlayGameCommandHandler
 import infrastructure.handler.game.RemoveGameFavouriteCommandHandler
 import infrastructure.handler.game.SaveGameCommandHandler
 import infrastructure.handler.game.SetGameImageCommandHandler
+import infrastructure.handler.provider.BatchProviderQueryHandler
 import infrastructure.handler.provider.FindAllProviderQueryHandler
 import infrastructure.handler.provider.FindProviderQueryHandler
 import infrastructure.handler.provider.SaveProviderCommandHandler
@@ -67,12 +69,14 @@ val handlerModule = module {
     single { SaveProviderCommandHandler() }
     single { FindProviderQueryHandler() }
     single { FindAllProviderQueryHandler() }
+    single { BatchProviderQueryHandler() }
     single { SetProviderImageCommandHandler(fileAdapter = get()) }
 
     // Collection
     single { SaveCollectionCommandHandler() }
     single { FindCollectionQueryHandler() }
     single { FindAllCollectionQueryHandler() }
+    single { BatchCollectionQueryHandler() }
     single { SetCollectionImageCommandHandler(fileAdapter = get()) }
     single { UpdateCollectionGameCommandHandler() }
 
