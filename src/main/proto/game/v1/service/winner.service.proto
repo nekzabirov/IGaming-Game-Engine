@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package game.v1;
+
+option java_package = "com.nekgamebling.game.v1";
+option java_multiple_files = true;
+
+import "game/v1/dto/game.dto.proto";
+import "game/v1/dto/common.dto.proto";
+
+service WinnerService {
+  rpc FindAll(FindAllWinnersQuery) returns (FindAllWinnersQuery.Result);
+}
+
+message FindAllWinnersQuery {
+  optional string game_identity = 1;
+
+  optional int64 min_amount = 2;
+
+  optional int64 max_amount = 3;
+
+  optional string currency = 4;
+
+  optional string player_id = 5;
+
+  optional string from_date = 6;
+
+  optional string to_date = 7;
+
+  int32 page_num = 8;
+
+  int32 page_size = 9;
+
+  message Result {
+    repeated WinnerItemDto items = 1;
+
+    int32 total_items = 2;
+
+    int32 total_pages = 3;
+
+    int32 current_page = 4;
+  }
+}
+
+message WinnerItemDto {
+  GameDto game = 1;
+
+  int64 amount = 2;
+
+  string currency = 3;
+
+  string player_id = 4;
+
+  string date = 5;
+}

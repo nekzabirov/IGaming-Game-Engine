@@ -19,6 +19,8 @@ Part of the IGambling platform — see the parent `CLAUDE.md` at `/IGambling/CLA
 ./gradlew runSync              # Run aggregator sync CLI locally
 ```
 
+**Note:** No automated tests exist yet. The test commands are listed for when tests are added.
+
 ## Local Development
 
 ```bash
@@ -110,6 +112,7 @@ Proto files in `src/main/proto/game/v1/`. Package: `game.v1` (Java: `com.nekgame
 
 - DTOs in `dto/` subdirectory as `<name>.dto.proto` (see `.claude/rules/proto-dto.md`)
 - Services in `service/` subdirectory: GameService, CollectionService, ProviderService, AggregatorService, FreespinService
+- Full gRPC client API reference: `src/main/proto/API.md`
 
 Each gRPC service extends `*GrpcKt.*CoroutineImplBase`, takes `Bus` as constructor parameter, and wraps every method in `handleGrpcCall { }` which maps `DomainException` → gRPC status codes and stores the exception class name in an `x-exception-name` metadata header for downstream error identification.
 
@@ -127,7 +130,7 @@ Currently implemented: **OneGameHub** (`infrastructure/aggregator/onegamehub/`),
 
 `AggregatorFabricImpl` routes by `aggregator.integration` string (e.g., `"ONEGAMEHUB"`, `"PRAGMATIC"`, `"PATEPLAY"`) to create the appropriate `IGamePort`/`IFreespinPort` adapters.
 
-Each aggregator provides: Config, AdapterFactory, GameAdapter (IGamePort), FreespinAdapter (IFreespinPort), HttpClient, and Webhook (Ktor Route handler). See `.claude/skills/add-aggregator.md` for the step-by-step guide.
+Each aggregator provides: Config, AdapterFactory, GameAdapter (IGamePort), FreespinAdapter (IFreespinPort), HttpClient, and Webhook (Ktor Route handler). See `.claude/skills/add-aggregator.md` for the step-by-step guide. See `.claude/agents/seed-collections.md` for the collection seeding agent.
 
 **Pragmatic specifics**: Uses MD5 hash authentication (sorted params + secret key), form-encoded POST requests, GET webhook endpoints at `/pragmatic/*.html`, and decimal string amounts (converted to/from minor units via ×100).
 

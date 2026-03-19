@@ -3,6 +3,7 @@ import api.grpc.service.CollectionGrpcService
 import api.grpc.service.FreespinGrpcService
 import api.grpc.service.GameGrpcService
 import api.grpc.service.ProviderGrpcService
+import api.grpc.service.WinnerGrpcService
 import infrastructure.koin.configureKoin
 import infrastructure.persistence.DatabaseConfig
 import infrastructure.persistence.DatabaseFactory
@@ -93,6 +94,7 @@ private fun Application.configureGrpc() {
             .addService(get<CollectionGrpcService>())
             .addService(get<AggregatorGrpcService>())
             .addService(get<FreespinGrpcService>())
+            .addService(get<WinnerGrpcService>())
             .build()
             .start()
 
