@@ -13,9 +13,3 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-
-includeBuild("../wallete-engine/wallet-grpc-client") {
-    dependencySubstitution {
-        substitute(module("com.nekgamebling:wallet-grpc-client")).using(project(":"))
-    }
-}
