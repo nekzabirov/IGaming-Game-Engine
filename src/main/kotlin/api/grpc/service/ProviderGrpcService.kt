@@ -60,6 +60,8 @@ class ProviderGrpcService(
                 query = request.query,
                 active = if (request.hasActive()) request.active else null,
                 aggregatorId = if (request.hasAggregatorIdentity()) request.aggregatorIdentity else null,
+                inTags = request.tagsList,
+                inCollectionIdentities = request.collectionIdentitiesList.map { Identity(it) },
                 pageable = Pageable(request.pageNum, request.pageSize),
             )
         )

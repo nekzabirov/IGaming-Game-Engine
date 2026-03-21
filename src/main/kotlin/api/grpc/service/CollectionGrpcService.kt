@@ -59,6 +59,8 @@ class CollectionGrpcService(
             FindAllCollectionCqrs(
                 query = request.query,
                 active = if (request.hasActive()) request.active else null,
+                inTags = request.tagsList,
+                inProviderIdentities = request.providerIdentitiesList.map { Identity(it) },
                 pageable = Pageable(request.pageNum, request.pageSize),
             )
         )

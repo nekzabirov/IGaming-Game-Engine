@@ -15,9 +15,11 @@ import org.jetbrains.exposed.sql.LongColumnType
 import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.Sum
 import org.jetbrains.exposed.sql.TextColumnType
+import infrastructure.persistence.table.ProviderTable
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.castTo
 import org.jetbrains.exposed.sql.countDistinct
+import org.jetbrains.exposed.sql.exists
 import org.jetbrains.exposed.sql.longLiteral
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
@@ -84,6 +86,36 @@ class FindAllCollectionQueryHandler : IQueryHandler<FindAllCollectionQuery, Page
                 })
             }
             query.active?.let { add(Op.build { CollectionTable.active eq it }) }
+
+            if (query.inTags.isNotEmpty()) {
+                add(exists(
+                    GameCollectionTable
+                        .join(GameTable, JoinType.INNER, GameCollectionTable.game, GameTable.id)
+                        .select(GameCollectionTable.collection)
+                        .where {
+                            (GameCollectionTable.collection eq CollectionTable.id) and
+                                    query.inTags.map { tag ->
+                                        Op.build { GameTable.tags.castTo<String>(TextColumnType()) like "%\"$tag\"%" }
+                                    }.reduce { acc, op -> acc or op }
+                        }
+                ))
+            }
+
+            if (query.inProviderIdentities.isNotEmpty()) {
+                add(exists(
+                    GameCollectionTable
+                        .join(GameTable, JoinType.INNER, GameCollectionTable.game, GameTable.id)
+                        .select(GameCollectionTable.collection)
+                        .where {
+                            (GameCollectionTable.collection eq CollectionTable.id) and
+                                    (GameTable.provider inSubQuery (
+                                            ProviderTable
+                                                .select(ProviderTable.id)
+                                                .where { ProviderTable.identity inList query.inProviderIdentities.map { it.value } }
+                                            ))
+                        }
+                ))
+            }
         }
         return conditions.reduceOrNull { acc, op -> acc and op } ?: Op.TRUE
     }

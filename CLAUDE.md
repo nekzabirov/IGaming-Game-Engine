@@ -50,24 +50,27 @@ Hexagonal Architecture + DDD + CQRS. Kotlin 2.0.21, JDK 21, Ktor 3.0.3 (CIO), Ex
 
 Four layers: `api/` (gRPC services + REST webhooks) → `application/` (CQRS commands/queries, use cases, ports, events) → `domain/` (models, value objects, factories, exceptions) → `infrastructure/` (adapters, persistence, aggregators, messaging).
 
-Ports: HTTP 8080 (dev) / 80 (Docker), gRPC 5050.
+Ports: HTTP 8080 (dev) / 80 (Docker), gRPC 5050. Configurable via `HTTP_PORT` and `GRPC_PORT` env vars.
 
 ## Entrypoints
 
 ### Main Server (Main.kt)
 
-Boot sequence:
-1. Koin DI — registers `Application` instance, then installs 8 modules (config → persistence → external → usecase → handler → bus → aggregator → grpc)
-2. Database — initializes Exposed connection pool, creates tables
-3. Serialization — kotlinx.serialization JSON with `ignoreUnknownKeys`
-4. Call logging
-5. HTTP routing — registers aggregator webhook routes (OneGameHub, Pragmatic)
-6. gRPC server — launches on separate coroutine (IO dispatcher) with 6 services
-7. Consumers — starts RabbitMQ event consumers
+Boot sequence (each step is a `configure*()` extension function on `Application`):
+1. `configureKoin()` — registers `Application` instance, then installs 8 modules (config → persistence → external → usecase → handler → bus → aggregator → grpc)
+2. `configureDatabase()` — initializes Exposed connection pool, creates tables
+3. `configureSerialization()` — kotlinx.serialization JSON with `ignoreUnknownKeys`
+4. `configureCallLogging()`
+5. `configureRabbitMq()` — installs RabbitMQ plugin
+6. `configureRouting()` — registers aggregator webhook routes under `/api/webhook` (defined in `api/rest/RestModule.kt`)
+7. `configureGrpc()` — launches gRPC server on separate coroutine (IO dispatcher) with 6 services (defined in `api/grpc/GrpcModule.kt`)
+8. `configureConsumers()` — starts RabbitMQ event consumers
+
+Environment variables: `HTTP_PORT` (default 8080), `GRPC_PORT` (default 5050).
 
 ### Sync Job (SyncJob.kt)
 
-Standalone CLI entrypoint that syncs games from all active aggregators, then exits. Uses `startKoin` directly (not koin-ktor) with 8 modules (no gRPC module, no Application registration). Dispatches `SyncAllActiveAggregatorCommand` via the CQRS Bus.
+Standalone CLI entrypoint that syncs games from all active aggregators, then exits. Uses `startKoin` directly (not koin-ktor) with same modules minus `grpcModule`, no `Application` registration. Dispatches `SyncAllActiveAggregatorCommand` via the CQRS Bus.
 
 **Important**: SyncJob does NOT register `Application` in Koin. A `syncOverrideModule` is loaded after `externalModule` to replace `IEventPort` with a no-op implementation (sync doesn't publish events). If adding new singletons that depend on `Application`, ensure the sync code path doesn't resolve them, or add an override in `syncOverrideModule`.
 
@@ -151,8 +154,10 @@ Each aggregator provides: Config, AdapterFactory, GameAdapter (IGamePort), Frees
 
 **Module install order matters** — dependencies must be installed before dependents.
 
-**Main server** (KoinInit.kt): Registers `Application` instance first, then 8 modules:
+**Main server** (`infrastructure/koin/KoinInit.kt`): Registers `Application` instance first, then 8 modules:
 `configModule → persistenceModule → externalModule → usecaseModule → handlerModule → busModule → aggregatorModule → grpcModule`
+
+The `grpcModule` is defined in `api/grpc/config/` and registers gRPC service singletons. All other modules are in `infrastructure/koin/`.
 
 **SyncJob** (SyncJob.kt): Same modules minus `grpcModule`, no `Application` registration, includes `syncOverrideModule` for no-op `IEventPort`.
 
@@ -166,7 +171,7 @@ Each aggregator provides: Config, AdapterFactory, GameAdapter (IGamePort), Frees
 - **Monetary values**: `Long` in minor units internally, `string` in proto for BigInteger precision
 - **Factories**: `object` singletons with validation (e.g., `SessionFactory.create()` checks active status and locale/platform support)
 - **SpinBalanceCalculator**: PLACE deducts (real-first when bonusBet), SETTLE deposits to same pool as original bet, ROLLBACK refunds to original pools
-- **Wallet dependency**: wallet-grpc-client resolved via Gradle `includeBuild` from `../wallete-engine/wallet-grpc-client` (note the "wallete" spelling)
+- **Wallet dependency**: wallet proto resolved via direct `srcDir("../wallete-engine/proto")` source reference in `build.gradle.kts` (note the "wallete" spelling)
 - **File storage interface**: Named `FileAdapter` (not `FilePort`), located in `application/port/external/`
 
 ## CI/CD

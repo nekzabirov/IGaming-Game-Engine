@@ -241,6 +241,8 @@ message FindAllProviderQuery {
   optional string aggregator_identity = 3;   // Filter by aggregator
   int32 page_num = 4;
   int32 page_size = 5;
+  repeated string tags = 6;                  // Filter by game tags (providers having games with these tags)
+  repeated string collection_identities = 7; // Filter by collection identities (providers having games in these collections)
 }
 
 // Response
@@ -395,6 +397,8 @@ message FindAllCollectionQuery {
   optional bool active = 2;
   int32 page_num = 3;
   int32 page_size = 4;
+  repeated string tags = 5;            // Filter by game tags (collections containing games with these tags)
+  repeated string provider_identities = 6;  // Filter by provider identities (collections containing games from these providers)
 }
 
 // Response

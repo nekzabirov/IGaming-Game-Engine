@@ -45,6 +45,10 @@ message FindAllCollectionQuery {
 
   int32 page_size = 4;
 
+  repeated string tags = 5;
+
+  repeated string provider_identities = 6;
+
   message Result {
     repeated Item items = 1;
 

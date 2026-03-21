@@ -45,6 +45,10 @@ message FindAllProviderQuery {
 
   int32 page_size = 5;
 
+  repeated string tags = 6;
+
+  repeated string collection_identities = 7;
+
   message Result {
     repeated Item items = 1;
 

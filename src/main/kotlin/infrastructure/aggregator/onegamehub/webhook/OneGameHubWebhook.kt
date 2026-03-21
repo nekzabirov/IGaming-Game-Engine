@@ -16,7 +16,7 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
 
-class OneGameHubWebhook(private val bus: Bus) {
+class  OneGameHubWebhook(private val bus: Bus) {
 
     private val Parameters.amount get() = this["amount"]!!.toLong()
     private val Parameters.gameSymbol get() = this["game_id"]!!

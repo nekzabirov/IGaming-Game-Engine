@@ -1,9 +1,12 @@
+import api.grpc.configureGrpc
 import api.grpc.service.AggregatorGrpcService
 import api.grpc.service.CollectionGrpcService
 import api.grpc.service.FreespinGrpcService
 import api.grpc.service.GameGrpcService
 import api.grpc.service.ProviderGrpcService
 import api.grpc.service.WinnerGrpcService
+import api.rest.configureRouting
+import api.rest.httpPort
 import infrastructure.koin.configureKoin
 import infrastructure.persistence.DatabaseConfig
 import infrastructure.persistence.DatabaseFactory
@@ -74,45 +77,7 @@ private fun Application.configureRabbitMq() {
     }
 }
 
-private fun Application.configureRouting() {
-    val oneGameHubWebhook = get<OneGameHubWebhook>()
-    val pragmaticWebhook = get<PragmaticWebhook>()
-
-    routing {
-        with(oneGameHubWebhook) { route() }
-        with(pragmaticWebhook) { route() }
-    }
-}
-
-private fun Application.configureGrpc() {
-    val grpcPort = grpcPort()
-
-    launch(Dispatchers.IO) {
-        val server = ServerBuilder.forPort(grpcPort)
-            .addService(get<GameGrpcService>())
-            .addService(get<ProviderGrpcService>())
-            .addService(get<CollectionGrpcService>())
-            .addService(get<AggregatorGrpcService>())
-            .addService(get<FreespinGrpcService>())
-            .addService(get<WinnerGrpcService>())
-            .build()
-            .start()
-
-        logger.info("gRPC server started on port $grpcPort")
-
-        Runtime.getRuntime().addShutdownHook(Thread {
-            server.shutdown()
-        })
-
-        server.awaitTermination()
-    }
-}
-
 private fun Application.configureConsumers() {
     val consumer = get<PlaceSpinEventConsumer>()
     consumer.start()
 }
-
-private fun httpPort(): Int = System.getenv("HTTP_PORT")?.toIntOrNull() ?: 8080
-
-private fun grpcPort(): Int = System.getenv("GRPC_PORT")?.toIntOrNull() ?: 5050
