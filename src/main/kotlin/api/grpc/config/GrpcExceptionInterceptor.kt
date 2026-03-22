@@ -16,6 +16,8 @@ val EXCEPTION_NAME_KEY: Metadata.Key<String> =
 suspend fun <T> handleGrpcCall(block: suspend () -> T): T {
     try {
         return block()
+    } catch (e: StatusException) {
+        throw e
     } catch (e: DomainException) {
         val status = when (e) {
             is NotFoundException -> Status.NOT_FOUND
@@ -28,5 +30,7 @@ suspend fun <T> handleGrpcCall(block: suspend () -> T): T {
         val metadata = Metadata()
         metadata.put(EXCEPTION_NAME_KEY, e::class.simpleName ?: "Unknown")
         throw StatusException(status.withDescription(e.message), metadata)
+    } catch (e: Exception) {
+        throw StatusException(Status.INTERNAL.withDescription("Internal server error"))
     }
 }
