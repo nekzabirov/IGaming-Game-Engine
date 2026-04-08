@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package game.v1;
+
+option java_multiple_files = true;
+option java_package = "com.nekgamebling.game.v1";
+
+import "game/v1/dto/game.dto.proto";
+import "game/v1/dto/provider.dto.proto";
+import "game/v1/dto/aggregator.dto.proto";
+import "game/v1/dto/collection.dto.proto";
+
+// Paged denormalized game-list result. Shared between every paged
+// game-listing RPC:
+//   - GameService.FindAll
+//   - GameService.FindAllPlayerFavourite
+//   - CollectionService.FindAllGame
+//
+// Join the denormalized sets back to each item by identity:
+//   - `GameDto.provider_identity`      → `providers`
+//   - `ProviderDto.aggregator_identity` → `aggregators`
+//   - `GameDto.collection_identities`  → `collections`
+message GamePageDto {
+  repeated GameDto items = 1;
+
+  repeated ProviderDto providers = 2;
+
+  repeated AggregatorDto aggregators = 3;
+
+  repeated CollectionDto collections = 4;
+
+  int32 total_items = 5;
+}

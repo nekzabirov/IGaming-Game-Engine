@@ -15,16 +15,12 @@ import infrastructure.persistence.entity.GameEntity
 import infrastructure.persistence.entity.ProviderEntity
 import infrastructure.persistence.mapper.GameMapper.toDomain
 import infrastructure.persistence.table.CollectionTable
-import infrastructure.persistence.table.GameCollectionTable
-import infrastructure.persistence.table.GameFavouriteTable
 import infrastructure.persistence.table.GameTable
 import infrastructure.persistence.table.ProviderTable
 import org.jetbrains.exposed.dao.with
 import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.batchUpsert
-import org.jetbrains.exposed.sql.deleteWhere
 
 class GameRepositoryImpl : IGameRepository {
 
@@ -137,19 +133,6 @@ class GameRepositoryImpl : IGameRepository {
                 GameEntity.find { GameTable.identity eq identity.value }.firstOrNull()
             ) { GameNotFoundException() }
             entity.images = entity.images.toMutableMap().apply { put(key, url) }
-        }
-    }
-
-    override suspend fun deleteByIdentity(identity: Identity) {
-        dbTransaction {
-            val entity = domainRequireNotNull(
-                GameEntity.find { GameTable.identity eq identity.value }.firstOrNull()
-            ) { GameNotFoundException() }
-
-            val gameId = entity.id
-            GameFavouriteTable.deleteWhere { game eq gameId }
-            GameCollectionTable.deleteWhere { game eq gameId }
-            entity.delete()
         }
     }
 }

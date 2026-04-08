@@ -41,7 +41,6 @@ class SetImageCommandHandlerTest : FunSpec({
         override suspend fun addImage(identity: Identity, key: String, url: String) {
             calls += Triple(identity, key, url)
         }
-        override suspend fun deleteByIdentity(identity: Identity) = Unit
     }
 
     class FakeProviderRepo : IProviderRepository {
@@ -54,7 +53,6 @@ class SetImageCommandHandlerTest : FunSpec({
         override suspend fun addImage(identity: Identity, key: String, url: String) {
             calls += Triple(identity, key, url)
         }
-        override suspend fun deleteByIdentity(identity: Identity) = Unit
     }
 
     class FakeCollectionRepo : ICollectionRepository {
@@ -65,7 +63,6 @@ class SetImageCommandHandlerTest : FunSpec({
         override suspend fun addImage(identity: Identity, key: String, url: String) {
             calls += Triple(identity, key, url)
         }
-        override suspend fun deleteByIdentity(identity: Identity) = Unit
     }
 
     class FakeFileAdapter : FileAdapter {

@@ -16,7 +16,6 @@ import infrastructure.persistence.table.AggregatorTable
 import infrastructure.persistence.table.ProviderTable
 import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.batchUpsert
-import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.upsert
 
@@ -101,15 +100,6 @@ class ProviderRepositoryImpl : IProviderRepository {
                 ProviderEntity.find { ProviderTable.identity eq identity.value }.firstOrNull()
             ) { ProviderNotFoundException() }
             entity.images = entity.images.toMutableMap().apply { put(key, url) }
-        }
-    }
-
-    override suspend fun deleteByIdentity(identity: Identity) {
-        dbTransaction {
-            val entity = domainRequireNotNull(
-                ProviderEntity.find { ProviderTable.identity eq identity.value }.firstOrNull()
-            ) { ProviderNotFoundException() }
-            entity.delete()
         }
     }
 }

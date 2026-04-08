@@ -10,7 +10,8 @@ import "game/v1/dto/provider.dto.proto";
 import "game/v1/dto/common.dto.proto";
 
 // ---------------------------------------------------------------------------
-// Provider catalog service — full CRUD.
+// Provider catalog service — read + upsert. Providers are contract artefacts
+// and cannot be deleted once registered.
 //
 // Every Save is a typed upsert mirroring
 // `application.command.provider.SaveProviderCommand`. FindAll takes a
@@ -24,8 +25,6 @@ service ProviderService {
   rpc FindAll(FindAllProviderQuery) returns (FindAllProviderQuery.Result);
 
   rpc Batch(BatchProviderQuery) returns (BatchProviderQuery.Result);
-
-  rpc Delete(DeleteProviderCommand) returns (Empty);
 
   rpc UpdateImage(UpdateProviderImageCommand) returns (Empty);
 }
@@ -44,10 +43,6 @@ message SaveProviderCommand {
   bool active = 4;
 
   string aggregator_identity = 5;
-}
-
-message DeleteProviderCommand {
-  string identity = 1;
 }
 
 message UpdateProviderImageCommand {

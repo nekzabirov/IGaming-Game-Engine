@@ -7,13 +7,19 @@ option java_multiple_files = true;
 
 import "game/v1/dto/collection.dto.proto";
 import "game/v1/dto/common.dto.proto";
+import "game/v1/dto/game_filter.dto.proto";
+import "game/v1/dto/game_page.dto.proto";
 
 // ---------------------------------------------------------------------------
-// Collection catalog service — full CRUD plus game-membership management.
+// Collection catalog service — read + upsert plus game-membership management.
+// Collections are contract artefacts and cannot be deleted once created.
 //
 // Every Save is a typed upsert (create-or-update) with explicit fields,
 // mirroring `application.command.collection.SaveCollectionCommand` on the
 // Kotlin side. FindAll takes a dedicated CollectionFilter sub-message.
+// FindAllGame returns the games that belong to a given collection — same
+// filter and response shape as `GameService.FindAll`, plus the collection
+// identity the caller is narrowing by.
 // ---------------------------------------------------------------------------
 service CollectionService {
   rpc Save(SaveCollectionCommand) returns (Empty);
@@ -24,7 +30,7 @@ service CollectionService {
 
   rpc Batch(BatchCollectionQuery) returns (BatchCollectionQuery.Result);
 
-  rpc Delete(DeleteCollectionCommand) returns (Empty);
+  rpc FindAllGame(FindAllGameCollectionQuery) returns (GamePageDto);
 
   rpc UpdateGames(UpdateCollectionGamesCommand) returns (Empty);
 
@@ -44,10 +50,6 @@ message SaveCollectionCommand {
   bool active = 3;
 
   int32 order = 4;
-}
-
-message DeleteCollectionCommand {
-  string identity = 1;
 }
 
 message UpdateCollectionGamesCommand {
@@ -110,4 +112,17 @@ message BatchCollectionQuery {
   message Result {
     repeated CollectionDto items = 1;
   }
+}
+
+// Paged game listing narrowed to a specific collection. Uses the shared
+// `GameFilter` and returns the shared `GamePageDto` — the only extra input
+// is `collection_identity`, which picks which collection's games to read.
+message FindAllGameCollectionQuery {
+  string collection_identity = 1;
+
+  GameFilter filter = 2;
+
+  int32 page_num = 3;
+
+  int32 page_size = 4;
 }

@@ -12,10 +12,8 @@ import infrastructure.persistence.dbTransaction
 import infrastructure.persistence.entity.CollectionEntity
 import infrastructure.persistence.mapper.CollectionMapper.toCollection
 import infrastructure.persistence.table.CollectionTable
-import infrastructure.persistence.table.GameCollectionTable
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.upsert
 
@@ -64,18 +62,6 @@ class CollectionRepositoryImpl : ICollectionRepository {
                 CollectionEntity.find { CollectionTable.identity eq identity.value }.firstOrNull()
             ) { CollectionNotFoundException() }
             entity.images = entity.images.toMutableMap().apply { put(key, url) }
-        }
-    }
-
-    override suspend fun deleteByIdentity(identity: Identity) {
-        dbTransaction {
-            val entity = domainRequireNotNull(
-                CollectionEntity.find { CollectionTable.identity eq identity.value }.firstOrNull()
-            ) { CollectionNotFoundException() }
-
-            val collectionId = entity.id
-            GameCollectionTable.deleteWhere { collection eq collectionId }
-            entity.delete()
         }
     }
 }

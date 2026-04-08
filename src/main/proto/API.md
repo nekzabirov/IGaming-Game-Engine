@@ -6,20 +6,20 @@ Package: `game.v1` | Java package: `com.nekgamebling.game.v1`
 
 ## GameService
 
-Game catalog management, launching, and player favorites.
+Game catalog management, launching, and player favorites. Games are contract artefacts and cannot be deleted once registered.
 
 | RPC | Request | Response | Description |
 |-----|---------|----------|-------------|
 | `Save` | `SaveGameCommand` | `Empty` | Create or update a game |
 | `Find` | `FindGameQuery` | `FindGameQuery.Result` | Get a single game by identity |
-| `FindAll` | `FindAllGameQuery` | `FindAllGameQuery.Result` | List/filter games with pagination |
+| `FindAll` | `FindAllGameQuery` | `GamePageDto` | List/filter games with pagination |
 | `Batch` | `BatchGameQuery` | `BatchGameQuery.Result` | Batch fetch games |
-| `Delete` | `DeleteGameCommand` | `Empty` | Hard-delete a game by identity |
 | `UpdateImage` | `UpdateGameImageCommand` | `Empty` | Upload/replace a game image |
 | `Play` | `PlayGameCommand` | `PlayGameCommand.Result` | Open a real-money game session |
 | `OpenDemo` | `OpenDemoQuery` | `OpenDemoQuery.Result` | Open a demo game session |
 | `AddFavourite` | `GameFavouriteCommand` | `Empty` | Add game to player favorites |
 | `RemoveFavourite` | `GameFavouriteCommand` | `Empty` | Remove game from player favorites |
+| `FindAllPlayerFavourite` | `FindAllGamePlayerFavouriteQuery` | `GamePageDto` | List a player's favourite games with the same filter/shape as `FindAll` |
 
 ### Save
 
@@ -57,45 +57,18 @@ message FindGameQuery.Result {
 
 ### FindAll
 
-Paginated game listing with filters. Returns games with providers, aggregators, and collections used across the result set.
+Paginated game listing with filters. Returns the shared `GamePageDto` — the same response type every paged game-listing RPC uses.
 
 ```protobuf
-// Reusable filter shape — also used by future game-listing RPCs
-message GameFilter {
-  string query = 1;                              // Free-text search
-  optional bool active = 2;                      // Filter by active status
-  optional string provider_identity = 3;         // Filter by provider
-  repeated string tags = 4;                      // Filter by tags
-  optional bool bonus_bet_enable = 5;
-  optional bool bonus_wagering_enable = 6;
-  optional bool free_spin_enable = 7;
-  optional bool free_chip_enable = 8;
-  optional bool jackpot_enable = 9;
-  optional bool demo_enable = 10;
-  optional bool bonus_buy_enable = 11;
-}
-
 // Request
 message FindAllGameQuery {
   GameFilter filter = 1;                         // Filter criteria
   int32 page_num = 2;                            // Page number (0-based)
   int32 page_size = 3;                           // Items per page
 }
-
-// Response
-message FindAllGameQuery.Result {
-  repeated Item items = 1;                       // Game + provider pairs
-  repeated ProviderDto providers = 2;            // All referenced providers
-  repeated AggregatorDto aggregators = 3;        // All referenced aggregators
-  repeated CollectionDto collections = 4;        // All referenced collections
-  int32 total_items = 5;                         // Total count for pagination
-
-  message Item {
-    GameDto game = 1;
-    ProviderDto provider = 2;
-  }
-}
 ```
+
+`GameFilter` and `GamePageDto` both live in `game/v1/dto/` — see [Shared game-listing DTOs](#shared-game-listing-dtos) below.
 
 ### Batch
 
@@ -109,25 +82,10 @@ message BatchGameQuery {
 
 // Response
 message BatchGameQuery.Result {
-  repeated Item items = 1;
+  repeated GameDto items = 1;
   repeated ProviderDto providers = 2;
   repeated AggregatorDto aggregators = 3;
   repeated CollectionDto collections = 4;
-
-  message Item {
-    GameDto game = 1;
-    ProviderDto provider = 2;
-  }
-}
-```
-
-### Delete
-
-Hard-delete a game by identity. Cascades through `GameFavouriteTable` and `GameCollectionTable` association rows. Raises `GameNotFoundException` (`NOT_FOUND`) if the game does not exist.
-
-```protobuf
-message DeleteGameCommand {
-  string identity = 1;
 }
 ```
 
@@ -196,6 +154,22 @@ message GameFavouriteCommand {
 }
 ```
 
+### FindAllPlayerFavourite
+
+Paginated listing of the games a specific player has favourited. Uses the shared `GameFilter` and returns the shared `GamePageDto` — the only extra input is `player_id`.
+
+```protobuf
+// Request
+message FindAllGamePlayerFavouriteQuery {
+  string player_id = 1;      // Player UUID whose favourites to read
+  GameFilter filter = 2;     // Shared filter — see Shared game-listing DTOs
+  int32 page_num = 3;
+  int32 page_size = 4;
+}
+```
+
+Response: `GamePageDto` (see [Shared game-listing DTOs](#shared-game-listing-dtos)).
+
 ---
 
 ## ProviderService
@@ -205,11 +179,12 @@ Game provider management (e.g. "Pragmatic Play", "NetEnt").
 | RPC | Request | Response | Description |
 |-----|---------|----------|-------------|
 | `Save` | `SaveProviderCommand` | `Empty` | Create or update a provider |
-| `Find` | `FindProviderQuery` | `FindProviderQuery.Result` | Get provider with game counts |
+| `Find` | `FindProviderQuery` | `FindProviderQuery.Result` | Get provider with denormalized aggregator |
 | `FindAll` | `FindAllProviderQuery` | `FindAllProviderQuery.Result` | List/filter providers with pagination |
 | `Batch` | `BatchProviderQuery` | `BatchProviderQuery.Result` | Batch fetch providers by identities |
-| `Delete` | `DeleteProviderCommand` | `Empty` | Hard-delete a provider by identity |
 | `UpdateImage` | `UpdateProviderImageCommand` | `Empty` | Upload/replace a provider image |
+
+Providers are contract artefacts and cannot be deleted once registered.
 
 ### Save
 
@@ -284,16 +259,6 @@ message BatchProviderQuery {
 message BatchProviderQuery.Result {
   repeated ProviderDto items = 1;
   repeated AggregatorDto aggregators = 2;
-}
-```
-
-### Delete
-
-Hard-delete a provider by identity. Raises `ProviderNotFoundException` (`NOT_FOUND`) if missing. Callers must delete dependent games first — the underlying FK will reject otherwise.
-
-```protobuf
-message DeleteProviderCommand {
-  string identity = 1;
 }
 ```
 
@@ -411,12 +376,14 @@ Game collection management (e.g. "Hot Games", "New Releases") with multi-languag
 | RPC | Request | Response | Description |
 |-----|---------|----------|-------------|
 | `Save` | `SaveCollectionCommand` | `Empty` | Create or update a collection |
-| `Find` | `FindCollectionQuery` | `FindCollectionQuery.Result` | Get collection with game/provider counts |
+| `Find` | `FindCollectionQuery` | `FindCollectionQuery.Result` | Get a single collection by identity |
 | `FindAll` | `FindAllCollectionQuery` | `FindAllCollectionQuery.Result` | List/filter collections with pagination |
 | `Batch` | `BatchCollectionQuery` | `BatchCollectionQuery.Result` | Batch fetch collections by identities |
-| `Delete` | `DeleteCollectionCommand` | `Empty` | Hard-delete a collection by identity |
+| `FindAllGame` | `FindAllGameCollectionQuery` | `GamePageDto` | List the games that belong to a given collection (same shape as `GameService.FindAll`) |
 | `UpdateGames` | `UpdateCollectionGamesCommand` | `Empty` | Add/remove games from a collection |
 | `UpdateImage` | `UpdateCollectionImageCommand` | `Empty` | Upload/replace a collection image |
+
+Collections are contract artefacts and cannot be deleted once created.
 
 ### Save
 
@@ -489,15 +456,21 @@ message BatchCollectionQuery.Result {
 }
 ```
 
-### Delete
+### FindAllGame
 
-Hard-delete a collection by identity. Cascades through `GameCollectionTable` association rows. Raises `CollectionNotFoundException` (`NOT_FOUND`) if missing.
+Paginated listing of the games that belong to a specific collection. Uses the shared `GameFilter` and returns the shared `GamePageDto` — the only extra input is `collection_identity`.
 
 ```protobuf
-message DeleteCollectionCommand {
-  string identity = 1;
+// Request
+message FindAllGameCollectionQuery {
+  string collection_identity = 1;  // Collection whose games to read
+  GameFilter filter = 2;           // Shared filter — see Shared game-listing DTOs
+  int32 page_num = 3;
+  int32 page_size = 4;
 }
 ```
+
+Response: `GamePageDto` (see [Shared game-listing DTOs](#shared-game-listing-dtos)).
 
 ### UpdateGames
 
@@ -703,6 +676,51 @@ message CollectionDto {
   int32 order = 5;
 }
 ```
+
+## Shared game-listing DTOs
+
+Both `GameFilter` and `GamePageDto` live in dedicated DTO files (`game/v1/dto/game_filter.dto.proto`, `game/v1/dto/game_page.dto.proto`) so every game-listing RPC can share the same request filter and response shape without any service importing another service.
+
+### GameFilter
+
+Reusable filter used by `GameService.FindAll`, `GameService.FindAllPlayerFavourite`, and `CollectionService.FindAllGame`. Every boolean is tri-state via `optional` — an unset field means "do not filter on this flag".
+
+```protobuf
+message GameFilter {
+  string query = 1;                      // Free-text search
+  optional bool active = 2;
+  optional string provider_identity = 3;
+  repeated string tags = 4;
+  optional bool bonus_bet_enable = 5;
+  optional bool bonus_wagering_enable = 6;
+  optional bool free_spin_enable = 7;
+  optional bool free_chip_enable = 8;
+  optional bool jackpot_enable = 9;
+  optional bool demo_enable = 10;
+  optional bool bonus_buy_enable = 11;
+}
+```
+
+### GamePageDto
+
+Shared paged response for every paged game-listing RPC. The denormalized sets are joined back to each item by identity, so the wire payload never ships the same provider/aggregator/collection twice.
+
+```protobuf
+message GamePageDto {
+  repeated GameDto items = 1;
+  repeated ProviderDto providers = 2;     // All referenced providers (denormalized)
+  repeated AggregatorDto aggregators = 3; // All referenced aggregators (denormalized)
+  repeated CollectionDto collections = 4; // All referenced collections (denormalized)
+  int32 total_items = 5;                  // Total count for pagination
+}
+```
+
+Join rules:
+- `GameDto.provider_identity` → `providers`
+- `ProviderDto.aggregator_identity` → `aggregators`
+- `GameDto.collection_identities` → `collections`
+
+Note: `BatchGameQuery` has its own nested Result because it is not paged — it omits `total_items`.
 
 ---
 

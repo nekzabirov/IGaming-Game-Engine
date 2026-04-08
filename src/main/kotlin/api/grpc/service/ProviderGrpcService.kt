@@ -4,7 +4,6 @@ import api.grpc.config.handleGrpcCall
 import api.grpc.mapper.AggregatorProtoMapper.toProto
 import api.grpc.mapper.ProviderProtoMapper.toProto
 import application.Bus
-import application.command.provider.DeleteProviderCommand
 import application.command.provider.SaveProviderCommand
 import application.command.provider.SetProviderImageCommand
 import com.nekgamebling.game.v1.BatchProviderQueryKt
@@ -18,7 +17,6 @@ import domain.vo.FileUpload
 import domain.vo.Identity
 import domain.vo.Pageable
 import com.nekgamebling.game.v1.BatchProviderQuery as BatchProviderProto
-import com.nekgamebling.game.v1.DeleteProviderCommand as DeleteProviderProto
 import com.nekgamebling.game.v1.FindAllProviderQuery as FindAllProviderProto
 import com.nekgamebling.game.v1.FindProviderQuery as FindProviderProto
 import com.nekgamebling.game.v1.SaveProviderCommand as SaveProviderProto
@@ -89,11 +87,6 @@ class ProviderGrpcService(
             items.addAll(providers.map { it.toProto() })
             aggregators.addAll(uniqueAggregators.map { it.toProto() })
         }
-    }
-
-    override suspend fun delete(request: DeleteProviderProto): Empty = handleGrpcCall {
-        bus(DeleteProviderCommand(identity = Identity(request.identity)))
-        Empty.getDefaultInstance()
     }
 
     override suspend fun updateImage(request: UpdateProviderImageCommand): Empty = handleGrpcCall {

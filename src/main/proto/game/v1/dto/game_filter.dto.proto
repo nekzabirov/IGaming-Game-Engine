@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package game.v1;
+
+option java_multiple_files = true;
+option java_package = "com.nekgamebling.game.v1";
+
+// Shared filter for every game-listing query. Every boolean is tri-state
+// via `optional` — "unset" means "do not filter on this flag".
+//
+// Consumed by `GameService.FindAll`, `GameService.FindAllPlayerFavourite`,
+// and `CollectionService.FindAllGame`, so this lives in the dto/ folder
+// to keep services from importing each other.
+message GameFilter {
+  string query = 1;
+
+  optional bool active = 2;
+
+  optional string provider_identity = 3;
+
+  repeated string tags = 4;
+
+  optional bool bonus_bet_enable = 5;
+
+  optional bool bonus_wagering_enable = 6;
+
+  optional bool free_spin_enable = 7;
+
+  optional bool free_chip_enable = 8;
+
+  optional bool jackpot_enable = 9;
+
+  optional bool demo_enable = 10;
+
+  optional bool bonus_buy_enable = 11;
+}

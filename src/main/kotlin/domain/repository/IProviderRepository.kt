@@ -19,6 +19,4 @@ interface IProviderRepository {
 
     suspend fun addImage(identity: Identity, key: String, url: String)
 
-    suspend fun deleteByIdentity(identity: Identity)
-
 }

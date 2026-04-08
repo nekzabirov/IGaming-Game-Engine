@@ -7,7 +7,6 @@ import infrastructure.handler.aggregator.FindAllAggregatorQueryHandler
 import infrastructure.handler.aggregator.SaveAggregatorCommandHandler
 import infrastructure.handler.aggregator.SyncAllActiveAggregatorCommandHandler
 import infrastructure.handler.collection.BatchCollectionQueryHandler
-import infrastructure.handler.collection.DeleteCollectionCommandHandler
 import infrastructure.handler.collection.FindAllCollectionQueryHandler
 import infrastructure.handler.collection.FindCollectionQueryHandler
 import infrastructure.handler.collection.SaveCollectionCommandHandler
@@ -17,7 +16,7 @@ import infrastructure.handler.freespin.CancelFreespinCommandHandler
 import infrastructure.handler.freespin.CreateFreespinCommandHandler
 import infrastructure.handler.game.AddGameFavouriteCommandHandler
 import infrastructure.handler.game.BatchGameQueryHandler
-import infrastructure.handler.game.DeleteGameCommandHandler
+import infrastructure.handler.game.FindAllGameCollectionQueryHandler
 import infrastructure.handler.game.FindAllGamePlayerFavoriteQueryHandler
 import infrastructure.handler.game.FindAllGameQueryHandler
 import infrastructure.handler.game.FindGameQueryHandler
@@ -27,7 +26,6 @@ import infrastructure.handler.game.PlayGameCommandHandler
 import infrastructure.handler.game.RemoveGameFavouriteCommandHandler
 import infrastructure.handler.game.SaveGameCommandHandler
 import infrastructure.handler.provider.BatchProviderQueryHandler
-import infrastructure.handler.provider.DeleteProviderCommandHandler
 import infrastructure.handler.provider.FindAllProviderQueryHandler
 import infrastructure.handler.provider.FindProviderQueryHandler
 import infrastructure.handler.provider.SaveProviderCommandHandler
@@ -58,12 +56,12 @@ val handlerModule = module {
     // Game
     single { PlayGameCommandHandler(gameVariantRepository = get(), playerLimitPort = get(), openSessionUsecase = get()) }
     single { SaveGameCommandHandler(gameRepository = get(), providerRepository = get()) }
-    single { DeleteGameCommandHandler(gameRepository = get()) }
     single { FindGameQueryHandler() }
     single { FindAllGameQueryHandler() }
     single { BatchGameQueryHandler() }
     single { GetGameDemoUrlQueryHandler(gameVariantRepository = get(), aggregatorFactory = get()) }
     single { FindAllGamePlayerFavoriteQueryHandler() }
+    single { FindAllGameCollectionQueryHandler() }
     single { AddGameFavouriteCommandHandler() }
     single { RemoveGameFavouriteCommandHandler() }
 
@@ -74,14 +72,12 @@ val handlerModule = module {
 
     // Provider
     single { SaveProviderCommandHandler(providerRepository = get(), aggregatorRepository = get()) }
-    single { DeleteProviderCommandHandler(providerRepository = get()) }
     single { FindProviderQueryHandler() }
     single { FindAllProviderQueryHandler() }
     single { BatchProviderQueryHandler() }
 
     // Collection
     single { SaveCollectionCommandHandler(collectionRepository = get()) }
-    single { DeleteCollectionCommandHandler(collectionRepository = get()) }
     single { FindCollectionQueryHandler() }
     single { FindAllCollectionQueryHandler() }
     single { BatchCollectionQueryHandler() }

@@ -4,19 +4,16 @@ import application.Bus
 import application.command.aggregator.DeleteAggregatorCommand
 import application.command.aggregator.SaveAggregatorCommand
 import application.command.aggregator.SyncAllActiveAggregatorCommand
-import application.command.collection.DeleteCollectionCommand
 import application.command.collection.SaveCollectionCommand
 import application.command.collection.SetCollectionImageCommand
 import application.command.collection.UpdateCollectionGameCommand
 import application.command.freespin.CancelFreespinCommand
 import application.command.freespin.CreateFreespinCommand
 import application.command.game.AddGameFavouriteCommand
-import application.command.game.DeleteGameCommand
 import application.command.game.PlayGameCommand
 import application.command.game.RemoveGameFavouriteCommand
 import application.command.game.SaveGameCommand
 import application.command.game.SetGameImageCommand
-import application.command.provider.DeleteProviderCommand
 import application.command.provider.SaveProviderCommand
 import application.command.provider.SetProviderImageCommand
 import application.command.session.EndRoundSessionCommand
@@ -30,6 +27,7 @@ import application.query.collection.FindAllCollectionQuery
 import application.query.collection.FindCollectionQuery
 import application.query.freespin.GetFreespinPresetsQuery
 import application.query.game.BatchGameQuery
+import application.query.game.FindAllGameCollectionQuery
 import application.query.game.FindAllGamePlayerFavoriteQuery
 import application.query.game.FindAllGameQuery
 import application.query.game.FindGameQuery
@@ -48,7 +46,6 @@ import infrastructure.handler.aggregator.FindAllAggregatorQueryHandler
 import infrastructure.handler.aggregator.SaveAggregatorCommandHandler
 import infrastructure.handler.aggregator.SyncAllActiveAggregatorCommandHandler
 import infrastructure.handler.collection.BatchCollectionQueryHandler
-import infrastructure.handler.collection.DeleteCollectionCommandHandler
 import infrastructure.handler.collection.FindAllCollectionQueryHandler
 import infrastructure.handler.collection.FindCollectionQueryHandler
 import infrastructure.handler.collection.SaveCollectionCommandHandler
@@ -58,7 +55,7 @@ import infrastructure.handler.freespin.CancelFreespinCommandHandler
 import infrastructure.handler.freespin.CreateFreespinCommandHandler
 import infrastructure.handler.game.AddGameFavouriteCommandHandler
 import infrastructure.handler.game.BatchGameQueryHandler
-import infrastructure.handler.game.DeleteGameCommandHandler
+import infrastructure.handler.game.FindAllGameCollectionQueryHandler
 import infrastructure.handler.game.FindAllGamePlayerFavoriteQueryHandler
 import infrastructure.handler.game.FindAllGameQueryHandler
 import infrastructure.handler.game.FindGameQueryHandler
@@ -68,7 +65,6 @@ import infrastructure.handler.game.PlayGameCommandHandler
 import infrastructure.handler.game.RemoveGameFavouriteCommandHandler
 import infrastructure.handler.game.SaveGameCommandHandler
 import infrastructure.handler.provider.BatchProviderQueryHandler
-import infrastructure.handler.provider.DeleteProviderCommandHandler
 import infrastructure.handler.provider.FindAllProviderQueryHandler
 import infrastructure.handler.provider.FindProviderQueryHandler
 import infrastructure.handler.provider.SaveProviderCommandHandler
@@ -101,7 +97,6 @@ val busModule = module {
                 // Game
                 PlayGameCommand::class.java to get<PlayGameCommandHandler>(),
                 SaveGameCommand::class.java to get<SaveGameCommandHandler>(),
-                DeleteGameCommand::class.java to get<DeleteGameCommandHandler>(),
                 SetGameImageCommand::class.java to setImageHandler,
                 AddGameFavouriteCommand::class.java to get<AddGameFavouriteCommandHandler>(),
                 RemoveGameFavouriteCommand::class.java to get<RemoveGameFavouriteCommandHandler>(),
@@ -110,11 +105,9 @@ val busModule = module {
                 CancelFreespinCommand::class.java to get<CancelFreespinCommandHandler>(),
                 // Provider
                 SaveProviderCommand::class.java to get<SaveProviderCommandHandler>(),
-                DeleteProviderCommand::class.java to get<DeleteProviderCommandHandler>(),
                 SetProviderImageCommand::class.java to setImageHandler,
                 // Collection
                 SaveCollectionCommand::class.java to get<SaveCollectionCommandHandler>(),
-                DeleteCollectionCommand::class.java to get<DeleteCollectionCommandHandler>(),
                 SetCollectionImageCommand::class.java to setImageHandler,
                 UpdateCollectionGameCommand::class.java to get<UpdateCollectionGameCommandHandler>(),
                 // Aggregator
@@ -128,6 +121,7 @@ val busModule = module {
                 FindAllGameQuery::class.java to get<FindAllGameQueryHandler>(),
                 BatchGameQuery::class.java to get<BatchGameQueryHandler>(),
                 FindAllGamePlayerFavoriteQuery::class.java to get<FindAllGamePlayerFavoriteQueryHandler>(),
+                FindAllGameCollectionQuery::class.java to get<FindAllGameCollectionQueryHandler>(),
                 GetGameDemoUrlQuery::class.java to get<GetGameDemoUrlQueryHandler>(),
                 GetFreespinPresetsQuery::class.java to get<GetFreespinPresetsQueryHandler>(),
                 FindProviderQuery::class.java to get<FindProviderQueryHandler>(),

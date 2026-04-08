@@ -4,13 +4,14 @@ import api.grpc.config.handleGrpcCall
 import api.grpc.mapper.AggregatorProtoMapper.toProto
 import api.grpc.mapper.CollectionProtoMapper.toProto
 import api.grpc.mapper.GameFilterProtoMapper.toDomain
+import api.grpc.mapper.GamePageProtoMapper.toGamePageDto
 import api.grpc.mapper.GameProtoMapper.toProto
 import api.grpc.mapper.PlatformProtoMapper.toDomain
 import api.grpc.mapper.ProviderProtoMapper.toProto
 import application.Bus
 import application.command.game.AddGameFavouriteCommand
-import application.command.game.DeleteGameCommand
 import application.query.game.BatchGameQuery
+import application.query.game.FindAllGamePlayerFavoriteQuery
 import application.query.game.FindAllGameQuery
 import application.query.game.FindGameQuery
 import application.query.game.GetGameDemoUrlQuery
@@ -18,8 +19,8 @@ import application.command.game.RemoveGameFavouriteCommand
 import application.command.game.SetGameImageCommand
 import com.nekgamebling.game.v1.BatchGameQueryKt
 import com.nekgamebling.game.v1.Empty
-import com.nekgamebling.game.v1.FindAllGameQueryKt
 import com.nekgamebling.game.v1.FindGameQueryKt
+import com.nekgamebling.game.v1.GamePageDto
 import com.nekgamebling.game.v1.GameFavouriteCommand
 import com.nekgamebling.game.v1.GameServiceGrpcKt
 import com.nekgamebling.game.v1.OpenDemoQuery
@@ -35,7 +36,7 @@ import domain.vo.Locale
 import domain.vo.Pageable
 import domain.vo.PlayerId
 import com.nekgamebling.game.v1.BatchGameQuery as BatchGameProto
-import com.nekgamebling.game.v1.DeleteGameCommand as DeleteGameProto
+import com.nekgamebling.game.v1.FindAllGamePlayerFavouriteQuery as FindAllGamePlayerFavouriteProto
 import com.nekgamebling.game.v1.FindAllGameQuery as FindAllGameProto
 import com.nekgamebling.game.v1.FindGameQuery as FindGameProto
 import com.nekgamebling.game.v1.PlayGameCommand as PlayGameProto
@@ -73,7 +74,7 @@ class GameGrpcService(
         }
     }
 
-    override suspend fun findAll(request: FindAllGameProto): FindAllGameProto.Result = handleGrpcCall {
+    override suspend fun findAll(request: FindAllGameProto): GamePageDto = handleGrpcCall {
         val page = bus(
             FindAllGameQuery(
                 filter = request.filter.toDomain(),
@@ -81,22 +82,7 @@ class GameGrpcService(
             )
         )
 
-        val uniqueProviders = page.items.map { it.game.provider }.distinctBy { it.identity.value }
-        val uniqueAggregators = uniqueProviders.map { it.aggregator }.distinctBy { it.identity.value }
-        val uniqueCollections = page.items.flatMap { it.game.collections }.distinctBy { it.identity.value }
-
-        FindAllGameQueryKt.result {
-            items.addAll(page.items.map { view ->
-                FindAllGameQueryKt.ResultKt.item {
-                    this.game = view.game.toProto(view.variant)
-                    provider = view.game.provider.toProto()
-                }
-            })
-            providers.addAll(uniqueProviders.map { it.toProto() })
-            aggregators.addAll(uniqueAggregators.map { it.toProto() })
-            collections.addAll(uniqueCollections.map { it.toProto() })
-            totalItems = page.totalItems.toInt()
-        }
+        page.toGamePageDto()
     }
 
     override suspend fun batch(request: BatchGameProto): BatchGameProto.Result = handleGrpcCall {
@@ -109,21 +95,11 @@ class GameGrpcService(
         val uniqueCollections = views.flatMap { it.game.collections }.distinctBy { it.identity.value }
 
         BatchGameQueryKt.result {
-            items.addAll(views.map { view ->
-                BatchGameQueryKt.ResultKt.item {
-                    this.game = view.game.toProto(view.variant)
-                    provider = view.game.provider.toProto()
-                }
-            })
+            items.addAll(views.map { it.game.toProto(it.variant) })
             providers.addAll(uniqueProviders.map { it.toProto() })
             aggregators.addAll(uniqueAggregators.map { it.toProto() })
             collections.addAll(uniqueCollections.map { it.toProto() })
         }
-    }
-
-    override suspend fun delete(request: DeleteGameProto): Empty = handleGrpcCall {
-        bus(DeleteGameCommand(identity = Identity(request.identity)))
-        Empty.getDefaultInstance()
     }
 
     override suspend fun updateImage(request: UpdateGameImageCommand): Empty = handleGrpcCall {
@@ -191,5 +167,17 @@ class GameGrpcService(
             )
         )
         Empty.getDefaultInstance()
+    }
+
+    override suspend fun findAllPlayerFavourite(request: FindAllGamePlayerFavouriteProto): GamePageDto = handleGrpcCall {
+        val page = bus(
+            FindAllGamePlayerFavoriteQuery(
+                playerId = PlayerId(request.playerId),
+                filter = request.filter.toDomain(),
+                pageable = Pageable(request.pageNum, request.pageSize),
+            )
+        )
+
+        page.toGamePageDto()
     }
 }

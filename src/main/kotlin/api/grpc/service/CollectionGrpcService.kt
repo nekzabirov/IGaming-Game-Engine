@@ -2,16 +2,19 @@ package api.grpc.service
 
 import api.grpc.config.handleGrpcCall
 import api.grpc.mapper.CollectionProtoMapper.toProto
+import api.grpc.mapper.GameFilterProtoMapper.toDomain
+import api.grpc.mapper.GamePageProtoMapper.toGamePageDto
 import application.Bus
-import application.command.collection.DeleteCollectionCommand
 import application.command.collection.SaveCollectionCommand
 import application.command.collection.SetCollectionImageCommand
 import application.command.collection.UpdateCollectionGameCommand
+import application.query.game.FindAllGameCollectionQuery
 import com.nekgamebling.game.v1.BatchCollectionQueryKt
 import com.nekgamebling.game.v1.CollectionServiceGrpcKt
 import com.nekgamebling.game.v1.Empty
 import com.nekgamebling.game.v1.FindAllCollectionQueryKt
 import com.nekgamebling.game.v1.FindCollectionQueryKt
+import com.nekgamebling.game.v1.GamePageDto
 import com.nekgamebling.game.v1.UpdateCollectionGamesCommand
 import com.nekgamebling.game.v1.UpdateCollectionImageCommand
 import domain.exception.notfound.CollectionNotFoundException
@@ -20,8 +23,8 @@ import domain.vo.Identity
 import domain.vo.LocaleName
 import domain.vo.Pageable
 import com.nekgamebling.game.v1.BatchCollectionQuery as BatchCollectionProto
-import com.nekgamebling.game.v1.DeleteCollectionCommand as DeleteCollectionProto
 import com.nekgamebling.game.v1.FindAllCollectionQuery as FindAllCollectionProto
+import com.nekgamebling.game.v1.FindAllGameCollectionQuery as FindAllGameCollectionProto
 import com.nekgamebling.game.v1.FindCollectionQuery as FindCollectionProto
 import com.nekgamebling.game.v1.SaveCollectionCommand as SaveCollectionProto
 import application.query.collection.BatchCollectionQuery as BatchCollectionCqrs
@@ -83,9 +86,16 @@ class CollectionGrpcService(
         }
     }
 
-    override suspend fun delete(request: DeleteCollectionProto): Empty = handleGrpcCall {
-        bus(DeleteCollectionCommand(identity = Identity(request.identity)))
-        Empty.getDefaultInstance()
+    override suspend fun findAllGame(request: FindAllGameCollectionProto): GamePageDto = handleGrpcCall {
+        val page = bus(
+            FindAllGameCollectionQuery(
+                collection = Identity(request.collectionIdentity),
+                filter = request.filter.toDomain(),
+                pageable = Pageable(request.pageNum, request.pageSize),
+            )
+        )
+
+        page.toGamePageDto()
     }
 
     override suspend fun updateGames(request: UpdateCollectionGamesCommand): Empty = handleGrpcCall {

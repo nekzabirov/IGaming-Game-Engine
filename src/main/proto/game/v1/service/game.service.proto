@@ -10,17 +10,20 @@ import "game/v1/dto/provider.dto.proto";
 import "game/v1/dto/aggregator.dto.proto";
 import "game/v1/dto/collection.dto.proto";
 import "game/v1/dto/common.dto.proto";
+import "game/v1/dto/game_filter.dto.proto";
+import "game/v1/dto/game_page.dto.proto";
 
 // ---------------------------------------------------------------------------
-// Game catalog service — full CRUD plus gameplay entrypoints.
+// Game catalog service — read + upsert + gameplay entrypoints. No delete:
+// games, providers and collections are contract artefacts that must not be
+// removed once they are in the catalog.
 //
-// Naming convention (uniform across Game / Collection / Provider / Aggregator):
+// Naming convention (uniform across Game / Collection / Provider):
 //   Save<X>Command     — create-or-update (upsert) with typed fields
 //   Find<X>Query       — read one by identity; Result carries denormalized
 //                        related entities (provider + aggregator + collections)
 //   FindAll<X>Query    — paged read; carries a single <X>Filter sub-message
 //   Batch<X>Query      — read many by repeated string identities
-//   Delete<X>Command   — hard delete by identity
 //   Update<X>ImageCommand — attach/replace a keyed image URL
 // ---------------------------------------------------------------------------
 service GameService {
@@ -28,11 +31,9 @@ service GameService {
 
   rpc Find(FindGameQuery) returns (FindGameQuery.Result);
 
-  rpc FindAll(FindAllGameQuery) returns (FindAllGameQuery.Result);
+  rpc FindAll(FindAllGameQuery) returns (GamePageDto);
 
   rpc Batch(BatchGameQuery) returns (BatchGameQuery.Result);
-
-  rpc Delete(DeleteGameCommand) returns (Empty);
 
   rpc UpdateImage(UpdateGameImageCommand) returns (Empty);
 
@@ -43,6 +44,8 @@ service GameService {
   rpc AddFavourite(GameFavouriteCommand) returns (Empty);
 
   rpc RemoveFavourite(GameFavouriteCommand) returns (Empty);
+
+  rpc FindAllPlayerFavourite(FindAllGamePlayerFavouriteQuery) returns (GamePageDto);
 }
 
 // ---------------------------------------------------------------------------
@@ -61,10 +64,6 @@ message SaveGameCommand {
   repeated string tags = 5;
 
   string provider_identity = 6;
-}
-
-message DeleteGameCommand {
-  string identity = 1;
 }
 
 message UpdateGameImageCommand {
@@ -119,79 +118,43 @@ message FindGameQuery {
   }
 }
 
-// Composite filter for FindAllGameQuery. Every boolean is tri-state via
-// `optional` — "unset" means "do not filter on this flag".
-message GameFilter {
-  string query = 1;
-
-  optional bool active = 2;
-
-  optional string provider_identity = 3;
-
-  repeated string tags = 4;
-
-  optional bool bonus_bet_enable = 5;
-
-  optional bool bonus_wagering_enable = 6;
-
-  optional bool free_spin_enable = 7;
-
-  optional bool free_chip_enable = 8;
-
-  optional bool jackpot_enable = 9;
-
-  optional bool demo_enable = 10;
-
-  optional bool bonus_buy_enable = 11;
-}
-
+// Paged game listing with a shared GameFilter. Returns the shared
+// `GamePageDto` — same response shape as every other paged game-listing RPC.
 message FindAllGameQuery {
   GameFilter filter = 1;
 
   int32 page_num = 2;
 
   int32 page_size = 3;
-
-  message Result {
-    repeated Item items = 1;
-
-    // Denormalized sets — every Item.provider points by identity into
-    // `providers`; each provider's aggregator is in `aggregators`; any
-    // collection referenced by an item game is in `collections`.
-    repeated ProviderDto providers = 2;
-
-    repeated AggregatorDto aggregators = 3;
-
-    repeated CollectionDto collections = 4;
-
-    int32 total_items = 5;
-
-    message Item {
-      GameDto game = 1;
-
-      ProviderDto provider = 2;
-    }
-  }
 }
 
 message BatchGameQuery {
   repeated string identities = 1;
 
+  // Batch has its own Result because it does NOT carry `total_items`
+  // (it is not paged — the caller already supplied the identities).
   message Result {
-    repeated Item items = 1;
+    repeated GameDto items = 1;
 
     repeated ProviderDto providers = 2;
 
     repeated AggregatorDto aggregators = 3;
 
     repeated CollectionDto collections = 4;
-
-    message Item {
-      GameDto game = 1;
-
-      ProviderDto provider = 2;
-    }
   }
+}
+
+// Paged game listing restricted to a specific player's favourites. Reuses
+// the shared `GameFilter` and `GamePageDto`; the only extra input is
+// `player_id`, which picks whose favourites to read.
+message FindAllGamePlayerFavouriteQuery {
+  string player_id = 1;
+
+  GameFilter filter = 2;
+
+  int32 page_num = 3;
+
+  int32 page_size = 4;
 }
 
 message OpenDemoQuery {
