@@ -8,74 +8,46 @@ option java_multiple_files = true;
 import "game/v1/dto/collection.dto.proto";
 import "game/v1/dto/common.dto.proto";
 
+// ---------------------------------------------------------------------------
+// Collection catalog service — full CRUD plus game-membership management.
+//
+// Every Save is a typed upsert (create-or-update) with explicit fields,
+// mirroring `application.command.collection.SaveCollectionCommand` on the
+// Kotlin side. FindAll takes a dedicated CollectionFilter sub-message.
+// ---------------------------------------------------------------------------
 service CollectionService {
-  rpc Save(CollectionDto) returns (Empty);
+  rpc Save(SaveCollectionCommand) returns (Empty);
 
   rpc Find(FindCollectionQuery) returns (FindCollectionQuery.Result);
 
   rpc FindAll(FindAllCollectionQuery) returns (FindAllCollectionQuery.Result);
 
+  rpc Batch(BatchCollectionQuery) returns (BatchCollectionQuery.Result);
+
+  rpc Delete(DeleteCollectionCommand) returns (Empty);
+
   rpc UpdateGames(UpdateCollectionGamesCommand) returns (Empty);
 
   rpc UpdateImage(UpdateCollectionImageCommand) returns (Empty);
-
-  rpc Batch(BatchCollectionQuery) returns (BatchCollectionQuery.Result);
 }
 
-message FindCollectionQuery {
+// ---------------------------------------------------------------------------
+// Commands
+// ---------------------------------------------------------------------------
+
+message SaveCollectionCommand {
   string identity = 1;
 
-  message Result {
-    CollectionDto item = 1;
+  // Localized name map (locale → display name), e.g. {"en": "Popular", "ru": "Популярные"}.
+  map<string, string> name = 2;
 
-    int32 game_active_count = 2;
+  bool active = 3;
 
-    int32 game_deactivate_count = 3;
-
-    int32 provider_count = 4;
-  }
+  int32 order = 4;
 }
 
-message FindAllCollectionQuery {
-  string query = 1;
-
-  optional bool active = 2;
-
-  int32 page_num = 3;
-
-  int32 page_size = 4;
-
-  repeated string tags = 5;
-
-  repeated string provider_identities = 6;
-
-  message Result {
-    repeated Item items = 1;
-
-    int32 total_items = 2;
-
-    message Item {
-      CollectionDto collection = 1;
-
-      int32 game_active_count = 2;
-
-      int32 game_deactivate_count = 3;
-
-      int32 provider_count = 4;
-    }
-  }
-}
-
-message BatchCollectionQuery {
-  repeated string identities = 1;
-
-  message Result {
-    repeated Item items = 1;
-
-    message Item {
-      CollectionDto collection = 1;
-    }
-  }
+message DeleteCollectionCommand {
+  string identity = 1;
 }
 
 message UpdateCollectionGamesCommand {
@@ -94,4 +66,48 @@ message UpdateCollectionImageCommand {
   bytes file = 3;
 
   string extension = 4;
+}
+
+// ---------------------------------------------------------------------------
+// Queries
+// ---------------------------------------------------------------------------
+
+message FindCollectionQuery {
+  string identity = 1;
+
+  message Result {
+    CollectionDto item = 1;
+  }
+}
+
+message CollectionFilter {
+  string query = 1;
+
+  optional bool active = 2;
+
+  repeated string in_tags = 3;
+
+  repeated string in_provider_identities = 4;
+}
+
+message FindAllCollectionQuery {
+  CollectionFilter filter = 1;
+
+  int32 page_num = 2;
+
+  int32 page_size = 3;
+
+  message Result {
+    repeated CollectionDto items = 1;
+
+    int32 total_items = 2;
+  }
+}
+
+message BatchCollectionQuery {
+  repeated string identities = 1;
+
+  message Result {
+    repeated CollectionDto items = 1;
+  }
 }

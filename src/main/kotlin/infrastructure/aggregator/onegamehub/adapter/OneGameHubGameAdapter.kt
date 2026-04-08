@@ -62,10 +62,10 @@ class OneGameHubGameAdapter(
             ?: error("No game URL returned from OneGameHub for demo")
     }
 
-    override suspend fun getLunchUrl(session: Session, lobbyUrl: String): String {
+    override suspend fun getLaunchUrl(session: Session, lobbyUrl: String): String {
         val response = client.getLaunchUrl(
-            gameSymbol = session.gameVariant.symbol,
-            sessionToken = session.token,
+            gameSymbol = session.gameVariant.symbol.value,
+            sessionToken = session.token.value,
             playerId = session.playerId.value,
             locale = session.locale.value,
             platform = session.platform,
@@ -74,7 +74,7 @@ class OneGameHubGameAdapter(
             demo = false
         )
 
-        check(response.success) { "OneGameHub getLunchUrl failed with status ${response.status}" }
+        check(response.success) { "OneGameHub getLaunchUrl failed with status ${response.status}" }
 
         return response.response?.gameUrl
             ?: error("No game URL returned from OneGameHub")

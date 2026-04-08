@@ -1,9 +1,9 @@
 package infrastructure.handler.freespin
 
-import application.cqrs.ICommandHandler
-import application.cqrs.freespin.CreateFreespinCommand
-import application.port.factory.IAggregatoryFactory
-import application.port.storage.IGameVariantRepository
+import application.ICommandHandler
+import application.command.freespin.CreateFreespinCommand
+import application.port.factory.IAggregatorFactory
+import domain.repository.IGameVariantRepository
 import domain.exception.conflict.FreespinNotSupportedException
 import domain.exception.domainRequire
 import domain.exception.domainRequireNotNull
@@ -11,7 +11,7 @@ import domain.exception.notfound.GameNotFoundException
 
 class CreateFreespinCommandHandler(
     private val gameVariantRepository: IGameVariantRepository,
-    private val aggregatoryFactory: IAggregatoryFactory
+    private val aggregatorFactory: IAggregatorFactory
 ) : ICommandHandler<CreateFreespinCommand, Unit> {
 
     override suspend fun handle(command: CreateFreespinCommand): Result<Unit> = runCatching {
@@ -21,13 +21,13 @@ class CreateFreespinCommandHandler(
 
         domainRequire(variant.freeSpinEnable) { FreespinNotSupportedException() }
 
-        val freespinAdapter = aggregatoryFactory.createFreespinAdapter(variant.game.provider.aggregator)
+        val freespinAdapter = aggregatorFactory.createFreespinAdapter(variant.game.provider.aggregator)
 
         freespinAdapter.create(
             presetValue = command.presetValues,
             referenceId = command.referenceId,
             playerId = command.playerId,
-            gameSymbol = variant.symbol,
+            gameSymbol = variant.symbol.value,
             currency = command.currency,
             startAt = command.startAt,
             endAt = command.endAt

@@ -1,8 +1,9 @@
 package infrastructure.handler.round
 
-import application.cqrs.IQueryHandler
-import application.cqrs.round.FindRoundQuery
-import application.cqrs.round.RoundItem
+import application.query.round.RoundView
+
+import application.IQueryHandler
+import application.query.round.FindRoundQuery
 import domain.model.SpinType
 import domain.vo.Amount
 import infrastructure.persistence.entity.GameEntity
@@ -13,12 +14,12 @@ import infrastructure.persistence.entity.SessionEntity
 import infrastructure.persistence.mapper.RoundMapper.toDomain
 import infrastructure.persistence.table.SpinTable
 import org.jetbrains.exposed.dao.load
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import infrastructure.persistence.dbRead
 import java.util.Optional
 
-class FindRoundQueryHandler : IQueryHandler<FindRoundQuery, Optional<RoundItem>> {
+class FindRoundQueryHandler : IQueryHandler<FindRoundQuery, Optional<RoundView>> {
 
-    override suspend fun handle(query: FindRoundQuery): Optional<RoundItem> = newSuspendedTransaction {
+    override suspend fun handle(query: FindRoundQuery): Optional<RoundView> = dbRead {
         val roundEntity = RoundEntity.findById(query.id)
             ?.load(
                 RoundEntity::session,
@@ -29,7 +30,7 @@ class FindRoundQueryHandler : IQueryHandler<FindRoundQuery, Optional<RoundItem>>
                 GameEntity::collections,
                 ProviderEntity::aggregator,
             )
-            ?: return@newSuspendedTransaction Optional.empty()
+            ?: return@dbRead Optional.empty()
 
         val totals = SpinTable
             .select(SpinTable.type, SpinTable.amount)
@@ -43,7 +44,7 @@ class FindRoundQueryHandler : IQueryHandler<FindRoundQuery, Optional<RoundItem>>
             }
 
         Optional.of(
-            RoundItem(
+            RoundView(
                 round = roundEntity.toDomain(),
                 totalPlace = Amount(totals.first),
                 totalSettle = Amount(totals.second),

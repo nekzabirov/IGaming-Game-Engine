@@ -1,3 +1,4 @@
+import api.grpc.config.configureKoin
 import api.grpc.configureGrpc
 import api.grpc.service.AggregatorGrpcService
 import api.grpc.service.CollectionGrpcService
@@ -7,7 +8,6 @@ import api.grpc.service.ProviderGrpcService
 import api.grpc.service.WinnerGrpcService
 import api.rest.configureRouting
 import api.rest.httpPort
-import infrastructure.koin.configureKoin
 import infrastructure.persistence.DatabaseConfig
 import infrastructure.persistence.DatabaseFactory
 import io.grpc.ServerBuilder

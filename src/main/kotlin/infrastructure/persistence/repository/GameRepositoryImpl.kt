@@ -1,22 +1,30 @@
 package infrastructure.persistence.repository
 
-import application.port.storage.IGameRepository
+import domain.repository.IGameRepository
+import domain.exception.domainRequireNotNull
+import domain.exception.notfound.GameNotFoundException
+import domain.exception.notfound.ProviderNotFoundException
 import domain.model.Game
 import domain.vo.Identity
 import domain.vo.Page
 import domain.vo.Pageable
+import infrastructure.persistence.dbRead
+import infrastructure.persistence.dbTransaction
 import infrastructure.persistence.entity.CollectionEntity
 import infrastructure.persistence.entity.GameEntity
 import infrastructure.persistence.entity.ProviderEntity
 import infrastructure.persistence.mapper.GameMapper.toDomain
 import infrastructure.persistence.table.CollectionTable
+import infrastructure.persistence.table.GameCollectionTable
+import infrastructure.persistence.table.GameFavouriteTable
 import infrastructure.persistence.table.GameTable
 import infrastructure.persistence.table.ProviderTable
 import org.jetbrains.exposed.dao.with
 import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.batchUpsert
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import org.jetbrains.exposed.sql.deleteWhere
 
 class GameRepositoryImpl : IGameRepository {
 
@@ -26,8 +34,10 @@ class GameRepositoryImpl : IGameRepository {
         ProviderEntity::aggregator,
     )
 
-    override suspend fun save(game: Game): Game = newSuspendedTransaction {
-        val providerEntity = ProviderEntity.find { ProviderTable.identity eq game.provider.identity.value }.single()
+    override suspend fun save(game: Game): Game = dbTransaction {
+        val providerEntity = domainRequireNotNull(
+            ProviderEntity.find { ProviderTable.identity eq game.provider.identity.value }.firstOrNull()
+        ) { ProviderNotFoundException() }
 
         val gameEntity = GameEntity.find { GameTable.identity eq game.identity.value }.firstOrNull()
 
@@ -65,14 +75,15 @@ class GameRepositoryImpl : IGameRepository {
         game
     }
 
-    override suspend fun saveAll(gameList: List<Game>): List<Game> = newSuspendedTransaction {
+    override suspend fun saveAll(gameList: List<Game>): List<Game> = dbTransaction {
         val providerIdentities = gameList.map { it.provider.identity.value }.distinct()
         val providerMap = ProviderEntity.find { ProviderTable.identity inList providerIdentities }
             .associateBy { it.identity }
 
         GameTable.batchUpsert(gameList, keys = arrayOf(GameTable.identity)) { game ->
-            val providerEntity = providerMap[game.provider.identity.value]
-                ?: error("Provider not found: ${game.provider.identity.value}")
+            val providerEntity = domainRequireNotNull(providerMap[game.provider.identity.value]) {
+                ProviderNotFoundException()
+            }
 
             this[GameTable.identity] = game.identity.value
             this[GameTable.name] = game.name
@@ -88,20 +99,20 @@ class GameRepositoryImpl : IGameRepository {
         gameList
     }
 
-    override suspend fun findByIdentity(identity: Identity): Game? = newSuspendedTransaction {
+    override suspend fun findByIdentity(identity: Identity): Game? = dbRead {
         GameEntity.find { GameTable.identity eq identity.value }
             .with(*gameChain)
             .firstOrNull()?.toDomain()
     }
 
-    override suspend fun findAll(): List<Game> = newSuspendedTransaction {
+    override suspend fun findAll(): List<Game> = dbRead {
         GameEntity.all()
             .with(*gameChain)
             .toList()
             .map { it.toDomain() }
     }
 
-    override suspend fun findAll(pageable: Pageable): Page<Game> = newSuspendedTransaction {
+    override suspend fun findAll(pageable: Pageable): Page<Game> = dbRead {
         val totalItems = GameEntity.count()
 
         val items = GameEntity.all()
@@ -118,5 +129,27 @@ class GameRepositoryImpl : IGameRepository {
             totalItems = totalItems,
             currentPage = pageable.pageReal,
         )
+    }
+
+    override suspend fun addImage(identity: Identity, key: String, url: String) {
+        dbTransaction {
+            val entity = domainRequireNotNull(
+                GameEntity.find { GameTable.identity eq identity.value }.firstOrNull()
+            ) { GameNotFoundException() }
+            entity.images = entity.images.toMutableMap().apply { put(key, url) }
+        }
+    }
+
+    override suspend fun deleteByIdentity(identity: Identity) {
+        dbTransaction {
+            val entity = domainRequireNotNull(
+                GameEntity.find { GameTable.identity eq identity.value }.firstOrNull()
+            ) { GameNotFoundException() }
+
+            val gameId = entity.id
+            GameFavouriteTable.deleteWhere { game eq gameId }
+            GameCollectionTable.deleteWhere { game eq gameId }
+            entity.delete()
+        }
     }
 }

@@ -1,15 +1,15 @@
 package application.usecase
 
-import application.event.SessionOpenEvent
-import application.port.factory.IAggregatoryFactory
 import application.port.external.IEventPort
-import application.port.storage.ISessionRepository
+import application.port.factory.IAggregatorFactory
+import domain.event.SessionOpened
 import domain.model.Session
+import domain.repository.ISessionRepository
 
 class OpenSessionUsecase(
-    private val aggregatorFactory: IAggregatoryFactory,
+    private val aggregatorFactory: IAggregatorFactory,
     private val sessionRepository: ISessionRepository,
-    private val eventAdapter: IEventPort,
+    private val eventPort: IEventPort,
 ) {
 
     suspend operator fun invoke(session: Session, lobbyUrl: String): Result<Response> = runCatching {
@@ -17,15 +17,14 @@ class OpenSessionUsecase(
 
         val gameAdapter = aggregatorFactory.createGameAdapter(aggregator)
 
-        val launchUrl = gameAdapter.getLunchUrl(session, lobbyUrl)
+        val launchUrl = gameAdapter.getLaunchUrl(session, lobbyUrl)
 
         val updatedSession = sessionRepository.save(session)
 
-        eventAdapter.publish(SessionOpenEvent(updatedSession))
+        eventPort.publish(SessionOpened(updatedSession))
 
         Response(session = updatedSession, launchUrl = launchUrl)
     }
 
     data class Response(val session: Session, val launchUrl: String)
-
 }

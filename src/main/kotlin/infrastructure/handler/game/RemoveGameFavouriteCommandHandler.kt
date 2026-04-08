@@ -1,25 +1,28 @@
 package infrastructure.handler.game
 
-import application.cqrs.ICommandHandler
-import application.cqrs.game.RemoveGameFavouriteCommand
+import application.ICommandHandler
+import application.command.game.RemoveGameFavouriteCommand
+import domain.exception.domainRequireNotNull
+import domain.exception.notfound.GameNotFoundException
+import infrastructure.persistence.dbTransaction
 import infrastructure.persistence.table.GameFavouriteTable
 import infrastructure.persistence.table.GameTable
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 
 class RemoveGameFavouriteCommandHandler : ICommandHandler<RemoveGameFavouriteCommand, Unit> {
+
     override suspend fun handle(command: RemoveGameFavouriteCommand): Result<Unit> = runCatching {
-        newSuspendedTransaction {
-            val gameId = GameTable.select(GameTable.id)
-                .where { GameTable.identity eq command.identity.value }
-                .singleOrNull()?.get(GameTable.id)
-                ?: throw IllegalArgumentException("Game not found: ${command.identity.value}")
+        dbTransaction {
+            val gameId = domainRequireNotNull(
+                GameTable.select(GameTable.id)
+                    .where { GameTable.identity eq command.identity.value }
+                    .singleOrNull()?.get(GameTable.id)
+            ) { GameNotFoundException() }
 
             GameFavouriteTable.deleteWhere {
-                (game eq gameId) and
-                        (playerId eq command.playerId.value)
+                (game eq gameId) and (playerId eq command.playerId.value)
             }
         }
     }

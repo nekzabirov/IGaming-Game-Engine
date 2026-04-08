@@ -1,18 +1,18 @@
 package infrastructure.handler.aggregator
 
-import application.cqrs.aggregator.FindAllAggregatorQuery
-import application.cqrs.IQueryHandler
+import application.query.aggregator.FindAllAggregatorQuery
+import application.IQueryHandler
 import domain.model.Aggregator
 import domain.vo.Page
 import infrastructure.persistence.mapper.AggregatorMapper.toAggregator
 import infrastructure.persistence.table.AggregatorTable
 import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import infrastructure.persistence.dbRead
 
 class FindAllAggregatorQueryHandler : IQueryHandler<FindAllAggregatorQuery, Page<Aggregator>> {
 
-    override suspend fun handle(query: FindAllAggregatorQuery): Page<Aggregator> = newSuspendedTransaction {
+    override suspend fun handle(query: FindAllAggregatorQuery): Page<Aggregator> = dbRead {
         val baseQuery = AggregatorTable
             .selectAll()
             .where { AggregatorTable.identity like "%${query.query.lowercase()}%" }

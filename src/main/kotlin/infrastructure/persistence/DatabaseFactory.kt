@@ -14,7 +14,6 @@ import infrastructure.persistence.table.SessionTable
 import infrastructure.persistence.table.SpinTable
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 
 object DatabaseFactory {
 
@@ -24,7 +23,7 @@ object DatabaseFactory {
     }
 
     suspend fun createTables() {
-        newSuspendedTransaction {
+        dbTransaction {
             SchemaUtils.create(
                 AggregatorTable,
                 ProviderTable,

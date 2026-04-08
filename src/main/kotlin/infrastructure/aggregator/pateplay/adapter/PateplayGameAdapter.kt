@@ -48,13 +48,13 @@ class PateplayGameAdapter(
         )
     }
 
-    override suspend fun getLunchUrl(session: Session, lobbyUrl: String): String {
+    override suspend fun getLaunchUrl(session: Session, lobbyUrl: String): String {
         check(config.gameLaunchUrl.isNotBlank()) { "PatePlay game launch URL not configured" }
 
         return buildLaunchUrl(
             baseHost = config.gameLaunchUrl,
-            gameSymbol = session.gameVariant.symbol,
-            sessionToken = session.token,
+            gameSymbol = session.gameVariant.symbol.value,
+            sessionToken = session.token.value,
             playerId = session.playerId.value,
             locale = session.locale,
             platform = session.platform

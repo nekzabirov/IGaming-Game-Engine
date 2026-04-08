@@ -1,9 +1,11 @@
 package infrastructure.handler.session
 
-import application.cqrs.IQueryHandler
-import application.cqrs.session.FindSessionBalanceQuery
+import application.IQueryHandler
+import application.query.session.FindSessionBalanceQuery
 import application.port.external.IWalletPort
-import application.port.storage.ISessionRepository
+import domain.repository.ISessionRepository
+import domain.exception.domainRequireNotNull
+import domain.exception.notfound.SessionNotFoundException
 import domain.model.PlayerBalance
 
 class FindSessionBalanceHandler(
@@ -12,12 +14,10 @@ class FindSessionBalanceHandler(
 ) : IQueryHandler<FindSessionBalanceQuery, PlayerBalance> {
 
     override suspend fun handle(query: FindSessionBalanceQuery): PlayerBalance {
-        val session = sessionRepository.findByToken(query.token) ?: error("Session not found")
+        val session = domainRequireNotNull(
+            sessionRepository.findByToken(query.token)
+        ) { SessionNotFoundException() }
 
-        val playerId = session.playerId
-        val currency = session.currency
-
-        return walletAdapter.findBalance(playerId, currency)
+        return walletAdapter.findBalance(session.playerId, session.currency)
     }
-
 }

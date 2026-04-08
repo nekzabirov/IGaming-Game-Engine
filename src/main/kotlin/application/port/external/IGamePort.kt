@@ -30,5 +30,5 @@ interface IGamePort {
         lobbyUrl: String,
     ): String
 
-    suspend fun getLunchUrl(session: Session, lobbyUrl: String): String
+    suspend fun getLaunchUrl(session: Session, lobbyUrl: String): String
 }

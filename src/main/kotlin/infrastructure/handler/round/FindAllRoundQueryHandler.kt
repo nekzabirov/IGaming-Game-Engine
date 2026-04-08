@@ -1,8 +1,9 @@
 package infrastructure.handler.round
 
-import application.cqrs.IQueryHandler
-import application.cqrs.round.FindAllRoundQuery
-import application.cqrs.round.RoundItem
+import application.query.round.RoundView
+
+import application.IQueryHandler
+import application.query.round.FindAllRoundQuery
 import domain.model.SpinType
 import domain.vo.Amount
 import domain.vo.Page
@@ -27,11 +28,11 @@ import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.Sum
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.longLiteral
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import infrastructure.persistence.dbRead
 
-class FindAllRoundQueryHandler : IQueryHandler<FindAllRoundQuery, Page<RoundItem>> {
+class FindAllRoundQueryHandler : IQueryHandler<FindAllRoundQuery, Page<RoundView>> {
 
-    override suspend fun handle(query: FindAllRoundQuery): Page<RoundItem> = newSuspendedTransaction {
+    override suspend fun handle(query: FindAllRoundQuery): Page<RoundView> = dbRead {
         val placeSum = Sum(
             Case()
                 .When(Op.build { SpinTable.type eq SpinType.PLACE }, SpinTable.amount)
@@ -167,7 +168,7 @@ class FindAllRoundQueryHandler : IQueryHandler<FindAllRoundQuery, Page<RoundItem
         val items = roundIds.mapNotNull { id ->
             val entity = rounds[id] ?: return@mapNotNull null
             val (place, settle) = amountsById[id] ?: (0L to 0L)
-            RoundItem(
+            RoundView(
                 round = entity.toDomain(),
                 totalPlace = Amount(place),
                 totalSettle = Amount(settle),

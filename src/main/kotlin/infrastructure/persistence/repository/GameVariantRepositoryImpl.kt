@@ -1,8 +1,12 @@
 package infrastructure.persistence.repository
 
-import application.port.storage.IGameVariantRepository
+import domain.repository.IGameVariantRepository
+import domain.exception.domainRequireNotNull
+import domain.exception.notfound.GameNotFoundException
 import domain.model.GameVariant
 import domain.vo.Identity
+import infrastructure.persistence.dbRead
+import infrastructure.persistence.dbTransaction
 import infrastructure.persistence.entity.GameEntity
 import infrastructure.persistence.entity.GameVariantEntity
 import infrastructure.persistence.entity.ProviderEntity
@@ -18,7 +22,6 @@ import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.batchUpsert
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.update
 
 class GameVariantRepositoryImpl : IGameVariantRepository {
@@ -30,7 +33,7 @@ class GameVariantRepositoryImpl : IGameVariantRepository {
         ProviderEntity::aggregator,
     )
 
-    override suspend fun save(gameVariant: GameVariant): GameVariant = newSuspendedTransaction {
+    override suspend fun save(gameVariant: GameVariant): GameVariant = dbTransaction {
         if (gameVariant.id == Long.MIN_VALUE) {
             val id = GameVariantTable.insertAndGetId { it.fromDomain(gameVariant) }
             gameVariant.copy(id = id.value)
@@ -40,17 +43,18 @@ class GameVariantRepositoryImpl : IGameVariantRepository {
         }
     }
 
-    override suspend fun saveAll(gameVariants: List<GameVariant>): List<GameVariant> = newSuspendedTransaction {
+    override suspend fun saveAll(gameVariants: List<GameVariant>): List<GameVariant> = dbTransaction {
         val gameIdentities = gameVariants.map { it.game.identity.value }.distinct()
         val gameIdMap = GameTable.select(GameTable.id, GameTable.identity)
             .where { GameTable.identity inList gameIdentities }
             .associate { it[GameTable.identity] to it[GameTable.id] }
 
         GameVariantTable.batchUpsert(gameVariants, keys = arrayOf(GameVariantTable.symbol)) { variant ->
-            val gameId = gameIdMap[variant.game.identity.value]
-                ?: error("Game not found: ${variant.game.identity.value}")
+            val gameId = domainRequireNotNull(gameIdMap[variant.game.identity.value]) {
+                GameNotFoundException()
+            }
 
-            this[GameVariantTable.symbol] = variant.symbol
+            this[GameVariantTable.symbol] = variant.symbol.value
             this[GameVariantTable.name] = variant.name
             this[GameVariantTable.integration] = variant.integration
             this[GameVariantTable.game] = gameId
@@ -68,23 +72,23 @@ class GameVariantRepositoryImpl : IGameVariantRepository {
         gameVariants
     }
 
-    override suspend fun findById(id: Long): GameVariant? = newSuspendedTransaction {
+    override suspend fun findById(id: Long): GameVariant? = dbRead {
         GameVariantEntity.findById(id)
             ?.load(*variantChain)
             ?.toDomain()
     }
 
-    override suspend fun findBySymbol(symbol: String): GameVariant? = newSuspendedTransaction {
+    override suspend fun findBySymbol(symbol: String): GameVariant? = dbRead {
         GameVariantEntity.find { GameVariantTable.symbol eq symbol }
             .with(*variantChain)
             .firstOrNull()?.toDomain()
     }
 
-    override suspend fun findAllByGame(gameIdentity: Identity): List<GameVariant> = newSuspendedTransaction {
+    override suspend fun findAllByGame(gameIdentity: Identity): List<GameVariant> = dbRead {
         val gameId = GameTable.select(GameTable.id)
             .where { GameTable.identity eq gameIdentity.value }
             .singleOrNull()?.get(GameTable.id)
-            ?: return@newSuspendedTransaction emptyList()
+            ?: return@dbRead emptyList()
 
         GameVariantEntity.find { GameVariantTable.game eq gameId }
             .with(*variantChain)
@@ -92,14 +96,14 @@ class GameVariantRepositoryImpl : IGameVariantRepository {
             .map { it.toDomain() }
     }
 
-    override suspend fun findAllByIntegration(integration: String): List<GameVariant> = newSuspendedTransaction {
+    override suspend fun findAllByIntegration(integration: String): List<GameVariant> = dbRead {
         GameVariantEntity.find { GameVariantTable.integration eq integration }
             .with(*variantChain)
             .toList()
             .map { it.toDomain() }
     }
 
-    override suspend fun findActiveByGameIdentity(gameIdentity: Identity): GameVariant? = newSuspendedTransaction {
+    override suspend fun findActiveByGameIdentity(gameIdentity: Identity): GameVariant? = dbRead {
         val variantId = GameVariantTable
             .join(GameTable, JoinType.INNER, GameVariantTable.game, GameTable.id)
             .join(ProviderTable, JoinType.INNER, GameTable.provider, ProviderTable.id)
@@ -113,7 +117,7 @@ class GameVariantRepositoryImpl : IGameVariantRepository {
                     (GameVariantTable.integration eq AggregatorTable.integration)
             }
             .firstOrNull()?.get(GameVariantTable.id)
-            ?: return@newSuspendedTransaction null
+            ?: return@dbRead null
 
         GameVariantEntity.findById(variantId)
             ?.load(*variantChain)
@@ -121,12 +125,13 @@ class GameVariantRepositoryImpl : IGameVariantRepository {
     }
 
     private fun UpdateBuilder<*>.fromDomain(gameVariant: GameVariant) {
-        val gameId = GameTable.select(GameTable.id)
-            .where { GameTable.identity eq gameVariant.game.identity.value }
-            .singleOrNull()?.get(GameTable.id)
-            ?: error("Game not found: ${gameVariant.game.identity.value}")
+        val gameId = domainRequireNotNull(
+            GameTable.select(GameTable.id)
+                .where { GameTable.identity eq gameVariant.game.identity.value }
+                .singleOrNull()?.get(GameTable.id)
+        ) { GameNotFoundException() }
 
-        this[GameVariantTable.symbol] = gameVariant.symbol
+        this[GameVariantTable.symbol] = gameVariant.symbol.value
         this[GameVariantTable.name] = gameVariant.name
         this[GameVariantTable.integration] = gameVariant.integration
         this[GameVariantTable.game] = gameId

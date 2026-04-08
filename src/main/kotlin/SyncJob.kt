@@ -1,7 +1,7 @@
-import application.cqrs.Bus
-import application.cqrs.aggregator.SyncAllActiveAggregatorCommand
-import application.event.ApplicationEvent
+import application.Bus
+import application.command.aggregator.SyncAllActiveAggregatorCommand
 import application.port.external.IEventPort
+import domain.event.DomainEvent
 import infrastructure.koin.aggregatorModule
 import infrastructure.koin.busModule
 import infrastructure.koin.configModule
@@ -22,7 +22,7 @@ private val logger = LoggerFactory.getLogger("com.nekgamebling.SyncJob")
 private val syncOverrideModule = module {
     single<IEventPort> {
         object : IEventPort {
-            override suspend fun publish(event: ApplicationEvent) {
+            override suspend fun publish(event: DomainEvent) {
                 // no-op: SyncJob does not publish events
             }
         }

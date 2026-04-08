@@ -263,22 +263,26 @@ message OpenDemoQuery {
   }
 }
 
+// Reusable filter shape — also used by future game-listing RPCs
+message GameFilter {
+  string query = 1;                      // Search query
+  optional bool active = 2;              // Filter by active status
+  optional string provider_identity = 3;
+  repeated string tags = 4;
+  optional bool bonus_bet_enable = 5;
+  optional bool bonus_wagering_enable = 6;
+  optional bool free_spin_enable = 7;
+  optional bool free_chip_enable = 8;
+  optional bool jackpot_enable = 9;
+  optional bool demo_enable = 10;
+  optional bool bonus_buy_enable = 11;
+}
+
 // List games with filtering and pagination
 message FindAllGameQuery {
-  string query = 1;                      // Search query
-  optional bool active = 2;             // Filter by active status
-  repeated string provider_identities = 3;
-  repeated string collection_identities = 4;
-  repeated string tags = 5;
-  optional bool bonus_bet_enable = 6;
-  optional bool bonus_wagering_enable = 7;
-  optional bool free_spin_enable = 8;
-  optional bool free_chip_enable = 9;
-  optional bool jackpot_enable = 10;
-  optional bool demo_enable = 11;
-  optional bool bonus_buy_enable = 12;
-  int32 page_num = 13;
-  int32 page_size = 14;
+  GameFilter filter = 1;
+  int32 page_num = 2;
+  int32 page_size = 3;
 
   message Result {
     repeated Item items = 1;             // Game items with provider

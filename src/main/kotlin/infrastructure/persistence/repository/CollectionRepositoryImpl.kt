@@ -1,20 +1,27 @@
 package infrastructure.persistence.repository
 
-import application.port.storage.ICollectionRepository
+import domain.exception.domainRequireNotNull
+import domain.exception.notfound.CollectionNotFoundException
 import domain.model.Collection
+import domain.repository.ICollectionRepository
 import domain.vo.Identity
 import domain.vo.Page
 import domain.vo.Pageable
+import infrastructure.persistence.dbRead
+import infrastructure.persistence.dbTransaction
+import infrastructure.persistence.entity.CollectionEntity
 import infrastructure.persistence.mapper.CollectionMapper.toCollection
 import infrastructure.persistence.table.CollectionTable
+import infrastructure.persistence.table.GameCollectionTable
 import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.upsert
 
 class CollectionRepositoryImpl : ICollectionRepository {
 
-    override suspend fun save(collection: Collection): Collection = newSuspendedTransaction {
+    override suspend fun save(collection: Collection): Collection = dbTransaction {
         CollectionTable.upsert(keys = arrayOf(CollectionTable.identity)) {
             it[identity] = collection.identity.value
             it[name] = collection.name.data
@@ -26,7 +33,7 @@ class CollectionRepositoryImpl : ICollectionRepository {
         collection
     }
 
-    override suspend fun findByIdentity(identity: Identity): Collection? = newSuspendedTransaction {
+    override suspend fun findByIdentity(identity: Identity): Collection? = dbRead {
         CollectionTable
             .selectAll()
             .where { CollectionTable.identity eq identity.value }
@@ -34,7 +41,7 @@ class CollectionRepositoryImpl : ICollectionRepository {
             ?.toCollection()
     }
 
-    override suspend fun findAll(pageable: Pageable): Page<Collection> = newSuspendedTransaction {
+    override suspend fun findAll(pageable: Pageable): Page<Collection> = dbRead {
         val totalItems = CollectionTable.selectAll().count()
         val items = CollectionTable
             .selectAll()
@@ -49,5 +56,26 @@ class CollectionRepositoryImpl : ICollectionRepository {
             totalItems = totalItems,
             currentPage = pageable.pageReal,
         )
+    }
+
+    override suspend fun addImage(identity: Identity, key: String, url: String) {
+        dbTransaction {
+            val entity = domainRequireNotNull(
+                CollectionEntity.find { CollectionTable.identity eq identity.value }.firstOrNull()
+            ) { CollectionNotFoundException() }
+            entity.images = entity.images.toMutableMap().apply { put(key, url) }
+        }
+    }
+
+    override suspend fun deleteByIdentity(identity: Identity) {
+        dbTransaction {
+            val entity = domainRequireNotNull(
+                CollectionEntity.find { CollectionTable.identity eq identity.value }.firstOrNull()
+            ) { CollectionNotFoundException() }
+
+            val collectionId = entity.id
+            GameCollectionTable.deleteWhere { collection eq collectionId }
+            entity.delete()
+        }
     }
 }

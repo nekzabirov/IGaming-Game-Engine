@@ -1,11 +1,12 @@
 package domain.model
 
+import domain.vo.GameSymbol
 import domain.vo.Locale
 
 data class GameVariant(
     val id: Long = Long.MIN_VALUE,
 
-    val symbol: String,
+    val symbol: GameSymbol,
 
     val name: String,
 
@@ -29,5 +30,9 @@ data class GameVariant(
 
     val platforms: List<Platform>,
 
-    val playLines: Int = 0
-)
+    val playLines: Int = 0,
+) {
+    fun supportsLocale(locale: Locale): Boolean = locales.contains(locale)
+
+    fun supportsPlatform(platform: Platform): Boolean = platforms.contains(platform)
+}

@@ -26,11 +26,4 @@ data class Game(
     override var images: ImageMap = ImageMap.EMPTY,
 
     override var order: Int = 0,
-) : Activatable, Imageable, Orderable {
-
-    lateinit var variant: GameVariant
-
-    val hasVariant: Boolean
-        get() = ::variant.isInitialized
-
-}
+) : Activatable, Imageable, Orderable

@@ -1,7 +1,7 @@
 package infrastructure.handler.collection
 
-import application.cqrs.ICommandHandler
-import application.cqrs.collection.UpdateCollectionGameCommand
+import application.ICommandHandler
+import application.command.collection.UpdateCollectionGameCommand
 import domain.exception.notfound.CollectionNotFoundException
 import infrastructure.persistence.table.CollectionTable
 import infrastructure.persistence.table.GameCollectionTable
@@ -11,11 +11,11 @@ import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import infrastructure.persistence.dbTransaction
 
 class UpdateCollectionGameCommandHandler : ICommandHandler<UpdateCollectionGameCommand, Unit> {
     override suspend fun handle(command: UpdateCollectionGameCommand): Result<Unit> = runCatching {
-        newSuspendedTransaction {
+        dbTransaction {
             val collectionRow = CollectionTable.selectAll()
                 .where { CollectionTable.identity eq command.identity.value }
                 .firstOrNull() ?: throw CollectionNotFoundException()

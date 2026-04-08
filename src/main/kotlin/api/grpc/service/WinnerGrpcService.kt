@@ -2,8 +2,8 @@ package api.grpc.service
 
 import api.grpc.config.handleGrpcCall
 import api.grpc.mapper.GameProtoMapper.toProto
-import application.cqrs.Bus
-import application.cqrs.winner.LastWinnerQuery
+import application.Bus
+import application.query.winner.LastWinnerQuery
 import com.nekgamebling.game.v1.FindAllWinnersQueryKt
 import com.nekgamebling.game.v1.WinnerServiceGrpcKt
 import com.nekgamebling.game.v1.winnerItemDto
@@ -36,7 +36,7 @@ class WinnerGrpcService(
         FindAllWinnersQueryKt.result {
             items.addAll(page.items.map { win ->
                 winnerItemDto {
-                    game = win.game.toProto()
+                    game = win.game.toProto(win.variant)
                     amount = win.amount.value
                     currency = win.currency.value
                     playerId = win.playerId.value

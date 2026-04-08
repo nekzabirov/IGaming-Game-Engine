@@ -14,6 +14,7 @@ Game catalog management, launching, and player favorites.
 | `Find` | `FindGameQuery` | `FindGameQuery.Result` | Get a single game by identity |
 | `FindAll` | `FindAllGameQuery` | `FindAllGameQuery.Result` | List/filter games with pagination |
 | `Batch` | `BatchGameQuery` | `BatchGameQuery.Result` | Batch fetch games |
+| `Delete` | `DeleteGameCommand` | `Empty` | Hard-delete a game by identity |
 | `UpdateImage` | `UpdateGameImageCommand` | `Empty` | Upload/replace a game image |
 | `Play` | `PlayGameCommand` | `PlayGameCommand.Result` | Open a real-money game session |
 | `OpenDemo` | `OpenDemoQuery` | `OpenDemoQuery.Result` | Open a demo game session |
@@ -59,22 +60,26 @@ message FindGameQuery.Result {
 Paginated game listing with filters. Returns games with providers, aggregators, and collections used across the result set.
 
 ```protobuf
-// Request
-message FindAllGameQuery {
+// Reusable filter shape — also used by future game-listing RPCs
+message GameFilter {
   string query = 1;                              // Free-text search
   optional bool active = 2;                      // Filter by active status
-  repeated string provider_identities = 3;       // Filter by providers
-  repeated string collection_identities = 4;     // Filter by collections
-  repeated string tags = 5;                      // Filter by tags
-  optional bool bonus_bet_enable = 6;
-  optional bool bonus_wagering_enable = 7;
-  optional bool free_spin_enable = 8;
-  optional bool free_chip_enable = 9;
-  optional bool jackpot_enable = 10;
-  optional bool demo_enable = 11;
-  optional bool bonus_buy_enable = 12;
-  int32 page_num = 13;                           // Page number (0-based)
-  int32 page_size = 14;                          // Items per page
+  optional string provider_identity = 3;         // Filter by provider
+  repeated string tags = 4;                      // Filter by tags
+  optional bool bonus_bet_enable = 5;
+  optional bool bonus_wagering_enable = 6;
+  optional bool free_spin_enable = 7;
+  optional bool free_chip_enable = 8;
+  optional bool jackpot_enable = 9;
+  optional bool demo_enable = 10;
+  optional bool bonus_buy_enable = 11;
+}
+
+// Request
+message FindAllGameQuery {
+  GameFilter filter = 1;                         // Filter criteria
+  int32 page_num = 2;                            // Page number (0-based)
+  int32 page_size = 3;                           // Items per page
 }
 
 // Response
@@ -113,6 +118,16 @@ message BatchGameQuery.Result {
     GameDto game = 1;
     ProviderDto provider = 2;
   }
+}
+```
+
+### Delete
+
+Hard-delete a game by identity. Cascades through `GameFavouriteTable` and `GameCollectionTable` association rows. Raises `GameNotFoundException` (`NOT_FOUND`) if the game does not exist.
+
+```protobuf
+message DeleteGameCommand {
+  string identity = 1;
 }
 ```
 
@@ -189,30 +204,30 @@ Game provider management (e.g. "Pragmatic Play", "NetEnt").
 
 | RPC | Request | Response | Description |
 |-----|---------|----------|-------------|
-| `Save` | `ProviderDto` | `Empty` | Create or update a provider |
+| `Save` | `SaveProviderCommand` | `Empty` | Create or update a provider |
 | `Find` | `FindProviderQuery` | `FindProviderQuery.Result` | Get provider with game counts |
 | `FindAll` | `FindAllProviderQuery` | `FindAllProviderQuery.Result` | List/filter providers with pagination |
 | `Batch` | `BatchProviderQuery` | `BatchProviderQuery.Result` | Batch fetch providers by identities |
+| `Delete` | `DeleteProviderCommand` | `Empty` | Hard-delete a provider by identity |
 | `UpdateImage` | `UpdateProviderImageCommand` | `Empty` | Upload/replace a provider image |
 
 ### Save
 
-Create or update a provider. Pass the full `ProviderDto`.
+Create or update a provider with explicit typed fields. Image URLs are managed separately via `UpdateImage`.
 
 ```protobuf
-message ProviderDto {
+message SaveProviderCommand {
   string identity = 1;              // Provider unique identifier
   string name = 2;                  // Display name
-  map<string, string> images = 3;   // Key → CDN URL
-  int32 order = 4;                  // Sort order
-  bool active = 5;                  // Active status
-  string aggregator_identity = 6;   // Parent aggregator identity
+  int32 order = 3;                  // Sort order
+  bool active = 4;                  // Active status
+  string aggregator_identity = 5;   // Parent aggregator identity
 }
 ```
 
 ### Find
 
-Returns a provider with its aggregator and game counts.
+Returns a provider with its aggregator denormalized.
 
 ```protobuf
 // Request
@@ -224,44 +239,40 @@ message FindProviderQuery {
 message FindProviderQuery.Result {
   ProviderDto item = 1;
   AggregatorDto aggregator = 2;
-  int32 active_game_count = 3;       // Number of active games
-  int32 deactivate_game_count = 4;   // Number of inactive games
 }
 ```
 
 ### FindAll
 
-Paginated provider listing with optional filters.
+Paginated provider listing. Filter criteria are wrapped in a dedicated `ProviderFilter` sub-message.
 
 ```protobuf
+message ProviderFilter {
+  string query = 1;                              // Free-text search
+  optional bool active = 2;                      // Filter by status
+  optional string aggregator_identity = 3;       // Filter by aggregator
+  repeated string in_collection_identities = 4;  // Filter by collection identities
+                                                 // (providers having games in these collections)
+}
+
 // Request
 message FindAllProviderQuery {
-  string query = 1;                          // Free-text search
-  optional bool active = 2;                  // Filter by status
-  optional string aggregator_identity = 3;   // Filter by aggregator
-  int32 page_num = 4;
-  int32 page_size = 5;
-  repeated string tags = 6;                  // Filter by game tags (providers having games with these tags)
-  repeated string collection_identities = 7; // Filter by collection identities (providers having games in these collections)
+  ProviderFilter filter = 1;
+  int32 page_num = 2;
+  int32 page_size = 3;
 }
 
 // Response
 message FindAllProviderQuery.Result {
-  repeated Item items = 1;
-  repeated AggregatorDto aggregators = 2;
+  repeated ProviderDto items = 1;
+  repeated AggregatorDto aggregators = 2;        // All referenced aggregators (denormalized)
   int32 total_items = 3;
-
-  message Item {
-    ProviderDto provider = 1;
-    int32 active_game_count = 3;
-    int32 deactivate_game_count = 4;
-  }
 }
 ```
 
 ### Batch
 
-Fetch providers by identities. Returns providers with their aggregators.
+Fetch providers by identities. Returns providers with their aggregators denormalized.
 
 ```protobuf
 // Request
@@ -271,12 +282,18 @@ message BatchProviderQuery {
 
 // Response
 message BatchProviderQuery.Result {
-  repeated Item items = 1;
+  repeated ProviderDto items = 1;
   repeated AggregatorDto aggregators = 2;
+}
+```
 
-  message Item {
-    ProviderDto provider = 1;
-  }
+### Delete
+
+Hard-delete a provider by identity. Raises `ProviderNotFoundException` (`NOT_FOUND`) if missing. Callers must delete dependent games first — the underlying FK will reject otherwise.
+
+```protobuf
+message DeleteProviderCommand {
+  string identity = 1;
 }
 ```
 
@@ -295,20 +312,22 @@ message UpdateProviderImageCommand {
 
 ## AggregatorService
 
-Aggregator configuration management (e.g. ONEGAMEHUB, PRAGMATIC, PATEPLAY).
+Aggregator configuration management (e.g. ONEGAMEHUB, PRAGMATIC, PATEPLAY). Aggregator has no images, so there is no `UpdateImage` RPC.
 
 | RPC | Request | Response | Description |
 |-----|---------|----------|-------------|
-| `Save` | `AggregatorDto` | `Empty` | Create or update an aggregator |
-| `Find` | `FindAggregatorQuery` | `AggregatorDto` | Get aggregator by identity |
-| `FindAll` | `FindAllAggregatorQuery` | `FindAllAggregatorResult` | List/filter aggregators with pagination |
+| `Save` | `SaveAggregatorCommand` | `Empty` | Create or update an aggregator |
+| `Find` | `FindAggregatorQuery` | `FindAggregatorQuery.Result` | Get aggregator by identity |
+| `FindAll` | `FindAllAggregatorQuery` | `FindAllAggregatorQuery.Result` | List/filter aggregators with pagination |
+| `Batch` | `BatchAggregatorQuery` | `BatchAggregatorQuery.Result` | Batch fetch aggregators by identities |
+| `Delete` | `DeleteAggregatorCommand` | `Empty` | Hard-delete an aggregator by identity |
 
 ### Save
 
-Create or update an aggregator. The `config` field is a JSON object with aggregator-specific settings (API keys, endpoints, etc.).
+Create or update an aggregator with explicit typed fields. The `config` field is a `google.protobuf.Struct` carrying aggregator-specific settings (API keys, endpoints, etc.) — handed to the aggregator adapter at runtime.
 
 ```protobuf
-message AggregatorDto {
+message SaveAggregatorCommand {
   string identity = 1;               // Aggregator unique identifier
   string integration = 2;            // Integration type: "ONEGAMEHUB", "PRAGMATIC", "PATEPLAY"
   google.protobuf.Struct config = 3; // Aggregator-specific JSON configuration
@@ -318,29 +337,68 @@ message AggregatorDto {
 
 ### Find
 
+Returns the aggregator wrapped in a nested `Result` message for shape consistency with the other catalog services.
+
 ```protobuf
+// Request
 message FindAggregatorQuery {
   string identity = 1;
 }
-// Returns: AggregatorDto
+
+// Response
+message FindAggregatorQuery.Result {
+  AggregatorDto item = 1;
+}
 ```
 
 ### FindAll
 
+Paginated aggregator listing. Filter criteria live in a dedicated `AggregatorFilter` sub-message.
+
 ```protobuf
+message AggregatorFilter {
+  string query = 1;                  // Free-text search
+  optional bool active = 2;          // Filter by status
+  optional string integration = 3;   // Filter by integration type
+}
+
 // Request
 message FindAllAggregatorQuery {
-  string query = 1;                  // Free-text search
-  optional bool active = 2;         // Filter by status
-  optional string integration = 3;  // Filter by integration type
-  int32 page_num = 4;
-  int32 page_size = 5;
+  AggregatorFilter filter = 1;
+  int32 page_num = 2;
+  int32 page_size = 3;
 }
 
 // Response
-message FindAllAggregatorResult {
+message FindAllAggregatorQuery.Result {
   repeated AggregatorDto items = 1;
   int32 total_items = 2;
+}
+```
+
+### Batch
+
+Fetch aggregators by identities. Missing identities are silently skipped — the response contains only the rows that were found.
+
+```protobuf
+// Request
+message BatchAggregatorQuery {
+  repeated string identities = 1;
+}
+
+// Response
+message BatchAggregatorQuery.Result {
+  repeated AggregatorDto items = 1;
+}
+```
+
+### Delete
+
+Hard-delete an aggregator by identity. Raises `AggregatorNotFoundException` (`NOT_FOUND`) if missing. Callers must delete dependent providers first.
+
+```protobuf
+message DeleteAggregatorCommand {
+  string identity = 1;
 }
 ```
 
@@ -352,22 +410,24 @@ Game collection management (e.g. "Hot Games", "New Releases") with multi-languag
 
 | RPC | Request | Response | Description |
 |-----|---------|----------|-------------|
-| `Save` | `CollectionDto` | `Empty` | Create or update a collection |
+| `Save` | `SaveCollectionCommand` | `Empty` | Create or update a collection |
 | `Find` | `FindCollectionQuery` | `FindCollectionQuery.Result` | Get collection with game/provider counts |
 | `FindAll` | `FindAllCollectionQuery` | `FindAllCollectionQuery.Result` | List/filter collections with pagination |
 | `Batch` | `BatchCollectionQuery` | `BatchCollectionQuery.Result` | Batch fetch collections by identities |
+| `Delete` | `DeleteCollectionCommand` | `Empty` | Hard-delete a collection by identity |
 | `UpdateGames` | `UpdateCollectionGamesCommand` | `Empty` | Add/remove games from a collection |
 | `UpdateImage` | `UpdateCollectionImageCommand` | `Empty` | Upload/replace a collection image |
 
 ### Save
 
+Create or update a collection with explicit typed fields. Image URLs are managed separately via `UpdateImage`.
+
 ```protobuf
-message CollectionDto {
+message SaveCollectionCommand {
   string identity = 1;              // Collection unique identifier
-  map<string, string> name = 2;     // Locale → name (e.g. {"en": "Hot Games", "de": "Heisse Spiele"})
-  map<string, string> images = 3;   // Key → CDN URL
-  bool active = 4;
-  int32 order = 5;                  // Sort order
+  map<string, string> name = 2;     // Locale → display name (e.g. {"en": "Hot Games", "de": "Heisse Spiele"})
+  bool active = 3;
+  int32 order = 4;                  // Sort order
 }
 ```
 
@@ -382,36 +442,34 @@ message FindCollectionQuery {
 // Response
 message FindCollectionQuery.Result {
   CollectionDto item = 1;
-  int32 game_active_count = 2;
-  int32 game_deactivate_count = 3;
-  int32 provider_count = 4;
 }
 ```
 
 ### FindAll
 
+Paginated collection listing. Filter criteria live in a dedicated `CollectionFilter` sub-message.
+
 ```protobuf
+message CollectionFilter {
+  string query = 1;                              // Free-text search
+  optional bool active = 2;                      // Filter by status
+  repeated string in_tags = 3;                   // Filter by game tags
+                                                 // (collections containing games with these tags)
+  repeated string in_provider_identities = 4;    // Filter by provider identities
+                                                 // (collections containing games from these providers)
+}
+
 // Request
 message FindAllCollectionQuery {
-  string query = 1;
-  optional bool active = 2;
-  int32 page_num = 3;
-  int32 page_size = 4;
-  repeated string tags = 5;            // Filter by game tags (collections containing games with these tags)
-  repeated string provider_identities = 6;  // Filter by provider identities (collections containing games from these providers)
+  CollectionFilter filter = 1;
+  int32 page_num = 2;
+  int32 page_size = 3;
 }
 
 // Response
 message FindAllCollectionQuery.Result {
-  repeated Item items = 1;
+  repeated CollectionDto items = 1;
   int32 total_items = 2;
-
-  message Item {
-    CollectionDto collection = 1;
-    int32 game_active_count = 2;
-    int32 game_deactivate_count = 3;
-    int32 provider_count = 4;
-  }
 }
 ```
 
@@ -427,11 +485,17 @@ message BatchCollectionQuery {
 
 // Response
 message BatchCollectionQuery.Result {
-  repeated Item items = 1;
+  repeated CollectionDto items = 1;
+}
+```
 
-  message Item {
-    CollectionDto collection = 1;
-  }
+### Delete
+
+Hard-delete a collection by identity. Cascades through `GameCollectionTable` association rows. Raises `CollectionNotFoundException` (`NOT_FOUND`) if missing.
+
+```protobuf
+message DeleteCollectionCommand {
+  string identity = 1;
 }
 ```
 

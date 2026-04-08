@@ -2,6 +2,7 @@ package infrastructure.persistence.mapper
 
 import domain.model.GameVariant
 import domain.model.Platform
+import domain.vo.GameSymbol
 import domain.vo.Locale
 import infrastructure.persistence.entity.GameVariantEntity
 import infrastructure.persistence.mapper.GameMapper.toDomain
@@ -10,7 +11,7 @@ object GameVariantMapper {
 
     fun GameVariantEntity.toDomain(): GameVariant = GameVariant(
         id = id.value,
-        symbol = symbol,
+        symbol = GameSymbol(symbol),
         name = name,
         integration = integration,
         game = game.toDomain(),

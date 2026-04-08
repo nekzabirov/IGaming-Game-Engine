@@ -1,3 +1,0 @@
-package application.event
-
-sealed interface ApplicationEvent

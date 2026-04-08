@@ -1,16 +1,19 @@
 package infrastructure.handler.winner
 
-import application.cqrs.IQueryHandler
-import application.cqrs.winner.LastWin
-import application.cqrs.winner.LastWinnerQuery
+import application.IQueryHandler
+import application.query.winner.LastWin
+import application.query.winner.LastWinnerQuery
+import domain.model.Game
 import domain.model.GameVariant
 import domain.model.Platform
 import domain.model.SpinType
 import domain.vo.Amount
 import domain.vo.Currency
+import domain.vo.GameSymbol
 import domain.vo.Locale
 import domain.vo.Page
 import domain.vo.PlayerId
+import infrastructure.persistence.dbRead
 import infrastructure.persistence.mapper.GameMapper.toGame
 import infrastructure.persistence.table.AggregatorTable
 import infrastructure.persistence.table.GameTable
@@ -24,11 +27,10 @@ import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.andWhere
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 
 class LastWinnerQueryHandler : IQueryHandler<LastWinnerQuery, Page<LastWin>> {
 
-    override suspend fun handle(query: LastWinnerQuery): Page<LastWin> = newSuspendedTransaction {
+    override suspend fun handle(query: LastWinnerQuery): Page<LastWin> = dbRead {
         val baseQuery = SpinTable
             .innerJoin(RoundTable)
             .join(SessionTable, JoinType.INNER, RoundTable.session, SessionTable.id)
@@ -76,33 +78,13 @@ class LastWinnerQueryHandler : IQueryHandler<LastWinnerQuery, Page<LastWin>> {
                 (SpinTable.type eq SpinType.SETTLE) and (RoundTable.freespinId.isNull())
             }
 
-        query.gameIdentity?.let {
-            baseQuery.andWhere { GameTable.identity eq it.value }
-        }
-
-        query.minAmount?.let {
-            baseQuery.andWhere { SpinTable.amount greaterEq it.value }
-        }
-
-        query.maxAmount?.let {
-            baseQuery.andWhere { SpinTable.amount lessEq it.value }
-        }
-
-        query.currency?.let {
-            baseQuery.andWhere { SessionTable.currency eq it.value }
-        }
-
-        query.playerId?.let {
-            baseQuery.andWhere { SessionTable.playerId eq it.value }
-        }
-
-        query.fromDate?.let {
-            baseQuery.andWhere { RoundTable.createdAt greaterEq it }
-        }
-
-        query.toDate?.let {
-            baseQuery.andWhere { RoundTable.createdAt lessEq it }
-        }
+        query.gameIdentity?.let { baseQuery.andWhere { GameTable.identity eq it.value } }
+        query.minAmount?.let { baseQuery.andWhere { SpinTable.amount greaterEq it.value } }
+        query.maxAmount?.let { baseQuery.andWhere { SpinTable.amount lessEq it.value } }
+        query.currency?.let { baseQuery.andWhere { SessionTable.currency eq it.value } }
+        query.playerId?.let { baseQuery.andWhere { SessionTable.playerId eq it.value } }
+        query.fromDate?.let { baseQuery.andWhere { RoundTable.createdAt greaterEq it } }
+        query.toDate?.let { baseQuery.andWhere { RoundTable.createdAt lessEq it } }
 
         val totalItems = baseQuery.count()
         val pageable = query.pageable
@@ -113,11 +95,11 @@ class LastWinnerQueryHandler : IQueryHandler<LastWinnerQuery, Page<LastWin>> {
             .offset(pageable.offset)
             .toList()
 
-        val spins = rows.map { row ->
+        val items = rows.map { row ->
             val game = row.toGame()
-            game.variant = row.toGameVariant(game)
             LastWin(
                 game = game,
+                variant = row.toGameVariant(game),
                 amount = Amount(row[SpinTable.amount]),
                 currency = Currency(row[SessionTable.currency]),
                 playerId = PlayerId(row[SessionTable.playerId]),
@@ -126,16 +108,16 @@ class LastWinnerQueryHandler : IQueryHandler<LastWinnerQuery, Page<LastWin>> {
         }
 
         Page(
-            items = spins,
+            items = items,
             totalPages = pageable.getTotalPages(totalItems),
             totalItems = totalItems,
             currentPage = pageable.pageReal,
         )
     }
 
-    private fun ResultRow.toGameVariant(game: domain.model.Game): GameVariant = GameVariant(
+    private fun ResultRow.toGameVariant(game: Game): GameVariant = GameVariant(
         id = this[GameVariantTable.id].value,
-        symbol = this[GameVariantTable.symbol],
+        symbol = GameSymbol(this[GameVariantTable.symbol]),
         name = this[GameVariantTable.name],
         integration = this[GameVariantTable.integration],
         game = game,

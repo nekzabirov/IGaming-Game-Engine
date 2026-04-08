@@ -5,35 +5,88 @@ package game.v1;
 option java_package = "com.nekgamebling.game.v1";
 option java_multiple_files = true;
 
+import "google/protobuf/struct.proto";
 import "game/v1/dto/aggregator.dto.proto";
 import "game/v1/dto/common.dto.proto";
 
+// ---------------------------------------------------------------------------
+// Aggregator catalog service — full CRUD.
+//
+// Every Save is a typed upsert mirroring
+// `application.command.aggregator.SaveAggregatorCommand`. Find / FindAll
+// return nested `.Result` messages for consistency with the other three
+// catalog services. Aggregator has no images, so there is no UpdateImage RPC.
+// ---------------------------------------------------------------------------
 service AggregatorService {
-  rpc Save(AggregatorDto) returns (Empty);
+  rpc Save(SaveAggregatorCommand) returns (Empty);
 
-  rpc Find(FindAggregatorQuery) returns (AggregatorDto);
+  rpc Find(FindAggregatorQuery) returns (FindAggregatorQuery.Result);
 
-  rpc FindAll(FindAllAggregatorQuery) returns (FindAllAggregatorResult);
+  rpc FindAll(FindAllAggregatorQuery) returns (FindAllAggregatorQuery.Result);
+
+  rpc Batch(BatchAggregatorQuery) returns (BatchAggregatorQuery.Result);
+
+  rpc Delete(DeleteAggregatorCommand) returns (Empty);
 }
 
-message FindAggregatorQuery {
+// ---------------------------------------------------------------------------
+// Commands
+// ---------------------------------------------------------------------------
+
+message SaveAggregatorCommand {
+  string identity = 1;
+
+  string integration = 2;
+
+  // Arbitrary vendor-specific configuration (URLs, credentials, feature
+  // toggles). Stored verbatim and handed to the aggregator adapter at runtime.
+  google.protobuf.Struct config = 3;
+
+  bool active = 4;
+}
+
+message DeleteAggregatorCommand {
   string identity = 1;
 }
 
-message FindAllAggregatorQuery {
+// ---------------------------------------------------------------------------
+// Queries
+// ---------------------------------------------------------------------------
+
+message FindAggregatorQuery {
+  string identity = 1;
+
+  message Result {
+    AggregatorDto item = 1;
+  }
+}
+
+message AggregatorFilter {
   string query = 1;
 
   optional bool active = 2;
 
   optional string integration = 3;
-
-  int32 page_num = 4;
-
-  int32 page_size = 5;
 }
 
-message FindAllAggregatorResult {
-  repeated AggregatorDto items = 1;
+message FindAllAggregatorQuery {
+  AggregatorFilter filter = 1;
 
-  int32 total_items = 2;
+  int32 page_num = 2;
+
+  int32 page_size = 3;
+
+  message Result {
+    repeated AggregatorDto items = 1;
+
+    int32 total_items = 2;
+  }
+}
+
+message BatchAggregatorQuery {
+  repeated string identities = 1;
+
+  message Result {
+    repeated AggregatorDto items = 1;
+  }
 }

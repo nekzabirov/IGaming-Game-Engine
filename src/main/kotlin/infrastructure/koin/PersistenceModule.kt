@@ -1,13 +1,13 @@
 package infrastructure.koin
 
-import application.port.storage.IAggregatorRepository
-import application.port.storage.ICollectionRepository
-import application.port.storage.IGameRepository
-import application.port.storage.IGameVariantRepository
-import application.port.storage.IProviderRepository
-import application.port.storage.IRoundRepository
-import application.port.storage.ISessionRepository
-import application.port.storage.ISpinRepository
+import domain.repository.IAggregatorRepository
+import domain.repository.ICollectionRepository
+import domain.repository.IGameRepository
+import domain.repository.IGameVariantRepository
+import domain.repository.IProviderRepository
+import domain.repository.IRoundRepository
+import domain.repository.ISessionRepository
+import domain.repository.ISpinRepository
 import infrastructure.persistence.repository.AggregatorRepositoryImpl
 import infrastructure.persistence.repository.CollectionRepositoryImpl
 import infrastructure.persistence.repository.GameRepositoryImpl

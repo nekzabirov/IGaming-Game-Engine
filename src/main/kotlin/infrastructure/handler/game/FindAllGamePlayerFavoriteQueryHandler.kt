@@ -1,61 +1,54 @@
 package infrastructure.handler.game
 
-import application.cqrs.IQueryHandler
-import application.cqrs.game.FindAllGamePlayerFavoriteQuery
-import domain.model.Game
+import application.IQueryHandler
+import application.query.game.FindAllGamePlayerFavoriteQuery
+import application.query.game.GameView
 import domain.vo.Page
+import infrastructure.persistence.dbRead
 import infrastructure.persistence.entity.GameEntity
-import infrastructure.persistence.entity.GameVariantEntity
 import infrastructure.persistence.entity.ProviderEntity
 import infrastructure.persistence.mapper.GameMapper.toDomain
-import infrastructure.persistence.mapper.GameVariantMapper
+import infrastructure.persistence.mapper.GameVariantMapper.toDomain
 import infrastructure.persistence.table.GameFavouriteTable
-import infrastructure.persistence.table.GameVariantTable
+import infrastructure.persistence.table.GameTable
 import org.jetbrains.exposed.dao.with
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 
-class FindAllGamePlayerFavoriteQueryHandler : IQueryHandler<FindAllGamePlayerFavoriteQuery, Page<Game>> {
+class FindAllGamePlayerFavoriteQueryHandler : IQueryHandler<FindAllGamePlayerFavoriteQuery, Page<GameView>> {
 
-    override suspend fun handle(query: FindAllGamePlayerFavoriteQuery): Page<Game> = newSuspendedTransaction {
-        val totalItems = GameFavouriteTable
-            .selectAll()
-            .where { GameFavouriteTable.playerId eq query.playerId.value }
-            .count()
+    override suspend fun handle(query: FindAllGamePlayerFavoriteQuery): Page<GameView> = dbRead {
+        val filterCondition = query.filter.toCondition()
 
+        val baseQuery = (GameFavouriteTable innerJoin GameTable)
+            .select(GameTable.id, GameFavouriteTable.id)
+            .where {
+                (GameFavouriteTable.playerId eq query.playerId.value) and filterCondition
+            }
+
+        val totalItems = baseQuery.count()
         val pageable = query.pageable
 
-        val gameIds = GameFavouriteTable
-            .select(GameFavouriteTable.game)
-            .where { GameFavouriteTable.playerId eq query.playerId.value }
+        val gameIds = baseQuery
             .orderBy(GameFavouriteTable.id to SortOrder.DESC)
             .limit(pageable.sizeReal)
             .offset(pageable.offset)
-            .map { it[GameFavouriteTable.game] }
+            .map { it[GameTable.id] }
 
         val entities = GameEntity.forEntityIds(gameIds)
             .with(GameEntity::provider, GameEntity::collections, ProviderEntity::aggregator)
             .toList()
 
-        val integrations = entities.map { it.provider.aggregator.integration }.distinct()
+        val variantMap = entities.loadVariantMap()
 
-        val variantMap = GameVariantEntity.find {
-            (GameVariantTable.game inList entities.map { it.id }) and
-                    (GameVariantTable.integration inList integrations)
-        }.toList().associateBy { it.game.id.value to it.integration }
-
-        val gamesById = entities.associate { entity ->
-            val game = entity.toDomain()
-            val variantEntity = variantMap[entity.id.value to entity.provider.aggregator.integration]
-            if (variantEntity != null) {
-                game.variant = GameVariantMapper.run { variantEntity.toDomain() }
-            }
-            entity.id to game
+        val viewsById = entities.associate { entity ->
+            entity.id to GameView(
+                game = entity.toDomain(),
+                variant = entity.variantFrom(variantMap)?.toDomain(),
+            )
         }
 
-        val items = gameIds.mapNotNull { id -> gamesById[id] }
+        val items = gameIds.mapNotNull { id -> viewsById[id] }
 
         Page(
             items = items,

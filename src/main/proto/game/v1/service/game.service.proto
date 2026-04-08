@@ -11,6 +11,18 @@ import "game/v1/dto/aggregator.dto.proto";
 import "game/v1/dto/collection.dto.proto";
 import "game/v1/dto/common.dto.proto";
 
+// ---------------------------------------------------------------------------
+// Game catalog service — full CRUD plus gameplay entrypoints.
+//
+// Naming convention (uniform across Game / Collection / Provider / Aggregator):
+//   Save<X>Command     — create-or-update (upsert) with typed fields
+//   Find<X>Query       — read one by identity; Result carries denormalized
+//                        related entities (provider + aggregator + collections)
+//   FindAll<X>Query    — paged read; carries a single <X>Filter sub-message
+//   Batch<X>Query      — read many by repeated string identities
+//   Delete<X>Command   — hard delete by identity
+//   Update<X>ImageCommand — attach/replace a keyed image URL
+// ---------------------------------------------------------------------------
 service GameService {
   rpc Save(SaveGameCommand) returns (Empty);
 
@@ -19,6 +31,8 @@ service GameService {
   rpc FindAll(FindAllGameQuery) returns (FindAllGameQuery.Result);
 
   rpc Batch(BatchGameQuery) returns (BatchGameQuery.Result);
+
+  rpc Delete(DeleteGameCommand) returns (Empty);
 
   rpc UpdateImage(UpdateGameImageCommand) returns (Empty);
 
@@ -30,6 +44,10 @@ service GameService {
 
   rpc RemoveFavourite(GameFavouriteCommand) returns (Empty);
 }
+
+// ---------------------------------------------------------------------------
+// Commands
+// ---------------------------------------------------------------------------
 
 message SaveGameCommand {
   string identity = 1;
@@ -45,6 +63,48 @@ message SaveGameCommand {
   string provider_identity = 6;
 }
 
+message DeleteGameCommand {
+  string identity = 1;
+}
+
+message UpdateGameImageCommand {
+  string identity = 1;
+
+  string key = 2;
+
+  bytes file = 3;
+
+  string extension = 4;
+}
+
+message PlayGameCommand {
+  string identity = 1;
+
+  string player_id = 2;
+
+  string locale = 3;
+
+  PlatformDto platform = 4;
+
+  string currency = 5;
+
+  optional int64 max_spin_place_amount = 6;
+
+  message Result {
+    string launch_url = 1;
+  }
+}
+
+message GameFavouriteCommand {
+  string identity = 1;
+
+  string player_id = 2;
+}
+
+// ---------------------------------------------------------------------------
+// Queries
+// ---------------------------------------------------------------------------
+
 message FindGameQuery {
   string identity = 1;
 
@@ -59,38 +119,45 @@ message FindGameQuery {
   }
 }
 
-message FindAllGameQuery {
+// Composite filter for FindAllGameQuery. Every boolean is tri-state via
+// `optional` — "unset" means "do not filter on this flag".
+message GameFilter {
   string query = 1;
 
   optional bool active = 2;
 
-  repeated string provider_identities = 3;
+  optional string provider_identity = 3;
 
-  repeated string collection_identities = 4;
+  repeated string tags = 4;
 
-  repeated string tags = 5;
+  optional bool bonus_bet_enable = 5;
 
-  optional bool bonus_bet_enable = 6;
+  optional bool bonus_wagering_enable = 6;
 
-  optional bool bonus_wagering_enable = 7;
+  optional bool free_spin_enable = 7;
 
-  optional bool free_spin_enable = 8;
+  optional bool free_chip_enable = 8;
 
-  optional bool free_chip_enable = 9;
+  optional bool jackpot_enable = 9;
 
-  optional bool jackpot_enable = 10;
+  optional bool demo_enable = 10;
 
-  optional bool demo_enable = 11;
+  optional bool bonus_buy_enable = 11;
+}
 
-  optional bool bonus_buy_enable = 12;
+message FindAllGameQuery {
+  GameFilter filter = 1;
 
-  int32 page_num = 13;
+  int32 page_num = 2;
 
-  int32 page_size = 14;
+  int32 page_size = 3;
 
   message Result {
     repeated Item items = 1;
 
+    // Denormalized sets — every Item.provider points by identity into
+    // `providers`; each provider's aggregator is in `aggregators`; any
+    // collection referenced by an item game is in `collections`.
     repeated ProviderDto providers = 2;
 
     repeated AggregatorDto aggregators = 3;
@@ -127,24 +194,6 @@ message BatchGameQuery {
   }
 }
 
-message PlayGameCommand {
-  string identity = 1;
-
-  string player_id = 2;
-
-  string locale = 3;
-
-  PlatformDto platform = 4;
-
-  string currency = 5;
-
-  optional int64 max_spin_place_amount = 6;
-
-  message Result {
-    string launch_url = 1;
-  }
-}
-
 message OpenDemoQuery {
   string identity = 1;
 
@@ -160,20 +209,3 @@ message OpenDemoQuery {
     string launch_url = 1;
   }
 }
-
-message GameFavouriteCommand {
-  string identity = 1;
-
-  string player_id = 2;
-}
-
-message UpdateGameImageCommand {
-  string identity = 1;
-
-  string key = 2;
-
-  bytes file = 3;
-
-  string extension = 4;
-}
-

@@ -1,10 +1,10 @@
 package infrastructure.aggregator.onegamehub.webhook
 
-import application.cqrs.Bus
-import application.cqrs.session.FindSessionBalanceQuery
-import application.cqrs.session.EndRoundSessionCommand
-import application.cqrs.session.PlaceSpinSessionCommand
-import application.cqrs.session.SettleSpinSessionCommand
+import application.Bus
+import application.query.session.FindSessionBalanceQuery
+import application.command.session.EndRoundSessionCommand
+import application.command.session.PlaceSpinSessionCommand
+import application.command.session.SettleSpinSessionCommand
 import domain.exception.forbidden.InsufficientBalanceException
 import domain.exception.forbidden.MaxPlaceSpinException
 import domain.exception.notfound.SessionNotFoundException

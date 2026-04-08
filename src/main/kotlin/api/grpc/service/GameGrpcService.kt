@@ -3,17 +3,19 @@ package api.grpc.service
 import api.grpc.config.handleGrpcCall
 import api.grpc.mapper.AggregatorProtoMapper.toProto
 import api.grpc.mapper.CollectionProtoMapper.toProto
+import api.grpc.mapper.GameFilterProtoMapper.toDomain
 import api.grpc.mapper.GameProtoMapper.toProto
 import api.grpc.mapper.PlatformProtoMapper.toDomain
 import api.grpc.mapper.ProviderProtoMapper.toProto
-import application.cqrs.Bus
-import application.cqrs.game.AddGameFavouriteCommand
-import application.cqrs.game.BatchGameQuery
-import application.cqrs.game.FindAllGameQuery
-import application.cqrs.game.FindGameQuery
-import application.cqrs.game.GetGameDemoUrlQuery
-import application.cqrs.game.RemoveGameFavouriteCommand
-import application.cqrs.game.SetGameImageCommand
+import application.Bus
+import application.command.game.AddGameFavouriteCommand
+import application.command.game.DeleteGameCommand
+import application.query.game.BatchGameQuery
+import application.query.game.FindAllGameQuery
+import application.query.game.FindGameQuery
+import application.query.game.GetGameDemoUrlQuery
+import application.command.game.RemoveGameFavouriteCommand
+import application.command.game.SetGameImageCommand
 import com.nekgamebling.game.v1.BatchGameQueryKt
 import com.nekgamebling.game.v1.Empty
 import com.nekgamebling.game.v1.FindAllGameQueryKt
@@ -33,12 +35,13 @@ import domain.vo.Locale
 import domain.vo.Pageable
 import domain.vo.PlayerId
 import com.nekgamebling.game.v1.BatchGameQuery as BatchGameProto
+import com.nekgamebling.game.v1.DeleteGameCommand as DeleteGameProto
 import com.nekgamebling.game.v1.FindAllGameQuery as FindAllGameProto
 import com.nekgamebling.game.v1.FindGameQuery as FindGameProto
 import com.nekgamebling.game.v1.PlayGameCommand as PlayGameProto
 import com.nekgamebling.game.v1.SaveGameCommand as SaveGameProto
-import application.cqrs.game.PlayGameCommand as PlayGameCqrs
-import application.cqrs.game.SaveGameCommand as SaveGameCqrs
+import application.command.game.PlayGameCommand as PlayGameCqrs
+import application.command.game.SaveGameCommand as SaveGameCqrs
 
 class GameGrpcService(
     private val bus: Bus,
@@ -59,45 +62,34 @@ class GameGrpcService(
     }
 
     override suspend fun find(request: FindGameProto): FindGameProto.Result = handleGrpcCall {
-        val game = bus(FindGameQuery(identity = Identity(request.identity)))
+        val view = bus(FindGameQuery(identity = Identity(request.identity)))
             .orElseThrow { GameNotFoundException() }
 
         FindGameQueryKt.result {
-            item = game.toProto()
-            provider = game.provider.toProto()
-            aggregator = game.provider.aggregator.toProto()
-            collections.addAll(game.collections.map { it.toProto() })
+            item = view.game.toProto(view.variant)
+            provider = view.game.provider.toProto()
+            aggregator = view.game.provider.aggregator.toProto()
+            collections.addAll(view.game.collections.map { it.toProto() })
         }
     }
 
     override suspend fun findAll(request: FindAllGameProto): FindAllGameProto.Result = handleGrpcCall {
         val page = bus(
             FindAllGameQuery(
-                query = request.query,
-                inProviderIdentities = request.providerIdentitiesList.map { Identity(it) },
-                inCollectionIdentities = request.collectionIdentitiesList.map { Identity(it) },
-                inTags = request.tagsList,
-                bonusBetEnable = if (request.hasBonusBetEnable()) request.bonusBetEnable else null,
-                bonusWageringEnabled = if (request.hasBonusWageringEnable()) request.bonusWageringEnable else null,
-                active = if (request.hasActive()) request.active else null,
-                freeSpinEnable = if (request.hasFreeSpinEnable()) request.freeSpinEnable else null,
-                freeChipEnable = if (request.hasFreeChipEnable()) request.freeChipEnable else null,
-                jackpotEnable = if (request.hasJackpotEnable()) request.jackpotEnable else null,
-                demoEnable = if (request.hasDemoEnable()) request.demoEnable else null,
-                bonusBuyEnable = if (request.hasBonusBuyEnable()) request.bonusBuyEnable else null,
+                filter = request.filter.toDomain(),
                 pageable = Pageable(request.pageNum, request.pageSize),
             )
         )
 
-        val uniqueProviders = page.items.map { it.provider }.distinctBy { it.identity.value }
+        val uniqueProviders = page.items.map { it.game.provider }.distinctBy { it.identity.value }
         val uniqueAggregators = uniqueProviders.map { it.aggregator }.distinctBy { it.identity.value }
-        val uniqueCollections = page.items.flatMap { it.collections }.distinctBy { it.identity.value }
+        val uniqueCollections = page.items.flatMap { it.game.collections }.distinctBy { it.identity.value }
 
         FindAllGameQueryKt.result {
-            items.addAll(page.items.map { game ->
+            items.addAll(page.items.map { view ->
                 FindAllGameQueryKt.ResultKt.item {
-                    this.game = game.toProto()
-                    provider = game.provider.toProto()
+                    this.game = view.game.toProto(view.variant)
+                    provider = view.game.provider.toProto()
                 }
             })
             providers.addAll(uniqueProviders.map { it.toProto() })
@@ -108,25 +100,30 @@ class GameGrpcService(
     }
 
     override suspend fun batch(request: BatchGameProto): BatchGameProto.Result = handleGrpcCall {
-        val games = bus(BatchGameQuery(
+        val views = bus(BatchGameQuery(
             identities = request.identitiesList.map { Identity(it) },
         ))
 
-        val uniqueProviders = games.map { it.provider }.distinctBy { it.identity.value }
+        val uniqueProviders = views.map { it.game.provider }.distinctBy { it.identity.value }
         val uniqueAggregators = uniqueProviders.map { it.aggregator }.distinctBy { it.identity.value }
-        val uniqueCollections = games.flatMap { it.collections }.distinctBy { it.identity.value }
+        val uniqueCollections = views.flatMap { it.game.collections }.distinctBy { it.identity.value }
 
         BatchGameQueryKt.result {
-            items.addAll(games.map { game ->
+            items.addAll(views.map { view ->
                 BatchGameQueryKt.ResultKt.item {
-                    this.game = game.toProto()
-                    provider = game.provider.toProto()
+                    this.game = view.game.toProto(view.variant)
+                    provider = view.game.provider.toProto()
                 }
             })
             providers.addAll(uniqueProviders.map { it.toProto() })
             aggregators.addAll(uniqueAggregators.map { it.toProto() })
             collections.addAll(uniqueCollections.map { it.toProto() })
         }
+    }
+
+    override suspend fun delete(request: DeleteGameProto): Empty = handleGrpcCall {
+        bus(DeleteGameCommand(identity = Identity(request.identity)))
+        Empty.getDefaultInstance()
     }
 
     override suspend fun updateImage(request: UpdateGameImageCommand): Empty = handleGrpcCall {

@@ -1,8 +1,8 @@
 package infrastructure.handler.aggregator
 
-import application.cqrs.ICommandHandler
-import application.cqrs.aggregator.SyncAllActiveAggregatorCommand
-import application.port.storage.IAggregatorRepository
+import application.ICommandHandler
+import application.command.aggregator.SyncAllActiveAggregatorCommand
+import domain.repository.IAggregatorRepository
 import application.usecase.SyncAggregatorUsecase
 
 class SyncAllActiveAggregatorCommandHandler(

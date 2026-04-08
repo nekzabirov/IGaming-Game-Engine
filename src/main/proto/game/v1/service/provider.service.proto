@@ -9,74 +9,45 @@ import "game/v1/dto/aggregator.dto.proto";
 import "game/v1/dto/provider.dto.proto";
 import "game/v1/dto/common.dto.proto";
 
+// ---------------------------------------------------------------------------
+// Provider catalog service — full CRUD.
+//
+// Every Save is a typed upsert mirroring
+// `application.command.provider.SaveProviderCommand`. FindAll takes a
+// dedicated ProviderFilter sub-message.
+// ---------------------------------------------------------------------------
 service ProviderService {
-  rpc Save(ProviderDto) returns (Empty);
+  rpc Save(SaveProviderCommand) returns (Empty);
 
   rpc Find(FindProviderQuery) returns (FindProviderQuery.Result);
 
   rpc FindAll(FindAllProviderQuery) returns (FindAllProviderQuery.Result);
 
-  rpc UpdateImage(UpdateProviderImageCommand) returns (Empty);
-
   rpc Batch(BatchProviderQuery) returns (BatchProviderQuery.Result);
+
+  rpc Delete(DeleteProviderCommand) returns (Empty);
+
+  rpc UpdateImage(UpdateProviderImageCommand) returns (Empty);
 }
 
-message FindProviderQuery {
+// ---------------------------------------------------------------------------
+// Commands
+// ---------------------------------------------------------------------------
+
+message SaveProviderCommand {
   string identity = 1;
 
-  message Result {
-    ProviderDto item = 1;
+  string name = 2;
 
-    AggregatorDto aggregator = 2;
+  int32 order = 3;
 
-    int32 active_game_count = 3;
-    int32 deactivate_game_count = 4;
-  }
+  bool active = 4;
+
+  string aggregator_identity = 5;
 }
 
-message FindAllProviderQuery {
-  string query = 1;
-
-  optional bool active = 2;
-
-  optional string aggregator_identity = 3;
-
-  int32 page_num = 4;
-
-  int32 page_size = 5;
-
-  repeated string tags = 6;
-
-  repeated string collection_identities = 7;
-
-  message Result {
-    repeated Item items = 1;
-
-    repeated AggregatorDto aggregators = 2;
-
-    int32 total_items = 3;
-
-    message Item {
-      ProviderDto provider = 1;
-
-      int32 active_game_count = 3;
-      int32 deactivate_game_count = 4;
-    }
-  }
-}
-
-message BatchProviderQuery {
-  repeated string identities = 1;
-
-  message Result {
-    repeated Item items = 1;
-
-    repeated AggregatorDto aggregators = 2;
-
-    message Item {
-      ProviderDto provider = 1;
-    }
-  }
+message DeleteProviderCommand {
+  string identity = 1;
 }
 
 message UpdateProviderImageCommand {
@@ -87,4 +58,55 @@ message UpdateProviderImageCommand {
   bytes file = 3;
 
   string extension = 4;
+}
+
+// ---------------------------------------------------------------------------
+// Queries
+// ---------------------------------------------------------------------------
+
+message FindProviderQuery {
+  string identity = 1;
+
+  message Result {
+    ProviderDto item = 1;
+
+    AggregatorDto aggregator = 2;
+  }
+}
+
+message ProviderFilter {
+  string query = 1;
+
+  optional bool active = 2;
+
+  optional string aggregator_identity = 3;
+
+  repeated string in_collection_identities = 4;
+}
+
+message FindAllProviderQuery {
+  ProviderFilter filter = 1;
+
+  int32 page_num = 2;
+
+  int32 page_size = 3;
+
+  message Result {
+    repeated ProviderDto items = 1;
+
+    // Denormalized aggregators referenced by any provider in `items`.
+    repeated AggregatorDto aggregators = 2;
+
+    int32 total_items = 3;
+  }
+}
+
+message BatchProviderQuery {
+  repeated string identities = 1;
+
+  message Result {
+    repeated ProviderDto items = 1;
+
+    repeated AggregatorDto aggregators = 2;
+  }
 }

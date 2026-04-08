@@ -1,21 +1,27 @@
 package infrastructure.handler.collection
 
-import application.cqrs.ICommandHandler
-import application.cqrs.collection.SaveCollectionCommand
-import infrastructure.persistence.table.CollectionTable
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import org.jetbrains.exposed.sql.upsert
+import application.ICommandHandler
+import application.command.collection.SaveCollectionCommand
+import domain.repository.ICollectionRepository
+import domain.model.Collection
 
-class SaveCollectionCommandHandler : ICommandHandler<SaveCollectionCommand, Unit> {
+class SaveCollectionCommandHandler(
+    private val collectionRepository: ICollectionRepository,
+) : ICommandHandler<SaveCollectionCommand, Unit> {
+
     override suspend fun handle(command: SaveCollectionCommand): Result<Unit> = runCatching {
-        newSuspendedTransaction {
-            CollectionTable.upsert(keys = arrayOf(CollectionTable.identity)) {
-                it[identity] = command.identity.value
-                it[name] = command.name.data
-                it[images] = emptyMap()
-                it[active] = command.active
-                it[sortOrder] = command.order
-            }
-        }
+        val existing = collectionRepository.findByIdentity(command.identity)
+        val collection = existing?.copy(
+            name = command.name,
+            active = command.active,
+            order = command.order,
+        ) ?: Collection(
+            identity = command.identity,
+            name = command.name,
+            active = command.active,
+            order = command.order,
+        )
+
+        collectionRepository.save(collection)
     }
 }

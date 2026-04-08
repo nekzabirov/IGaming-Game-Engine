@@ -1,7 +1,9 @@
 package infrastructure.persistence.repository
 
-import application.port.storage.ISessionRepository
+import domain.repository.ISessionRepository
 import domain.model.Session
+import infrastructure.persistence.dbRead
+import infrastructure.persistence.dbTransaction
 import infrastructure.persistence.entity.GameEntity
 import infrastructure.persistence.entity.GameVariantEntity
 import infrastructure.persistence.entity.ProviderEntity
@@ -12,12 +14,11 @@ import org.jetbrains.exposed.dao.load
 import org.jetbrains.exposed.dao.with
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.update
 
 class SessionRepositoryImpl : ISessionRepository {
 
-    override suspend fun save(session: Session): Session = newSuspendedTransaction {
+    override suspend fun save(session: Session): Session = dbTransaction {
         if (session.id == Long.MIN_VALUE) {
             val id = SessionTable.insertAndGetId { it.fromDomain(session) }
             session.copy(id = id.value)
@@ -27,7 +28,7 @@ class SessionRepositoryImpl : ISessionRepository {
         }
     }
 
-    override suspend fun findById(id: Long): Session? = newSuspendedTransaction {
+    override suspend fun findById(id: Long): Session? = dbRead {
         SessionEntity.findById(id)
             ?.load(
                 SessionEntity::gameVariant,
@@ -39,7 +40,7 @@ class SessionRepositoryImpl : ISessionRepository {
             ?.toDomain()
     }
 
-    override suspend fun findByToken(token: String): Session? = newSuspendedTransaction {
+    override suspend fun findByToken(token: String): Session? = dbRead {
         SessionEntity.find { SessionTable.token eq token }
             .with(
                 SessionEntity::gameVariant,
@@ -54,7 +55,7 @@ class SessionRepositoryImpl : ISessionRepository {
     private fun UpdateBuilder<*>.fromDomain(session: Session) {
         this[SessionTable.gameVariant] = session.gameVariant.id
         this[SessionTable.playerId] = session.playerId.value
-        this[SessionTable.token] = session.token
+        this[SessionTable.token] = session.token.value
         this[SessionTable.externalToken] = session.externalToken
         this[SessionTable.currency] = session.currency.value
         this[SessionTable.locale] = session.locale.value

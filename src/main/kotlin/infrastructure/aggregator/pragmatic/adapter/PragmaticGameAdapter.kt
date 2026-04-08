@@ -56,11 +56,11 @@ class PragmaticGameAdapter(
         )
     }
 
-    override suspend fun getLunchUrl(session: Session, lobbyUrl: String): String {
+    override suspend fun getLaunchUrl(session: Session, lobbyUrl: String): String {
         return client.getLaunchUrl(
             LaunchUrlRequestDto(
-                gameSymbol = session.gameVariant.symbol,
-                sessionToken = session.token,
+                gameSymbol = session.gameVariant.symbol.value,
+                sessionToken = session.token.value,
                 playerId = session.playerId.value,
                 locale = session.locale.value,
                 platform = session.platform,

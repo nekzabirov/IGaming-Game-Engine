@@ -4,6 +4,7 @@ import domain.model.Session
 import domain.vo.Currency
 import domain.vo.Locale
 import domain.vo.PlayerId
+import domain.vo.SessionToken
 import infrastructure.persistence.entity.SessionEntity
 import infrastructure.persistence.mapper.GameVariantMapper.toDomain
 
@@ -13,7 +14,7 @@ object SessionMapper {
         id = id.value,
         gameVariant = gameVariant.toDomain(),
         playerId = PlayerId(playerId),
-        token = token,
+        token = SessionToken(token),
         externalToken = externalToken,
         currency = Currency(currency),
         locale = Locale(locale),

@@ -1,10 +1,12 @@
 package domain.model
 
-import domain.exception.badrequest.BlankSessionTokenException
-import domain.exception.domainRequire
+import domain.service.RoundFactory
 import domain.vo.Currency
+import domain.vo.ExternalRoundId
+import domain.vo.FreespinId
 import domain.vo.Locale
 import domain.vo.PlayerId
+import domain.vo.SessionToken
 
 data class Session(
     val id: Long = Long.MIN_VALUE,
@@ -13,7 +15,7 @@ data class Session(
 
     val playerId: PlayerId,
 
-    val token: String,
+    val token: SessionToken,
 
     val externalToken: String?,
 
@@ -21,9 +23,12 @@ data class Session(
 
     val locale: Locale,
 
-    val platform: Platform
+    val platform: Platform,
 ) {
-    init {
-        domainRequire(token.isNotBlank()) { BlankSessionTokenException() }
-    }
+    /**
+     * Opens a new [Round] against this session. Keeps round creation anchored to its
+     * parent aggregate so usecases don't have to know about [RoundFactory].
+     */
+    fun openRound(externalId: ExternalRoundId, freespinId: FreespinId? = null): Round =
+        RoundFactory.open(session = this, externalId = externalId, freespinId = freespinId)
 }

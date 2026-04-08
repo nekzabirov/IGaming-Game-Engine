@@ -3,33 +3,34 @@ package api.grpc.service
 import api.grpc.config.handleGrpcCall
 import api.grpc.mapper.AggregatorProtoMapper.toProto
 import api.grpc.mapper.ProviderProtoMapper.toProto
-import application.cqrs.Bus
-import application.cqrs.provider.SaveProviderCommand
-import application.cqrs.provider.SetProviderImageCommand
+import application.Bus
+import application.command.provider.DeleteProviderCommand
+import application.command.provider.SaveProviderCommand
+import application.command.provider.SetProviderImageCommand
 import com.nekgamebling.game.v1.BatchProviderQueryKt
 import com.nekgamebling.game.v1.Empty
 import com.nekgamebling.game.v1.FindAllProviderQueryKt
 import com.nekgamebling.game.v1.FindProviderQueryKt
-import com.nekgamebling.game.v1.ProviderDto
 import com.nekgamebling.game.v1.ProviderServiceGrpcKt
 import com.nekgamebling.game.v1.UpdateProviderImageCommand
+import domain.exception.notfound.ProviderNotFoundException
 import domain.vo.FileUpload
 import domain.vo.Identity
 import domain.vo.Pageable
-import io.grpc.Status
-import io.grpc.StatusException
 import com.nekgamebling.game.v1.BatchProviderQuery as BatchProviderProto
+import com.nekgamebling.game.v1.DeleteProviderCommand as DeleteProviderProto
 import com.nekgamebling.game.v1.FindAllProviderQuery as FindAllProviderProto
 import com.nekgamebling.game.v1.FindProviderQuery as FindProviderProto
-import application.cqrs.provider.BatchProviderQuery as BatchProviderCqrs
-import application.cqrs.provider.FindAllProviderQuery as FindAllProviderCqrs
-import application.cqrs.provider.FindProviderQuery as FindProviderCqrs
+import com.nekgamebling.game.v1.SaveProviderCommand as SaveProviderProto
+import application.query.provider.BatchProviderQuery as BatchProviderCqrs
+import application.query.provider.FindAllProviderQuery as FindAllProviderCqrs
+import application.query.provider.FindProviderQuery as FindProviderCqrs
 
 class ProviderGrpcService(
     private val bus: Bus,
 ) : ProviderServiceGrpcKt.ProviderServiceCoroutineImplBase() {
 
-    override suspend fun save(request: ProviderDto): Empty = handleGrpcCall {
+    override suspend fun save(request: SaveProviderProto): Empty = handleGrpcCall {
         bus(
             SaveProviderCommand(
                 identity = Identity(request.identity),
@@ -43,61 +44,56 @@ class ProviderGrpcService(
     }
 
     override suspend fun find(request: FindProviderProto): FindProviderProto.Result = handleGrpcCall {
-        val item = bus(FindProviderCqrs(identity = Identity(request.identity)))
-            .orElseThrow { StatusException(Status.NOT_FOUND.withDescription("Provider not found")) }
+        val provider = bus(FindProviderCqrs(identity = Identity(request.identity)))
+            .orElseThrow { ProviderNotFoundException() }
 
         FindProviderQueryKt.result {
-            this.item = item.provider.toProto()
-            aggregator = item.provider.aggregator.toProto()
-            activeGameCount = item.gameActiveCount.toInt()
-            deactivateGameCount = item.gameDeactivateCount.toInt()
+            item = provider.toProto()
+            aggregator = provider.aggregator.toProto()
         }
     }
 
     override suspend fun findAll(request: FindAllProviderProto): FindAllProviderProto.Result = handleGrpcCall {
+        val filter = request.filter
         val page = bus(
             FindAllProviderCqrs(
-                query = request.query,
-                active = if (request.hasActive()) request.active else null,
-                aggregatorId = if (request.hasAggregatorIdentity()) request.aggregatorIdentity else null,
-                inTags = request.tagsList,
-                inCollectionIdentities = request.collectionIdentitiesList.map { Identity(it) },
+                query = filter.query,
+                active = if (filter.hasActive()) filter.active else null,
+                aggregatorId = if (filter.hasAggregatorIdentity()) filter.aggregatorIdentity else null,
+                inCollectionIdentities = filter.inCollectionIdentitiesList.map { Identity(it) },
                 pageable = Pageable(request.pageNum, request.pageSize),
             )
         )
 
         val uniqueAggregators = page.items
-            .map { it.provider.aggregator }
+            .map { it.aggregator }
             .distinctBy { it.identity.value }
 
         FindAllProviderQueryKt.result {
-            items.addAll(page.items.map { providerItem ->
-                FindAllProviderQueryKt.ResultKt.item {
-                    provider = providerItem.provider.toProto()
-                    activeGameCount = providerItem.gameActiveCount.toInt()
-                    deactivateGameCount = providerItem.gameDeactivateCount.toInt()
-                }
-            })
+            items.addAll(page.items.map { it.toProto() })
             aggregators.addAll(uniqueAggregators.map { it.toProto() })
             totalItems = page.totalItems.toInt()
         }
     }
 
     override suspend fun batch(request: BatchProviderProto): BatchProviderProto.Result = handleGrpcCall {
-        val providers = bus(BatchProviderCqrs(
-            identities = request.identitiesList.map { Identity(it) },
-        ))
+        val providers = bus(
+            BatchProviderCqrs(
+                identities = request.identitiesList.map { Identity(it) },
+            )
+        )
 
         val uniqueAggregators = providers.map { it.aggregator }.distinctBy { it.identity.value }
 
         BatchProviderQueryKt.result {
-            items.addAll(providers.map { provider ->
-                BatchProviderQueryKt.ResultKt.item {
-                    this.provider = provider.toProto()
-                }
-            })
+            items.addAll(providers.map { it.toProto() })
             aggregators.addAll(uniqueAggregators.map { it.toProto() })
         }
+    }
+
+    override suspend fun delete(request: DeleteProviderProto): Empty = handleGrpcCall {
+        bus(DeleteProviderCommand(identity = Identity(request.identity)))
+        Empty.getDefaultInstance()
     }
 
     override suspend fun updateImage(request: UpdateProviderImageCommand): Empty = handleGrpcCall {

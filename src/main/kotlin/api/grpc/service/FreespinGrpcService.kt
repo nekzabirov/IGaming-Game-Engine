@@ -3,8 +3,8 @@ package api.grpc.service
 import api.grpc.config.handleGrpcCall
 import api.grpc.mapper.AggregatorProtoMapper.toDomainMap
 import api.grpc.mapper.AggregatorProtoMapper.toProtoStruct
-import application.cqrs.Bus
-import application.cqrs.freespin.GetFreespinPresetsQuery
+import application.Bus
+import application.query.freespin.GetFreespinPresetsQuery
 import com.nekgamebling.game.v1.Empty
 import com.nekgamebling.game.v1.FreespinServiceGrpcKt
 import com.nekgamebling.game.v1.GetFreespinPresetQuery
@@ -15,8 +15,8 @@ import domain.vo.PlayerId
 import kotlinx.datetime.LocalDateTime
 import com.nekgamebling.game.v1.CancelFreespinCommand as CancelFreespinProto
 import com.nekgamebling.game.v1.CreateFreespinCommand as CreateFreespinProto
-import application.cqrs.freespin.CancelFreespinCommand as CancelFreespinCqrs
-import application.cqrs.freespin.CreateFreespinCommand as CreateFreespinCqrs
+import application.command.freespin.CancelFreespinCommand as CancelFreespinCqrs
+import application.command.freespin.CreateFreespinCommand as CreateFreespinCqrs
 
 class FreespinGrpcService(
     private val bus: Bus,

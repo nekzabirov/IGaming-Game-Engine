@@ -1,27 +1,37 @@
 package infrastructure.handler.provider
 
-import application.cqrs.ICommandHandler
-import application.cqrs.provider.SaveProviderCommand
-import infrastructure.persistence.table.AggregatorTable
-import infrastructure.persistence.table.ProviderTable
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import org.jetbrains.exposed.sql.upsert
+import application.ICommandHandler
+import application.command.provider.SaveProviderCommand
+import domain.repository.IAggregatorRepository
+import domain.repository.IProviderRepository
+import domain.exception.domainRequireNotNull
+import domain.exception.notfound.AggregatorNotFoundException
+import domain.model.Provider
 
-class SaveProviderCommandHandler : ICommandHandler<SaveProviderCommand, Unit> {
+class SaveProviderCommandHandler(
+    private val providerRepository: IProviderRepository,
+    private val aggregatorRepository: IAggregatorRepository,
+) : ICommandHandler<SaveProviderCommand, Unit> {
+
     override suspend fun handle(command: SaveProviderCommand): Result<Unit> = runCatching {
-        newSuspendedTransaction {
-            val aggregatorId = AggregatorTable.select(AggregatorTable.id)
-                .where { AggregatorTable.identity eq command.aggregatorIdentity.value }
-                .singleOrNull()?.get(AggregatorTable.id)
-                ?: throw IllegalArgumentException("Aggregator not found: ${command.aggregatorIdentity.value}")
+        val aggregator = domainRequireNotNull(
+            aggregatorRepository.findByIdentity(command.aggregatorIdentity)
+        ) { AggregatorNotFoundException() }
 
-            ProviderTable.upsert(keys = arrayOf(ProviderTable.identity)) {
-                it[identity] = command.identity.value
-                it[name] = command.name
-                it[sortOrder] = command.order
-                it[active] = command.active
-                it[aggregator] = aggregatorId
-            }
-        }
+        val existing = providerRepository.findByIdentity(command.identity)
+        val provider = existing?.copy(
+            name = command.name,
+            order = command.order,
+            active = command.active,
+            aggregator = aggregator,
+        ) ?: Provider(
+            identity = command.identity,
+            name = command.name,
+            order = command.order,
+            active = command.active,
+            aggregator = aggregator,
+        )
+
+        providerRepository.save(provider)
     }
 }

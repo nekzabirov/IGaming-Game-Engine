@@ -1,9 +1,12 @@
 package application.port.external
 
-import application.event.ApplicationEvent
+import domain.event.DomainEvent
 
 interface IEventPort {
 
-    suspend fun publish(event: ApplicationEvent)
+    suspend fun publish(event: DomainEvent)
 
+    suspend fun publishAll(events: Iterable<DomainEvent>) {
+        events.forEach { publish(it) }
+    }
 }

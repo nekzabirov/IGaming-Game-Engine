@@ -1,14 +1,14 @@
 package infrastructure.handler.game
 
-import application.cqrs.ICommandHandler
-import application.cqrs.game.PlayGameCommand
+import application.ICommandHandler
+import application.command.game.PlayGameCommand
 import application.port.external.IPlayerLimitPort
-import application.port.storage.IGameVariantRepository
 import application.usecase.OpenSessionUsecase
 import domain.exception.domainRequireNotNull
 import domain.exception.notfound.GameNotFoundException
-import domain.model.Session
-import domain.vo.Identity
+import domain.repository.IGameVariantRepository
+import domain.service.SessionFactory
+import domain.vo.SessionToken
 
 class PlayGameCommandHandler(
     private val gameVariantRepository: IGameVariantRepository,
@@ -30,11 +30,10 @@ class PlayGameCommandHandler(
             playerLimitPort.saveMaxPlaceAmount(command.playerId, command.maxSpinPlaceAmount)
         }
 
-        val session = Session(
-            gameVariant = gameVariant,
+        val session = SessionFactory.create(
+            token = SessionToken(generateBase24Token()),
             playerId = command.playerId,
-            token = generateBase24Token(),
-            externalToken = null,
+            gameVariant = gameVariant,
             currency = command.currency,
             locale = command.locale,
             platform = command.platform,
