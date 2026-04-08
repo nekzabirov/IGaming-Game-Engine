@@ -6,11 +6,13 @@ import infrastructure.handler.aggregator.FindAggregatorQueryHandler
 import infrastructure.handler.aggregator.FindAllAggregatorQueryHandler
 import infrastructure.handler.aggregator.SaveAggregatorCommandHandler
 import infrastructure.handler.aggregator.SyncAllActiveAggregatorCommandHandler
+import infrastructure.handler.collection.AddCollectionGameCommandHandler
 import infrastructure.handler.collection.BatchCollectionQueryHandler
 import infrastructure.handler.collection.FindAllCollectionQueryHandler
 import infrastructure.handler.collection.FindCollectionQueryHandler
+import infrastructure.handler.collection.RemoveCollectionGameCommandHandler
 import infrastructure.handler.collection.SaveCollectionCommandHandler
-import infrastructure.handler.collection.UpdateCollectionGameCommandHandler
+import infrastructure.handler.collection.UpdateCollectionGameOrderCommandHandler
 import infrastructure.handler.common.SetImageCommandHandler
 import infrastructure.handler.freespin.CancelFreespinCommandHandler
 import infrastructure.handler.freespin.CreateFreespinCommandHandler
@@ -81,7 +83,9 @@ val handlerModule = module {
     single { FindCollectionQueryHandler() }
     single { FindAllCollectionQueryHandler() }
     single { BatchCollectionQueryHandler() }
-    single { UpdateCollectionGameCommandHandler() }
+    single { AddCollectionGameCommandHandler(collectionRepository = get()) }
+    single { RemoveCollectionGameCommandHandler(collectionRepository = get()) }
+    single { UpdateCollectionGameOrderCommandHandler(collectionRepository = get()) }
 
     // Common (polymorphic — serves SetGameImageCommand / SetProviderImageCommand / SetCollectionImageCommand)
     single {

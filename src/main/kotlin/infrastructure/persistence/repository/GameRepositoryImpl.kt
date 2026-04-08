@@ -10,15 +10,12 @@ import domain.vo.Page
 import domain.vo.Pageable
 import infrastructure.persistence.dbRead
 import infrastructure.persistence.dbTransaction
-import infrastructure.persistence.entity.CollectionEntity
 import infrastructure.persistence.entity.GameEntity
 import infrastructure.persistence.entity.ProviderEntity
 import infrastructure.persistence.mapper.GameMapper.toDomain
-import infrastructure.persistence.table.CollectionTable
 import infrastructure.persistence.table.GameTable
 import infrastructure.persistence.table.ProviderTable
 import org.jetbrains.exposed.dao.with
-import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.batchUpsert
 
@@ -37,7 +34,7 @@ class GameRepositoryImpl : IGameRepository {
 
         val gameEntity = GameEntity.find { GameTable.identity eq game.identity.value }.firstOrNull()
 
-        val entity = if (gameEntity != null) {
+        if (gameEntity != null) {
             gameEntity.apply {
                 name = game.name
                 provider = providerEntity
@@ -62,11 +59,10 @@ class GameRepositoryImpl : IGameRepository {
             }
         }
 
-        val collectionIdentities = game.collections.map { it.identity.value }
-        val collectionEntities = CollectionEntity.find {
-            CollectionTable.identity inList collectionIdentities
-        }.toList()
-        entity.collections = SizedCollection(collectionEntities)
+        // Collection membership is owned exclusively by the three CollectionService
+        // game-membership RPCs (AddGame / RemoveGame / UpdateGameOrder). Save never
+        // touches GameCollectionTable, so per-collection sort order is never
+        // clobbered by a routine game upsert.
 
         game
     }

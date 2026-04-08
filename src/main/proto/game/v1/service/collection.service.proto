@@ -19,7 +19,13 @@ import "game/v1/dto/game_page.dto.proto";
 // Kotlin side. FindAll takes a dedicated CollectionFilter sub-message.
 // FindAllGame returns the games that belong to a given collection — same
 // filter and response shape as `GameService.FindAll`, plus the collection
-// identity the caller is narrowing by.
+// identity the caller is narrowing by, ordered by the per-collection
+// position managed through AddGame / RemoveGame / UpdateGameOrder.
+//
+// Game-in-collection membership is managed with three single-game RPCs:
+//   - AddGame         — idempotent insert, new row appended at end
+//   - RemoveGame      — idempotent delete
+//   - UpdateGameOrder — set per-collection sort position for one game
 // ---------------------------------------------------------------------------
 service CollectionService {
   rpc Save(SaveCollectionCommand) returns (Empty);
@@ -32,7 +38,11 @@ service CollectionService {
 
   rpc FindAllGame(FindAllGameCollectionQuery) returns (GamePageDto);
 
-  rpc UpdateGames(UpdateCollectionGamesCommand) returns (Empty);
+  rpc AddGame(AddCollectionGameCommand) returns (Empty);
+
+  rpc RemoveGame(RemoveCollectionGameCommand) returns (Empty);
+
+  rpc UpdateGameOrder(UpdateCollectionGameOrderCommand) returns (Empty);
 
   rpc UpdateImage(UpdateCollectionImageCommand) returns (Empty);
 }
@@ -52,12 +62,34 @@ message SaveCollectionCommand {
   int32 order = 4;
 }
 
-message UpdateCollectionGamesCommand {
+// Add a single game to a collection. Idempotent — if the game is already
+// in the collection, the call is a no-op. On first insert the new row is
+// appended at the end (sort_order = max existing + 1, or 0 when empty).
+// Fails with NOT_FOUND if the collection or the game does not exist.
+message AddCollectionGameCommand {
   string identity = 1;
 
-  repeated string add_games = 2;
+  string game_identity = 2;
+}
 
-  repeated string remove_games = 3;
+// Remove a single game from a collection. Idempotent — if the game is not
+// currently a member, the call is a no-op. Fails with NOT_FOUND if the
+// collection or the game does not exist.
+message RemoveCollectionGameCommand {
+  string identity = 1;
+
+  string game_identity = 2;
+}
+
+// Set the per-collection display order for a single game inside a
+// collection. Fails with NOT_FOUND if the collection does not exist, or if
+// the game is not currently a member of the collection.
+message UpdateCollectionGameOrderCommand {
+  string identity = 1;
+
+  string game_identity = 2;
+
+  int32 order = 3;
 }
 
 message UpdateCollectionImageCommand {

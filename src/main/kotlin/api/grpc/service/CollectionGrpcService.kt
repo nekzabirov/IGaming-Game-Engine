@@ -7,7 +7,6 @@ import api.grpc.mapper.GamePageProtoMapper.toGamePageDto
 import application.Bus
 import application.command.collection.SaveCollectionCommand
 import application.command.collection.SetCollectionImageCommand
-import application.command.collection.UpdateCollectionGameCommand
 import application.query.game.FindAllGameCollectionQuery
 import com.nekgamebling.game.v1.BatchCollectionQueryKt
 import com.nekgamebling.game.v1.CollectionServiceGrpcKt
@@ -15,18 +14,23 @@ import com.nekgamebling.game.v1.Empty
 import com.nekgamebling.game.v1.FindAllCollectionQueryKt
 import com.nekgamebling.game.v1.FindCollectionQueryKt
 import com.nekgamebling.game.v1.GamePageDto
-import com.nekgamebling.game.v1.UpdateCollectionGamesCommand
 import com.nekgamebling.game.v1.UpdateCollectionImageCommand
 import domain.exception.notfound.CollectionNotFoundException
 import domain.vo.FileUpload
 import domain.vo.Identity
 import domain.vo.LocaleName
 import domain.vo.Pageable
+import com.nekgamebling.game.v1.AddCollectionGameCommand as AddCollectionGameProto
 import com.nekgamebling.game.v1.BatchCollectionQuery as BatchCollectionProto
 import com.nekgamebling.game.v1.FindAllCollectionQuery as FindAllCollectionProto
 import com.nekgamebling.game.v1.FindAllGameCollectionQuery as FindAllGameCollectionProto
 import com.nekgamebling.game.v1.FindCollectionQuery as FindCollectionProto
+import com.nekgamebling.game.v1.RemoveCollectionGameCommand as RemoveCollectionGameProto
 import com.nekgamebling.game.v1.SaveCollectionCommand as SaveCollectionProto
+import com.nekgamebling.game.v1.UpdateCollectionGameOrderCommand as UpdateCollectionGameOrderProto
+import application.command.collection.AddCollectionGameCommand as AddCollectionGameCqrs
+import application.command.collection.RemoveCollectionGameCommand as RemoveCollectionGameCqrs
+import application.command.collection.UpdateCollectionGameOrderCommand as UpdateCollectionGameOrderCqrs
 import application.query.collection.BatchCollectionQuery as BatchCollectionCqrs
 import application.query.collection.FindAllCollectionQuery as FindAllCollectionCqrs
 import application.query.collection.FindCollectionQuery as FindCollectionCqrs
@@ -98,12 +102,32 @@ class CollectionGrpcService(
         page.toGamePageDto()
     }
 
-    override suspend fun updateGames(request: UpdateCollectionGamesCommand): Empty = handleGrpcCall {
+    override suspend fun addGame(request: AddCollectionGameProto): Empty = handleGrpcCall {
         bus(
-            UpdateCollectionGameCommand(
+            AddCollectionGameCqrs(
                 identity = Identity(request.identity),
-                addGameIdentities = request.addGamesList.map { Identity(it) },
-                deleteGameIdentities = request.removeGamesList.map { Identity(it) },
+                gameIdentity = Identity(request.gameIdentity),
+            )
+        )
+        Empty.getDefaultInstance()
+    }
+
+    override suspend fun removeGame(request: RemoveCollectionGameProto): Empty = handleGrpcCall {
+        bus(
+            RemoveCollectionGameCqrs(
+                identity = Identity(request.identity),
+                gameIdentity = Identity(request.gameIdentity),
+            )
+        )
+        Empty.getDefaultInstance()
+    }
+
+    override suspend fun updateGameOrder(request: UpdateCollectionGameOrderProto): Empty = handleGrpcCall {
+        bus(
+            UpdateCollectionGameOrderCqrs(
+                identity = Identity(request.identity),
+                gameIdentity = Identity(request.gameIdentity),
+                order = request.order,
             )
         )
         Empty.getDefaultInstance()

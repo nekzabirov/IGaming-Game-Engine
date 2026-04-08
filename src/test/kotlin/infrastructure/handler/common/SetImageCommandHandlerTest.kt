@@ -63,6 +63,9 @@ class SetImageCommandHandlerTest : FunSpec({
         override suspend fun addImage(identity: Identity, key: String, url: String) {
             calls += Triple(identity, key, url)
         }
+        override suspend fun addGame(identity: Identity, gameIdentity: Identity) = Unit
+        override suspend fun removeGame(identity: Identity, gameIdentity: Identity) = Unit
+        override suspend fun updateGameOrder(identity: Identity, gameIdentity: Identity, order: Int) = Unit
     }
 
     class FakeFileAdapter : FileAdapter {

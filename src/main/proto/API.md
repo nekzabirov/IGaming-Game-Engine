@@ -379,8 +379,10 @@ Game collection management (e.g. "Hot Games", "New Releases") with multi-languag
 | `Find` | `FindCollectionQuery` | `FindCollectionQuery.Result` | Get a single collection by identity |
 | `FindAll` | `FindAllCollectionQuery` | `FindAllCollectionQuery.Result` | List/filter collections with pagination |
 | `Batch` | `BatchCollectionQuery` | `BatchCollectionQuery.Result` | Batch fetch collections by identities |
-| `FindAllGame` | `FindAllGameCollectionQuery` | `GamePageDto` | List the games that belong to a given collection (same shape as `GameService.FindAll`) |
-| `UpdateGames` | `UpdateCollectionGamesCommand` | `Empty` | Add/remove games from a collection |
+| `FindAllGame` | `FindAllGameCollectionQuery` | `GamePageDto` | List games that belong to a given collection, ordered by per-collection position |
+| `AddGame` | `AddCollectionGameCommand` | `Empty` | Add one game to a collection (idempotent; appended at end) |
+| `RemoveGame` | `RemoveCollectionGameCommand` | `Empty` | Remove one game from a collection (idempotent) |
+| `UpdateGameOrder` | `UpdateCollectionGameOrderCommand` | `Empty` | Set one game's per-collection sort position |
 | `UpdateImage` | `UpdateCollectionImageCommand` | `Empty` | Upload/replace a collection image |
 
 Collections are contract artefacts and cannot be deleted once created.
@@ -472,17 +474,47 @@ message FindAllGameCollectionQuery {
 
 Response: `GamePageDto` (see [Shared game-listing DTOs](#shared-game-listing-dtos)).
 
-### UpdateGames
+### AddGame / RemoveGame / UpdateGameOrder
 
-Add and/or remove games from a collection in a single call.
+Three focused single-game RPCs manage game-in-collection membership and per-collection ordering. Each accepts one `game_identity` — batch operations are not supported by design.
+
+All three fail with `NOT_FOUND` + `x-exception-name=CollectionNotFoundException` if the collection does not exist, or `x-exception-name=GameNotFoundException` if the game does not exist. `UpdateGameOrder` additionally returns `GameNotFoundException` if the game is not currently a member of the collection.
+
+#### AddGame
+
+Add a single game to a collection. **Idempotent** — if the game is already in the collection, no-op. On first insert, the new row is appended at the end (`sort_order = max(existing) + 1`, or `0` when the collection is empty).
 
 ```protobuf
-message UpdateCollectionGamesCommand {
-  string identity = 1;             // Collection identity
-  repeated string add_games = 2;   // Game identities to add
-  repeated string remove_games = 3; // Game identities to remove
+message AddCollectionGameCommand {
+  string identity = 1;       // Collection identity
+  string game_identity = 2;  // Game to add
 }
 ```
+
+#### RemoveGame
+
+Remove a single game from a collection. **Idempotent** — if the game is not currently a member, no-op. Remaining games keep their existing `sort_order` values (no compaction — holes in the sequence are harmless because the read side only uses it for `ORDER BY`).
+
+```protobuf
+message RemoveCollectionGameCommand {
+  string identity = 1;       // Collection identity
+  string game_identity = 2;  // Game to remove
+}
+```
+
+#### UpdateGameOrder
+
+Set the per-collection display position for a single game. Fails if the game is not currently a member of the collection — callers must `AddGame` first.
+
+```protobuf
+message UpdateCollectionGameOrderCommand {
+  string identity = 1;       // Collection identity
+  string game_identity = 2;  // Game whose position to update
+  int32 order = 3;           // New per-collection sort position
+}
+```
+
+`CollectionService.FindAllGame` returns games ordered by `sort_order ASC`, with ties broken deterministically on `GameTable.id`.
 
 ### UpdateImage
 

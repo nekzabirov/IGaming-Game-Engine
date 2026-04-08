@@ -4,9 +4,11 @@ import application.Bus
 import application.command.aggregator.DeleteAggregatorCommand
 import application.command.aggregator.SaveAggregatorCommand
 import application.command.aggregator.SyncAllActiveAggregatorCommand
+import application.command.collection.AddCollectionGameCommand
+import application.command.collection.RemoveCollectionGameCommand
 import application.command.collection.SaveCollectionCommand
 import application.command.collection.SetCollectionImageCommand
-import application.command.collection.UpdateCollectionGameCommand
+import application.command.collection.UpdateCollectionGameOrderCommand
 import application.command.freespin.CancelFreespinCommand
 import application.command.freespin.CreateFreespinCommand
 import application.command.game.AddGameFavouriteCommand
@@ -45,11 +47,13 @@ import infrastructure.handler.aggregator.FindAggregatorQueryHandler
 import infrastructure.handler.aggregator.FindAllAggregatorQueryHandler
 import infrastructure.handler.aggregator.SaveAggregatorCommandHandler
 import infrastructure.handler.aggregator.SyncAllActiveAggregatorCommandHandler
+import infrastructure.handler.collection.AddCollectionGameCommandHandler
 import infrastructure.handler.collection.BatchCollectionQueryHandler
 import infrastructure.handler.collection.FindAllCollectionQueryHandler
 import infrastructure.handler.collection.FindCollectionQueryHandler
+import infrastructure.handler.collection.RemoveCollectionGameCommandHandler
 import infrastructure.handler.collection.SaveCollectionCommandHandler
-import infrastructure.handler.collection.UpdateCollectionGameCommandHandler
+import infrastructure.handler.collection.UpdateCollectionGameOrderCommandHandler
 import infrastructure.handler.common.SetImageCommandHandler
 import infrastructure.handler.freespin.CancelFreespinCommandHandler
 import infrastructure.handler.freespin.CreateFreespinCommandHandler
@@ -109,7 +113,9 @@ val busModule = module {
                 // Collection
                 SaveCollectionCommand::class.java to get<SaveCollectionCommandHandler>(),
                 SetCollectionImageCommand::class.java to setImageHandler,
-                UpdateCollectionGameCommand::class.java to get<UpdateCollectionGameCommandHandler>(),
+                AddCollectionGameCommand::class.java to get<AddCollectionGameCommandHandler>(),
+                RemoveCollectionGameCommand::class.java to get<RemoveCollectionGameCommandHandler>(),
+                UpdateCollectionGameOrderCommand::class.java to get<UpdateCollectionGameOrderCommandHandler>(),
                 // Aggregator
                 SaveAggregatorCommand::class.java to get<SaveAggregatorCommandHandler>(),
                 DeleteAggregatorCommand::class.java to get<DeleteAggregatorCommandHandler>(),
