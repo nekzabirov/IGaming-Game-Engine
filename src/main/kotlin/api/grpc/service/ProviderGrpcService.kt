@@ -13,6 +13,7 @@ import com.nekgamebling.game.v1.FindProviderQueryKt
 import com.nekgamebling.game.v1.ProviderServiceGrpcKt
 import com.nekgamebling.game.v1.UpdateProviderImageCommand
 import domain.exception.notfound.ProviderNotFoundException
+import domain.vo.Country
 import domain.vo.FileUpload
 import domain.vo.Identity
 import domain.vo.Pageable
@@ -36,6 +37,7 @@ class ProviderGrpcService(
                 order = request.order,
                 active = request.active,
                 aggregatorIdentity = Identity(request.aggregatorIdentity),
+                blockedCountry = request.blockedCountryList.map { Country(it) },
             )
         )
         Empty.getDefaultInstance()

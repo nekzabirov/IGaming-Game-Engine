@@ -13,5 +13,6 @@ object ProviderProtoMapper {
         order = this@toProto.order
         active = this@toProto.active
         aggregatorIdentity = this@toProto.aggregator.identity.value
+        blockedCountry.addAll(this@toProto.blockedCountry.map { it.value })
     }
 }

@@ -24,12 +24,14 @@ class SaveProviderCommandHandler(
             order = command.order,
             active = command.active,
             aggregator = aggregator,
+            blockedCountry = command.blockedCountry,
         ) ?: Provider(
             identity = command.identity,
             name = command.name,
             order = command.order,
             active = command.active,
             aggregator = aggregator,
+            blockedCountry = command.blockedCountry,
         )
 
         providerRepository.save(provider)

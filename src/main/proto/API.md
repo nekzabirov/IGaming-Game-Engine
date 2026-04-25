@@ -197,6 +197,7 @@ message SaveProviderCommand {
   int32 order = 3;                  // Sort order
   bool active = 4;                  // Active status
   string aggregator_identity = 5;   // Parent aggregator identity
+  repeated string blocked_country = 6; // ISO country codes blocked for this provider
 }
 ```
 
@@ -683,6 +684,7 @@ message ProviderDto {
   int32 order = 4;
   bool active = 5;
   string aggregator_identity = 6;
+  repeated string blocked_country = 7; // ISO country codes blocked for this provider
 }
 ```
 

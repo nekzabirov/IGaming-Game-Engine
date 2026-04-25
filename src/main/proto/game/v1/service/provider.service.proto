@@ -43,6 +43,8 @@ message SaveProviderCommand {
   bool active = 4;
 
   string aggregator_identity = 5;
+
+  repeated string blocked_country = 6;
 }
 
 message UpdateProviderImageCommand {

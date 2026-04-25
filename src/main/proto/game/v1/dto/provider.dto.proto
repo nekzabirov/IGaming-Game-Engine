@@ -17,4 +17,6 @@ message ProviderDto {
   bool active = 5;
 
   string aggregator_identity = 6;
+
+  repeated string blocked_country = 7;
 }

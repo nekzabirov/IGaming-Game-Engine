@@ -3,6 +3,7 @@ package domain.model
 import domain.util.Activatable
 import domain.util.Imageable
 import domain.util.Orderable
+import domain.vo.Country
 import domain.vo.Identity
 import domain.vo.ImageMap
 
@@ -17,5 +18,7 @@ data class Provider(
 
     override var active: Boolean = false,
 
-    val aggregator: Aggregator
+    val aggregator: Aggregator,
+
+    val blockedCountry: List<Country> = emptyList(),
 ) : Activatable, Imageable, Orderable

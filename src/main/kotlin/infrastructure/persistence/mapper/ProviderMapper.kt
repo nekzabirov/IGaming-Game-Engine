@@ -1,6 +1,7 @@
 package infrastructure.persistence.mapper
 
 import domain.model.Provider
+import domain.vo.Country
 import domain.vo.Identity
 import domain.vo.ImageMap
 import infrastructure.persistence.entity.ProviderEntity
@@ -18,6 +19,7 @@ object ProviderMapper {
         order = sortOrder,
         active = active,
         aggregator = aggregator.toDomain(),
+        blockedCountry = blockedCountry.map { Country(it) },
     )
 
     fun ResultRow.toProvider(): Provider = Provider(
@@ -27,5 +29,6 @@ object ProviderMapper {
         order = this[ProviderTable.sortOrder],
         active = this[ProviderTable.active],
         aggregator = toAggregator(),
+        blockedCountry = this[ProviderTable.blockedCountry].map { Country(it) },
     )
 }

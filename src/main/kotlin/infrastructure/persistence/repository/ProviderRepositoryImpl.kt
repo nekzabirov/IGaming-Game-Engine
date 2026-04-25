@@ -35,6 +35,7 @@ class ProviderRepositoryImpl : IProviderRepository {
             it[sortOrder] = provider.order
             it[active] = provider.active
             it[aggregator] = aggregatorId
+            it[blockedCountry] = provider.blockedCountry.map { it.value }
         }
 
         provider
@@ -57,6 +58,7 @@ class ProviderRepositoryImpl : IProviderRepository {
             this[ProviderTable.sortOrder] = provider.order
             this[ProviderTable.active] = provider.active
             this[ProviderTable.aggregator] = aggregatorId
+            this[ProviderTable.blockedCountry] = provider.blockedCountry.map { it.value }
         }
 
         providers

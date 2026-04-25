@@ -1,6 +1,7 @@
 package application.command.provider
 
 import application.ICommand
+import domain.vo.Country
 import domain.vo.Identity
 
 data class SaveProviderCommand(
@@ -12,5 +13,7 @@ data class SaveProviderCommand(
 
     val active: Boolean,
 
-    val aggregatorIdentity: Identity
+    val aggregatorIdentity: Identity,
+
+    val blockedCountry: List<Country> = emptyList(),
 ) : ICommand<Unit>
