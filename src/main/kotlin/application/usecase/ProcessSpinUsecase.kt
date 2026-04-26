@@ -5,6 +5,7 @@ import application.port.external.IEventPort
 import application.port.external.IPlayerLimitPort
 import application.port.external.IWalletPort
 import domain.event.toDomainEvent
+import domain.exception.DomainException
 import domain.exception.domainRequire
 import domain.exception.forbidden.MaxPlaceSpinException
 import domain.model.PlayerBalance
@@ -14,6 +15,7 @@ import domain.service.SpinBalanceCalculator
 import domain.service.SpinResult
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import org.slf4j.LoggerFactory
 
 class ProcessSpinUsecase(
     private val spinRepository: ISpinRepository,
@@ -23,7 +25,14 @@ class ProcessSpinUsecase(
     private val backgroundTaskPort: IBackgroundTaskPort,
 ) {
 
+    private val logger = LoggerFactory.getLogger(ProcessSpinUsecase::class.java)
+
     suspend operator fun invoke(spin: Spin): Result<Response> = runCatching {
+        logger.info(
+            "Processing spin: type={} session={} round={} amount={} freespin={}",
+            spin.type, spin.round.session.id, spin.round.id, spin.amount, spin.round.freespinId,
+        )
+
         val result = if (spin.round.freespinId != null) {
             processFreespin(spin)
         } else {
@@ -34,7 +43,16 @@ class ProcessSpinUsecase(
 
         eventPort.publish(updatedSpin.toDomainEvent())
 
+        logger.info("Spin processed: id={} type={}", updatedSpin.id, updatedSpin.type)
+
         Response(spin = updatedSpin, balance = result.balance)
+    }.onFailure { e ->
+        if (e !is DomainException) {
+            logger.error(
+                "Failed to process spin: type={} session={} round={}",
+                spin.type, spin.round.session.id, spin.round.id, e,
+            )
+        }
     }
 
     private suspend fun processFreespin(spin: Spin): SpinResult {

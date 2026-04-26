@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+    <logger name="io.netty" level="WARN"/>
+    <logger name="io.grpc" level="WARN"/>
+    <logger name="io.grpc.netty" level="WARN"/>
+    <logger name="com.zaxxer.hikari" level="WARN"/>
+    <logger name="io.lettuce" level="WARN"/>
+    <logger name="org.koin" level="WARN"/>
+    <logger name="Exposed" level="WARN"/>
+    <logger name="io.github.damir.denis.tudor.ktor.server.rabbitmq" level="WARN"/>
+
+    <logger name="com.nekgamebling" level="INFO"/>
+    <logger name="application" level="INFO"/>
+    <logger name="infrastructure" level="INFO"/>
+
+</configuration>

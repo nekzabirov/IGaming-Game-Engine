@@ -9,6 +9,9 @@ import domain.exception.system.SystemException
 import io.grpc.Metadata
 import io.grpc.Status
 import io.grpc.StatusException
+import org.slf4j.LoggerFactory
+
+private val logger = LoggerFactory.getLogger("api.grpc")
 
 val EXCEPTION_NAME_KEY: Metadata.Key<String> =
     Metadata.Key.of("x-exception-name", Metadata.ASCII_STRING_MARSHALLER)
@@ -19,6 +22,7 @@ suspend fun <T> handleGrpcCall(block: suspend () -> T): T {
     } catch (e: StatusException) {
         throw e
     } catch (e: DomainException) {
+        logger.info("Domain rejection [{}]: {}", e::class.simpleName, e.message)
         val status = when (e) {
             is NotFoundException -> Status.NOT_FOUND
             is BadRequestException -> Status.INVALID_ARGUMENT
@@ -31,6 +35,7 @@ suspend fun <T> handleGrpcCall(block: suspend () -> T): T {
         metadata.put(EXCEPTION_NAME_KEY, e::class.simpleName ?: "Unknown")
         throw StatusException(status.withDescription(e.message), metadata)
     } catch (e: Exception) {
+        logger.error("Unhandled exception in gRPC call", e)
         throw StatusException(Status.INTERNAL.withDescription("Internal server error"))
     }
 }
