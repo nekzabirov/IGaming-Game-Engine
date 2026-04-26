@@ -18,6 +18,8 @@
     <logger name="io.lettuce" level="WARN"/>
     <logger name="org.koin" level="WARN"/>
     <logger name="Exposed" level="WARN"/>
+    <logger name="org.jetbrains.exposed" level="WARN"/>
+    <logger name="org.flywaydb" level="WARN"/>
     <logger name="io.github.damir.denis.tudor.ktor.server.rabbitmq" level="WARN"/>
 
     <logger name="com.nekgamebling" level="INFO"/>
