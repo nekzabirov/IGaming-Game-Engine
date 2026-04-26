@@ -21,9 +21,12 @@ import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.routing.routing
 import infrastructure.aggregator.onegamehub.webhook.OneGameHubWebhook
 import infrastructure.aggregator.pragmatic.webhook.PragmaticWebhook
+import infrastructure.rabbitmq.CASINO_EXCHANGE
 import infrastructure.rabbitmq.PlaceSpinEventConsumer
 import infrastructure.rabbitmq.RabbitMqConfig
 import io.github.damir.denis.tudor.ktor.server.rabbitmq.RabbitMQ
+import io.github.damir.denis.tudor.ktor.server.rabbitmq.dsl.exchangeDeclare
+import io.github.damir.denis.tudor.ktor.server.rabbitmq.dsl.rabbitmq
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -42,6 +45,7 @@ fun main() {
         configureSerialization()
         configureCallLogging()
         configureRabbitMq()
+        configureRabbitMqTopology()
         configureRouting()
         configureGrpc()
         configureConsumers()
@@ -71,6 +75,17 @@ private fun Application.configureRabbitMq() {
     install(RabbitMQ) {
         uri = config.uri
     }
+}
+
+private fun Application.configureRabbitMqTopology() {
+    rabbitmq {
+        exchangeDeclare {
+            exchange = CASINO_EXCHANGE
+            type = "topic"
+            durable = true
+        }
+    }
+    logger.info("RabbitMQ topology ready: exchange={}", CASINO_EXCHANGE)
 }
 
 private fun Application.configureConsumers() {
