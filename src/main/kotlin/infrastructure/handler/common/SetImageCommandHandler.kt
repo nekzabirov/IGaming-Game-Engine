@@ -29,7 +29,11 @@ class SetImageCommandHandler(
         val ext = command.file.name.substringAfterLast('.', "")
         val media = MediaFile(ext = ext, bytes = command.file.content)
         val url = fileAdapter
-            .upload(folder = command.folder, fileName = command.identity.value, file = media)
+            .upload(
+                folder = command.folder,
+                fileName = "${command.identity.value}/${command.key}",
+                file = media,
+            )
             .getOrThrow()
 
         when (command) {

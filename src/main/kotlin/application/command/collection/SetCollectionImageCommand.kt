@@ -15,6 +15,6 @@ data class SetCollectionImageCommand(
     override val folder: String get() = FOLDER
 
     companion object {
-        const val FOLDER: String = "collections"
+        const val FOLDER: String = "casino/collection"
     }
 }

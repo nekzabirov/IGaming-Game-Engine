@@ -15,6 +15,6 @@ data class SetProviderImageCommand(
     override val folder: String get() = FOLDER
 
     companion object {
-        const val FOLDER: String = "providers"
+        const val FOLDER: String = "casino/provider"
     }
 }

@@ -77,7 +77,7 @@ class SetImageCommandHandlerTest : FunSpec({
         override suspend fun delete(path: String): Result<Boolean> = Result.success(true)
     }
 
-    test("SetGameImageCommand uploads with folder=games and hits game repository") {
+    test("SetGameImageCommand uploads with folder=casino/game and hits game repository") {
         val gameRepo = FakeGameRepo()
         val providerRepo = FakeProviderRepo()
         val collectionRepo = FakeCollectionRepo()
@@ -92,14 +92,14 @@ class SetImageCommandHandlerTest : FunSpec({
         val result = handler.handle(SetGameImageCommand(Identity("game_a"), "main", sampleFile))
 
         result.isSuccess shouldBe true
-        fileAdapter.lastFolder shouldBe "games"
+        fileAdapter.lastFolder shouldBe "casino/game"
         gameRepo.calls.size shouldBe 1
-        gameRepo.calls.single() shouldBe Triple(Identity("game_a"), "main", "https://cdn/games/game_a")
+        gameRepo.calls.single() shouldBe Triple(Identity("game_a"), "main", "https://cdn/casino/game/game_a/main")
         providerRepo.calls.size shouldBe 0
         collectionRepo.calls.size shouldBe 0
     }
 
-    test("SetProviderImageCommand uploads with folder=providers and hits provider repository") {
+    test("SetProviderImageCommand uploads with folder=casino/provider and hits provider repository") {
         val gameRepo = FakeGameRepo()
         val providerRepo = FakeProviderRepo()
         val collectionRepo = FakeCollectionRepo()
@@ -114,13 +114,13 @@ class SetImageCommandHandlerTest : FunSpec({
         val result = handler.handle(SetProviderImageCommand(Identity("prov_a"), "logo", sampleFile))
 
         result.isSuccess shouldBe true
-        fileAdapter.lastFolder shouldBe "providers"
-        providerRepo.calls.single() shouldBe Triple(Identity("prov_a"), "logo", "https://cdn/providers/prov_a")
+        fileAdapter.lastFolder shouldBe "casino/provider"
+        providerRepo.calls.single() shouldBe Triple(Identity("prov_a"), "logo", "https://cdn/casino/provider/prov_a/logo")
         gameRepo.calls.size shouldBe 0
         collectionRepo.calls.size shouldBe 0
     }
 
-    test("SetCollectionImageCommand uploads with folder=collections and hits collection repository") {
+    test("SetCollectionImageCommand uploads with folder=casino/collection and hits collection repository") {
         val gameRepo = FakeGameRepo()
         val providerRepo = FakeProviderRepo()
         val collectionRepo = FakeCollectionRepo()
@@ -135,8 +135,8 @@ class SetImageCommandHandlerTest : FunSpec({
         val result = handler.handle(SetCollectionImageCommand(Identity("coll_a"), "cover", sampleFile))
 
         result.isSuccess shouldBe true
-        fileAdapter.lastFolder shouldBe "collections"
-        collectionRepo.calls.single() shouldBe Triple(Identity("coll_a"), "cover", "https://cdn/collections/coll_a")
+        fileAdapter.lastFolder shouldBe "casino/collection"
+        collectionRepo.calls.single() shouldBe Triple(Identity("coll_a"), "cover", "https://cdn/casino/collection/coll_a/cover")
         gameRepo.calls.size shouldBe 0
         providerRepo.calls.size shouldBe 0
     }
