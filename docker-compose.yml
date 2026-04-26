@@ -10,13 +10,12 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: game_core
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d game_core"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -102,6 +101,22 @@ services:
   # APPLICATION
   # ============================================
 
+  casino-engine-migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: casino-engine-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DB_URL=${DB_URL:-jdbc:postgresql://postgres:5432}
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+    entrypoint: /app/bin/db-migrate
+    networks:
+      - casino-engine-network
+
   casino-engine:
     build:
       context: .
@@ -109,8 +124,8 @@ services:
     container_name: casino-engine
     restart: unless-stopped
     depends_on:
-      postgres:
-        condition: service_healthy
+      casino-engine-migrate:
+        condition: service_completed_successfully
       rabbitmq:
         condition: service_healthy
       redis:
@@ -120,9 +135,9 @@ services:
     environment:
       - HTTP_PORT=${HTTP_PORT:-80}
       - GRPC_PORT=${GRPC_PORT:-5050}
-      - DATABASE_URL=${DATABASE_URL:-jdbc:postgresql://postgres:5432/game_core}
-      - DATABASE_USER=${DATABASE_USER:-postgres}
-      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres}
+      - DB_URL=${DB_URL:-jdbc:postgresql://postgres:5432}
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
       - WALLET_GRPC_HOST=${WALLET_GRPC_HOST:-host.docker.internal}
       - WALLET_GRPC_PORT=${WALLET_GRPC_PORT:-5555}
       - REDIS_HOST=${REDIS_HOST:-redis}
@@ -132,8 +147,10 @@ services:
       - S3_ACCESS_KEY=${S3_ACCESS_KEY:-minioadmin}
       - S3_SECRET_KEY=${S3_SECRET_KEY:-minioadmin}
       - S3_BUCKET=${S3_BUCKET:-casino-engine}
-      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
-      - RABBITMQ_EXCHANGE=${RABBITMQ_EXCHANGE:-casino-engine}
+      - RABBIT_HOST=${RABBIT_HOST:-rabbitmq}
+      - RABBIT_PORT=${RABBIT_PORT:-5672}
+      - RABBIT_USER=${RABBIT_USER:-guest}
+      - RABBIT_PASSWORD=${RABBIT_PASSWORD:-guest}
     entrypoint: /app/bin/casino-engine
     ports:
       - "${HTTP_PORT:-8080}:${HTTP_PORT:-80}"
@@ -147,13 +164,18 @@ services:
       dockerfile: Dockerfile
     container_name: casino-engine-sync
     depends_on:
-      - casino-engine
+      casino-engine-migrate:
+        condition: service_completed_successfully
+      casino-engine:
+        condition: service_started
     environment:
-      - DATABASE_URL=${DATABASE_URL:-jdbc:postgresql://postgres:5432/game_core}
-      - DATABASE_USER=${DATABASE_USER:-postgres}
-      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres}
-      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
-      - RABBITMQ_EXCHANGE=${RABBITMQ_EXCHANGE:-casino-engine}
+      - DB_URL=${DB_URL:-jdbc:postgresql://postgres:5432}
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - RABBIT_HOST=${RABBIT_HOST:-rabbitmq}
+      - RABBIT_PORT=${RABBIT_PORT:-5672}
+      - RABBIT_USER=${RABBIT_USER:-guest}
+      - RABBIT_PASSWORD=${RABBIT_PASSWORD:-guest}
       - S3_ENDPOINT=${S3_ENDPOINT:-http://minio:9000}
       - S3_REGION=${S3_REGION:-us-east-1}
       - S3_ACCESS_KEY=${S3_ACCESS_KEY:-minioadmin}

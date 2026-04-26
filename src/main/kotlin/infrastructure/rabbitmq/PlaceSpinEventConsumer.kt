@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory
 
 class PlaceSpinEventConsumer(
     private val application: Application,
-    private val config: RabbitMqConfig,
     private val playerLimitPort: IPlayerLimitPort,
 ) {
 
@@ -28,7 +27,7 @@ class PlaceSpinEventConsumer(
         application.rabbitmq {
             queueBind {
                 queue = QUEUE_NAME
-                exchange = config.exchange
+                exchange = CASINO_EXCHANGE
                 routingKey = ROUTING_KEY
                 queueDeclare {
                     queue = QUEUE_NAME

@@ -29,7 +29,7 @@ val externalModule = module {
     single<IPlayerLimitPort> { PlayerLimitRedis(config = get()) }
     single<ICurrencyPort> { CurrencyAdapter() }
     single<IBackgroundTaskPort> { BackgroundWorker() }
-    single<IEventPort> { RabbitMqEventPublisher(application = get(), config = get()) }
+    single<IEventPort> { RabbitMqEventPublisher(application = get()) }
 
     // Aggregator providers — add a new aggregator by binding another AggregatorAdapterProvider.
     single(named("onegamehub")) { OneGameHubAdapterProvider() } bind AggregatorAdapterProvider::class
@@ -39,5 +39,5 @@ val externalModule = module {
         AggregatorRegistry(providers = getAll<AggregatorAdapterProvider>())
     }
 
-    single { PlaceSpinEventConsumer(application = get(), config = get(), playerLimitPort = get()) }
+    single { PlaceSpinEventConsumer(application = get(), playerLimitPort = get()) }
 }

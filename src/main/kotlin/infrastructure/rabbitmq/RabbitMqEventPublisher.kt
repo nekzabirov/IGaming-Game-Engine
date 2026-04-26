@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory
  */
 class RabbitMqEventPublisher(
     private val application: Application,
-    private val config: RabbitMqConfig,
 ) : IEventPort {
 
     private val logger = LoggerFactory.getLogger(RabbitMqEventPublisher::class.java)
@@ -42,7 +41,7 @@ class RabbitMqEventPublisher(
 
         application.rabbitmq {
             basicPublish {
-                exchange = config.exchange
+                exchange = CASINO_EXCHANGE
                 this.routingKey = routingKey
                 message { payload }
             }

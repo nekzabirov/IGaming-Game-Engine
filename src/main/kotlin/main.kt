@@ -26,7 +26,6 @@ import infrastructure.rabbitmq.RabbitMqConfig
 import io.github.damir.denis.tudor.ktor.server.rabbitmq.RabbitMQ
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.koin.ktor.ext.get
 import org.slf4j.LoggerFactory
@@ -52,9 +51,6 @@ fun main() {
 private fun Application.configureDatabase() {
     val config = get<DatabaseConfig>()
     DatabaseFactory.init(config)
-    runBlocking {
-        DatabaseFactory.createTables()
-    }
 }
 
 private fun Application.configureSerialization() {

@@ -1,5 +1,6 @@
 package infrastructure.koin
 
+import infrastructure.persistence.CASINO_DB_NAME
 import infrastructure.persistence.DatabaseConfig
 import infrastructure.rabbitmq.RabbitMqConfig
 import infrastructure.redis.RedisConfig
@@ -9,10 +10,11 @@ import org.koin.dsl.module
 
 val configModule = module {
     single {
+        val baseUrl = System.getenv("DB_URL") ?: "jdbc:postgresql://localhost:5432"
         DatabaseConfig(
-            url = System.getenv("DATABASE_URL") ?: "jdbc:postgresql://localhost:5432/game_core",
-            user = System.getenv("DATABASE_USER") ?: "postgres",
-            password = System.getenv("DATABASE_PASSWORD") ?: "postgres"
+            url = "$baseUrl/$CASINO_DB_NAME",
+            user = System.getenv("DB_USERNAME") ?: "user",
+            password = System.getenv("DB_PASSWORD") ?: "password"
         )
     }
     single {
@@ -38,8 +40,10 @@ val configModule = module {
     }
     single {
         RabbitMqConfig(
-            uri = System.getenv("RABBITMQ_URL") ?: "amqp://guest:guest@localhost:5672",
-            exchange = System.getenv("RABBITMQ_EXCHANGE") ?: "casino-engine"
+            host = System.getenv("RABBIT_HOST") ?: "localhost",
+            port = (System.getenv("RABBIT_PORT") ?: "5672").toInt(),
+            user = System.getenv("RABBIT_USER") ?: "guest",
+            password = System.getenv("RABBIT_PASSWORD") ?: "guest",
         )
     }
 }

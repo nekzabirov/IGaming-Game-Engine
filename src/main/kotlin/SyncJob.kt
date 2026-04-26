@@ -54,8 +54,6 @@ fun main() {
     DatabaseFactory.init(dbConfig)
 
     runBlocking {
-        DatabaseFactory.createTables()
-
         val bus = koin.get<Bus>()
 
         logger.info("Starting aggregator sync...")

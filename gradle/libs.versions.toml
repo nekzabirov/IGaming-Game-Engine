@@ -17,6 +17,7 @@ lettuce = "6.5.3.RELEASE"
 kotest = "5.9.1"
 testcontainers = "1.20.4"
 junit = "5.11.4"
+flyway = "10.20.1"
 
 [libraries]
 # Ktor Server
@@ -91,6 +92,10 @@ aws-s3 = { module = "aws.sdk.kotlin:s3", version.ref = "aws-sdk" }
 
 # Redis
 lettuce = { module = "io.lettuce:lettuce-core", version.ref = "lettuce" }
+
+# Flyway DB migrations
+flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
+flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
 
 [bundles]
 ktor-server = [
