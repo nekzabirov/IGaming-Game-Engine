@@ -5,6 +5,10 @@ data class RabbitMqConfig(
     val port: Int,
     val user: String,
     val password: String,
+    val tls: Boolean,
 ) {
-    val uri: String get() = "amqp://$user:$password@$host:$port"
+    val uri: String get() {
+        val scheme = if (tls) "amqps" else "amqp"
+        return "$scheme://$user:$password@$host:$port"
+    }
 }

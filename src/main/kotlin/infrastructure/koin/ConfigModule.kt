@@ -44,6 +44,7 @@ val configModule = module {
             port = (System.getenv("RABBIT_PORT") ?: "5672").toInt(),
             user = System.getenv("RABBIT_USER") ?: "guest",
             password = System.getenv("RABBIT_PASSWORD") ?: "guest",
+            tls = System.getenv("RABBIT_TLS")?.toBoolean() ?: false,
         )
     }
 }

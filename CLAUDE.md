@@ -230,6 +230,8 @@ Adding a new domain event → compiler forces you to add a `when` branch (sealed
 
 **Publishing timing**: usecases publish **after** the DB transaction commits (outside the `dbTransaction { }` block) so a failed write never emits phantom events. See `.claude/rules/domain-events.md`.
 
+**Connection config**: `RabbitMqConfig` (built in `infrastructure/koin/ConfigModule.kt`) reads `RABBIT_HOST`, `RABBIT_PORT`, `RABBIT_USER`, `RABBIT_PASSWORD`, and `RABBIT_TLS` from env. `RABBIT_TLS=true` switches the URI scheme to `amqps://` — required for AWS Amazon MQ for RabbitMQ and any TLS-only broker. The Java client auto-enables TLS via the URI scheme using the JVM's default trust store (publicly-signed CAs), so no keystore is needed for AWS. Set `RABBIT_PORT=5671` alongside `RABBIT_TLS=true`; the default port is not changed automatically.
+
 ## Koin Dependency Injection
 
 **Module install order matters** — dependencies must be installed before dependents.
