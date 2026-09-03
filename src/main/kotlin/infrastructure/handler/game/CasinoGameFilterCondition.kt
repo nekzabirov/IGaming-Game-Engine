@@ -149,9 +149,15 @@ fun CasinoGameFilter.toCondition(relaxed: Boolean = false): Op<Boolean> {
 fun CasinoGameFilter.toOrdering(): Array<Pair<Expression<*>, SortOrder>> {
     // id tiebreaker: sortOrder is not unique (bulk-synced games share 0), and equal keys
     // give unstable pagination — a game could repeat or vanish across pages.
+    val relevance = SearchIndexes.games.relevance(query)
+    val leading = relevance?.leading ?: emptyArray()
+    val trailing = relevance?.trailing ?: emptyArray()
+
     val collectionIdentity = collection
-        ?: return relevanceOrdering() +
-            arrayOf(CasinoGameTable.sortOrder to SortOrder.ASC, CasinoGameTable.id to SortOrder.ASC)
+        ?: return leading +
+            arrayOf<Pair<Expression<*>, SortOrder>>(CasinoGameTable.sortOrder to SortOrder.ASC) +
+            trailing +
+            arrayOf<Pair<Expression<*>, SortOrder>>(CasinoGameTable.id to SortOrder.ASC)
 
     val railPosition = wrapAsExpression<Int>(
         (CasinoGameCollectionTable innerJoin CollectionTable)
@@ -162,13 +168,13 @@ fun CasinoGameFilter.toOrdering(): Array<Pair<Expression<*>, SortOrder>> {
             }
     )
 
-    return relevanceOrdering() + arrayOf(railPosition to SortOrder.ASC, CasinoGameTable.id to SortOrder.ASC)
+    return leading +
+        arrayOf<Pair<Expression<*>, SortOrder>>(railPosition to SortOrder.ASC) +
+        trailing +
+        arrayOf<Pair<Expression<*>, SortOrder>>(CasinoGameTable.id to SortOrder.ASC)
 }
 
-/**
- * A searched listing leads with how well the row answers what was typed; the curated catalog /
- * rail position stays as the tiebreaker below it. Empty when nothing was typed.
- */
+/** Both relevance tiers back to back — for the player's own lists, which carry no catalog order. */
 fun CasinoGameFilter.relevanceOrdering(): Array<Pair<Expression<*>, SortOrder>> =
     SearchIndexes.games.relevanceOrdering(query)
 

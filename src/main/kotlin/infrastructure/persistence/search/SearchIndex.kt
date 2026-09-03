@@ -109,25 +109,34 @@ class SearchIndex(vararg parts: Expression<*>) {
     }
 
     /**
-     * Ordering key for a searched listing: an exact prefix beats an exact fragment beats a row that
-     * merely *sounds* like the query beats a loose trigram resemblance, and inside each band the
-     * trigram score decides. The phonetic band matters — without it "gaets" ranked *Gaelic Warrior*
-     * (trigram noise) above *Gates of Olympus*, which is the very row the query is about.
+     * Ordering keys for a searched listing, in two tiers around the caller's own catalog order:
+     *
+     *  - [SearchRelevance.band] goes FIRST: a row that contains the query verbatim (as a prefix or
+     *    a fragment) beats one that merely *sounds* like it, which beats a loose trigram
+     *    resemblance. The phonetic band matters — without it "gaets" ranked *Gaelic Warrior*
+     *    (trigram noise) above *Gates of Olympus*, which is the very row the query is about.
+     *  - [SearchRelevance.score] goes LAST, after the catalog order: inside a band the popular row
+     *    wins, and the trigram score only separates rows the catalog does not rank. Prefix and
+     *    fragment share a band on purpose — "olymp" used to put *Olympus of Luck* (prefix) above
+     *    *Gates of Olympus* (fragment), the game every player typing it wants.
+     *
      * `null` when nothing was typed, so the caller keeps its own catalog ordering untouched.
      */
-    fun relevance(rawQuery: String): Expression<Double>? {
+    fun relevance(rawQuery: String): SearchRelevance? {
         val needle = normalizeSearchQuery(rawQuery)
         if (needle.isEmpty()) return null
 
         val hasPhoneticCodes = needle.split(' ').any { it.length >= MIN_PHONETIC_LENGTH }
 
-        return Relevance(text, phonetic.takeIf { hasPhoneticCodes }, needle)
+        return SearchRelevance(
+            band = RelevanceBand(text, phonetic.takeIf { hasPhoneticCodes }, needle),
+            score = TrigramScore(text, needle),
+        )
     }
 
+    /** Both tiers back to back — for listings that have no catalog order of their own to wrap. */
     fun relevanceOrdering(rawQuery: String): Array<Pair<Expression<*>, SortOrder>> =
-        relevance(rawQuery)
-            ?.let { arrayOf<Pair<Expression<*>, SortOrder>>(it to SortOrder.DESC) }
-            ?: emptyArray()
+        relevance(rawQuery)?.let { it.leading + it.trailing } ?: emptyArray()
 
     private fun tokenMatches(token: String, relaxed: Boolean): Op<Boolean> {
         val strict = containsFragment(token) or wordSimilar(token)
@@ -207,20 +216,41 @@ private class CloseWordOp(
     }
 }
 
-private class Relevance(
+/** The two halves of a searched listing's order — see [SearchIndex.relevance]. */
+class SearchRelevance(
+    val band: Expression<Int>,
+    val score: Expression<Double>,
+) {
+    /** Keys that go BEFORE the catalog order. */
+    val leading: Array<Pair<Expression<*>, SortOrder>> = arrayOf(band to SortOrder.DESC)
+
+    /** Keys that go AFTER the catalog order. */
+    val trailing: Array<Pair<Expression<*>, SortOrder>> = arrayOf(score to SortOrder.DESC)
+}
+
+private class RelevanceBand(
     private val text: Expression<String>,
     private val phonetic: Expression<String>?,
+    private val needle: String,
+) : Expression<Int>() {
+
+    override fun toQueryBuilder(queryBuilder: QueryBuilder): Unit = queryBuilder {
+        append("(CASE WHEN ", text, " LIKE ", stringParam("%$needle%"), " THEN 2")
+
+        if (phonetic != null) {
+            append(" WHEN ", PhoneticContainsOp(phonetic, stringParam(needle)), " THEN 1")
+        }
+
+        append(" ELSE 0 END)")
+    }
+}
+
+private class TrigramScore(
+    private val text: Expression<String>,
     private val needle: String,
 ) : Expression<Double>() {
 
     override fun toQueryBuilder(queryBuilder: QueryBuilder): Unit = queryBuilder {
-        append("(CASE WHEN ", text, " LIKE ", stringParam("$needle%"), " THEN 3.0")
-        append(" WHEN ", text, " LIKE ", stringParam("%$needle%"), " THEN 2.0 ELSE 0.0 END")
-
-        if (phonetic != null) {
-            append(" + CASE WHEN ", PhoneticContainsOp(phonetic, stringParam(needle)), " THEN 1.0 ELSE 0.0 END")
-        }
-
-        append(" + word_similarity(", stringParam(needle), ", ", text, "))")
+        append("word_similarity(", stringParam(needle), ", ", text, ")")
     }
 }
