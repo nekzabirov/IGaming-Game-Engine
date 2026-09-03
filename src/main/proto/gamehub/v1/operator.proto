@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package gamehub.v1;
+
+import "gamehub/v1/common.proto";
+
+// Implemented by the OPERATOR, called by the hub. The address comes from
+// `operators.webhook_url`.
+//
+// The hub holds no money and checks no balance: it normalises what a provider
+// sends, calls this service, and translates the answer back into the provider's
+// own protocol.
+service OperatorWalletService {
+  // One money movement. See SpinRequest for the direction and idempotency rules.
+  rpc Spin(SpinRequest) returns (SpinResult);
+
+  // Current balance, asked by a provider mid-game.
+  rpc GetBalance(BalanceRequest) returns (BalanceResult);
+}
+
+// One leg of a round.
+//
+// DIRECTION IS THE SIGN. There is no type field:
+//   place    -> negative amounts (money leaves the player)
+//   settle   -> positive amounts (money reaches the player)
+//   rollback -> the compensating amount under a NEW id
+//               (rolling back a place arrives positive, rolling back a settle
+//                arrives negative)
+//
+// IDEMPOTENCY. `id` is unique for every leg, rollbacks included. The operator
+// MUST be idempotent on it: replaying an id moves no money and answers with the
+// result the first call produced.
+message SpinRequest {
+  // Unique per leg. The hub's spin id, and the operator's idempotency key.
+  string id = 1;
+
+  // Game identity, as served by GameHubService.GameList.
+  string game = 2;
+
+  // Signed, nano. Negative debits, positive credits.
+  sint64 real_amount = 3;
+
+  // Signed, nano.
+  sint64 bonus_amount = 4;
+
+  string currency = 5;
+
+  string player_id = 6;
+
+  // The operator's own grant reference, when this leg belongs to a free round.
+  // Whether a free round's win is paid is the operator's policy; the hub only
+  // reports that the leg carries a grant.
+  optional string freespin_id = 7;
+
+  // The hub's round id. Legs of one round share it.
+  string round_id = 8;
+
+  // True on the leg that closes the round.
+  bool round_close = 9;
+
+  // Whatever the operator passed as OpenGameRequest.session_ref, verbatim.
+  optional string session_ref = 10;
+}
+
+message SpinResult {
+  // The operator's own transaction id. Stored by the hub for reconciliation.
+  string id = 1;
+
+  // The balance AFTER this movement — it is what the provider is shown.
+  Balance balance = 2;
+}
+
+message BalanceRequest {
+  string game = 1;
+
+  string player_id = 2;
+
+  string currency = 3;
+
+  // As above: the operator's own handle for the session being played.
+  optional string session_ref = 4;
+}
+
+message BalanceResult {
+  Balance balance = 1;
+}

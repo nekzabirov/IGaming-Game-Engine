@@ -5,10 +5,13 @@ import api.grpc.service.CollectionGrpcService
 import api.grpc.service.FreespinGrpcService
 import api.grpc.service.CasinoGameGrpcService
 import api.grpc.service.JackpotGrpcService
+import api.grpc.service.OperatorCredentialsInterceptor
+import api.grpc.service.OperatorWalletGrpcService
 import api.grpc.service.CasinoProviderGrpcService
 import api.grpc.service.SportbookGrpcService
 import api.grpc.service.WinnerGrpcService
 import io.grpc.ServerBuilder
+import io.grpc.ServerInterceptors
 import io.ktor.server.application.Application
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -30,6 +33,11 @@ fun Application.configureGrpc() {
             .addService(get<WinnerGrpcService>())
             .addService(get<JackpotGrpcService>())
             .addService(get<SportbookGrpcService>())
+            // GameHub calls us for every money movement, so its credential headers have to
+            // reach the call: a CoroutineImplBase method cannot read metadata by itself.
+            .addService(
+                ServerInterceptors.intercept(get<OperatorWalletGrpcService>(), OperatorCredentialsInterceptor)
+            )
             .build()
             .start()
 

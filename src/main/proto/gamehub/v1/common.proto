@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package gamehub.v1;
+
+// Empty request/response. Local, so the hub never depends on well-known types.
+message Empty {}
+
+enum Platform {
+  PLATFORM_UNSPECIFIED = 0;
+
+  PLATFORM_DESKTOP = 1;
+
+  PLATFORM_MOBILE = 2;
+}
+
+// A player's money, in nano (value x 1e9) — the fleet-wide wallet unit.
+message Balance {
+  int64 real = 1;
+
+  int64 bonus = 2;
+
+  string currency = 3;
+}

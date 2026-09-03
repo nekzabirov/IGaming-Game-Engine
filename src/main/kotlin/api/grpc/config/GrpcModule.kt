@@ -5,6 +5,7 @@ import api.grpc.service.CollectionGrpcService
 import api.grpc.service.FreespinGrpcService
 import api.grpc.service.CasinoGameGrpcService
 import api.grpc.service.JackpotGrpcService
+import api.grpc.service.OperatorWalletGrpcService
 import api.grpc.service.CasinoProviderGrpcService
 import api.grpc.service.SportbookGrpcService
 import api.grpc.service.WinnerGrpcService
@@ -19,4 +20,5 @@ val grpcModule = module {
     single { WinnerGrpcService(get()) }
     single { JackpotGrpcService(get()) }
     single { SportbookGrpcService(get()) }
+    single { OperatorWalletGrpcService(get()) }
 }
