@@ -42,6 +42,7 @@ import infrastructure.handler.provider.SaveCasinoProviderCommandHandler
 import infrastructure.handler.round.FindAllCasinoRoundQueryHandler
 import infrastructure.handler.round.FindCasinoRoundQueryHandler
 import infrastructure.handler.session.EndCasinoRoundSessionHandler
+import infrastructure.handler.session.ReopenCasinoRoundSessionHandler
 import infrastructure.handler.session.FindCasinoSessionBalanceHandler
 import infrastructure.handler.session.FindCasinoSessionByExternalTokenHandler
 import infrastructure.handler.session.FindCasinoSessionHandler
@@ -81,6 +82,7 @@ val handlerModule = module {
     single { SettleSpinCasinoSessionHandler(roundRepository = get(), spinRepository = get(), processSpinUsecase = get(), walletPort = get()) }
     single { RollbackSpinCasinoSessionHandler(spinRepository = get(), processSpinUsecase = get(), walletPort = get()) }
     single { EndCasinoRoundSessionHandler(roundRepository = get(), finishRoundUsecase = get()) }
+    single { ReopenCasinoRoundSessionHandler(roundRepository = get()) }
     single { FindCasinoSessionBalanceHandler(walletAdapter = get()) }
 
     // CasinoGame

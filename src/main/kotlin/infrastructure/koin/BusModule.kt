@@ -27,6 +27,7 @@ import application.command.bet.RollbackBetCommand
 import application.command.bet.SettleBetCommand
 import application.command.session.EndCasinoRoundSessionCommand
 import application.command.session.PlaceSpinCasinoSessionCommand
+import application.command.session.ReopenCasinoRoundSessionCommand
 import application.command.session.RollbackSpinCasinoSessionCommand
 import application.command.session.SettleSpinCasinoSessionCommand
 import application.command.sportbook.ExchangeSportbookTokenCommand
@@ -112,6 +113,7 @@ import infrastructure.handler.session.FindCasinoSessionBalanceHandler
 import infrastructure.handler.session.FindCasinoSessionByExternalTokenHandler
 import infrastructure.handler.session.FindCasinoSessionHandler
 import infrastructure.handler.session.PlaceSpinCasinoSessionHandler
+import infrastructure.handler.session.ReopenCasinoRoundSessionHandler
 import infrastructure.handler.session.RollbackSpinCasinoSessionHandler
 import infrastructure.handler.session.SettleSpinCasinoSessionHandler
 import infrastructure.handler.bet.ConfirmBetHandler
@@ -149,6 +151,7 @@ val busModule = module {
                 SettleSpinCasinoSessionCommand::class.java to get<SettleSpinCasinoSessionHandler>(),
                 RollbackSpinCasinoSessionCommand::class.java to get<RollbackSpinCasinoSessionHandler>(),
                 EndCasinoRoundSessionCommand::class.java to get<EndCasinoRoundSessionHandler>(),
+                ReopenCasinoRoundSessionCommand::class.java to get<ReopenCasinoRoundSessionHandler>(),
                 // CasinoGame
                 PlayCasinoGameCommand::class.java to get<PlayCasinoGameCommandHandler>(),
                 SaveCasinoGameCommand::class.java to get<SaveCasinoGameCommandHandler>(),

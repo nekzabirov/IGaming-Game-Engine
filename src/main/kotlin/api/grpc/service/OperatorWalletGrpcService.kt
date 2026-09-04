@@ -3,6 +3,7 @@ package api.grpc.service
 import application.Bus
 import application.command.session.EndCasinoRoundSessionCommand
 import application.command.session.PlaceSpinCasinoSessionCommand
+import application.command.session.ReopenCasinoRoundSessionCommand
 import application.command.session.SettleSpinCasinoSessionCommand
 import application.query.session.FindCasinoSessionBalanceQuery
 import application.query.session.FindCasinoSessionQuery
@@ -111,6 +112,22 @@ class OperatorWalletGrpcService(
         // often than it is right, and a wrong guess books real money to the wrong side.
         val total = request.realAmount + request.bonusAmount
         val freespinId = if (request.hasFreespinId()) request.freespinId.takeIf { it.isNotBlank() } else null
+
+        // A correcting movement legitimately arrives after its round closed — the hub sends a
+        // rollback as the compensating amount under a new id, and a vendor can give one up hours
+        // later. `SpinFactory` refuses a place or a settle on a finished round, which is right for
+        // a vendor inventing new play and wrong for money that has to come back, so the round is
+        // reopened first. A round that is still open is untouched.
+        if (total != 0L) {
+            try {
+                bus(ReopenCasinoRoundSessionCommand(session = session, externalRoundId = request.roundId))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // The usual case: the first leg of a round, so there is nothing to reopen yet.
+                logger.debug("No round to reopen for {}: {}", request.roundId, e.message)
+            }
+        }
 
         val playerBalance = when {
             total < 0 -> bus(
