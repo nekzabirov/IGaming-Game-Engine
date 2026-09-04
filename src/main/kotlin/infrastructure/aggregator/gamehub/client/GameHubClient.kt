@@ -12,9 +12,11 @@ import gamehub.v1.Gamehub
 import infrastructure.aggregator.gamehub.GameHubAdapterProvider
 import infrastructure.aggregator.gamehub.GameHubConfig
 import io.grpc.ManagedChannel
-import io.grpc.ManagedChannelBuilder
 import io.grpc.Metadata
 import io.grpc.StatusRuntimeException
+import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts
+import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder
+import io.grpc.netty.shaded.io.netty.handler.ssl.SslProvider
 import io.grpc.stub.MetadataUtils
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
@@ -168,14 +170,26 @@ class GameHubClient(private val config: GameHubConfig) {
             check(config.grpcHost.isNotBlank()) { "GameHub gRPC host not configured" }
 
             return channels.computeIfAbsent("${config.grpcHost}:${config.grpcPort}") {
-                ManagedChannelBuilder
+                NettyChannelBuilder
                     .forAddress(config.grpcHost, config.grpcPort)
                     // The hub is reached across a network we do not own, so the channel is TLS
                     // unless the config says otherwise — a plaintext HTTP/2 preface against the
                     // hub's TLS listener comes back as "First received frame was not SETTINGS",
                     // which reads like a protocol bug rather than a missing handshake.
                     // `plaintext: "true"` stays available for a local hub over loopback.
-                    .apply { if (config.plaintext) usePlaintext() else useTransportSecurity() }
+                    //
+                    // The TLS provider is pinned to JDK rather than left to pick the default:
+                    // grpc-netty-shaded prefers its bundled BoringSSL, and loading it in this
+                    // image killed the JVM outright with a SIGSEGV inside
+                    // netty_internal_tcnative_SSLContext_JNI_OnLoad. The JDK provider is a little
+                    // slower and does not take the process with it.
+                    .apply {
+                        if (config.plaintext) {
+                            usePlaintext()
+                        } else {
+                            sslContext(GrpcSslContexts.forClient().sslProvider(SslProvider.JDK).build())
+                        }
+                    }
                     .keepAliveTime(30, TimeUnit.SECONDS)
                     .keepAliveTimeout(10, TimeUnit.SECONDS)
                     .keepAliveWithoutCalls(true)
