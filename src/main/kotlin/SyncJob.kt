@@ -25,6 +25,12 @@ private val syncOverrideModule = module {
 }
 
 fun main() {
+    // grpc-netty-shaded prefers its bundled BoringSSL for TLS, and loading it in this image kills
+    // the JVM outright: SIGSEGV inside netty_internal_tcnative_SSLContext_JNI_OnLoad. The flag has
+    // to be set before any netty SSL class loads — GrpcSslContexts probes OpenSsl during its own
+    // static init, so choosing the JDK provider at the call site is already too late.
+    System.setProperty("io.grpc.netty.shaded.io.netty.handler.ssl.noOpenSsl", "true")
+
     System.setProperty("user.timezone", "UTC")
     java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("UTC"))
 
