@@ -81,10 +81,14 @@ DROP TABLE aggregators;
 -- ------------------------------------------------------------------------------- spins bug --
 -- `SpinTable.externalId` has carried `.uniqueIndex()` in the Exposed table definition since V1,
 -- and `SpinRepositoryImpl.save()` has always caught a unique-violation and mapped it to
--- `SpinAlreadyExistsException` — but this schema (Flyway, not Exposed auto-DDL) only ever created
--- a PLAIN index (`spins_external_id_idx`). The constraint the idempotency guarantee has always
--- claimed to rely on was never actually there. Fixed here, in the same migration that makes
--- `WalletGrpcService` lean on it directly: two concurrent redeliveries of the same leg now collide
--- in Postgres, not in a race between two callers' SELECTs.
-DROP INDEX spins_external_id_idx;
-CREATE UNIQUE INDEX spins_external_id_unique ON spins (external_id);
+-- `SpinAlreadyExistsException` — but on at least one environment this schema (Flyway, not Exposed
+-- auto-DDL) only ever created a PLAIN index (`spins_external_id_idx`); the idempotency guarantee
+-- the code has always claimed relied on a constraint that was never actually there. Fixed here, in
+-- the same migration that makes `WalletGrpcService` lean on it directly: two concurrent
+-- redeliveries of the same leg now collide in Postgres, not in a race between two callers' SELECTs.
+--
+-- IF EXISTS / IF NOT EXISTS on both sides: prematch's own DB already carries the fix as
+-- `spins_external_id_unique` (fixed out of band at some point, ahead of this migration ever
+-- running there), so this has to be a no-op wherever it already holds, not just where it doesn't.
+DROP INDEX IF EXISTS spins_external_id_idx;
+CREATE UNIQUE INDEX IF NOT EXISTS spins_external_id_unique ON spins (external_id);
