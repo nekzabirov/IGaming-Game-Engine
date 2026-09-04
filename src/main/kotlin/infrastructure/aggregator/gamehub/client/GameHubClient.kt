@@ -170,7 +170,12 @@ class GameHubClient(private val config: GameHubConfig) {
             return channels.computeIfAbsent("${config.grpcHost}:${config.grpcPort}") {
                 ManagedChannelBuilder
                     .forAddress(config.grpcHost, config.grpcPort)
-                    .usePlaintext()
+                    // The hub is reached across a network we do not own, so the channel is TLS
+                    // unless the config says otherwise — a plaintext HTTP/2 preface against the
+                    // hub's TLS listener comes back as "First received frame was not SETTINGS",
+                    // which reads like a protocol bug rather than a missing handshake.
+                    // `plaintext: "true"` stays available for a local hub over loopback.
+                    .apply { if (config.plaintext) usePlaintext() else useTransportSecurity() }
                     .keepAliveTime(30, TimeUnit.SECONDS)
                     .keepAliveTimeout(10, TimeUnit.SECONDS)
                     .keepAliveWithoutCalls(true)

@@ -25,6 +25,13 @@ class GameHubConfig(config: Map<String, Any>) {
     /** The shared secret — sent as `x-operator-key`, compared in constant time by the hub. */
     val operatorKey = config["operatorKey"]?.toString() ?: ""
 
+    /**
+     * TLS is the default because the hub is reached across a network we do not own. Opt out only
+     * for a hub on loopback: against a TLS listener a plaintext channel fails as "First received
+     * frame was not SETTINGS", which reads like a protocol bug rather than a missing handshake.
+     */
+    val plaintext = config["plaintext"]?.toString()?.trim()?.equals("true", ignoreCase = true) == true
+
     private companion object {
         const val DEFAULT_GRPC_PORT = 9090
     }
