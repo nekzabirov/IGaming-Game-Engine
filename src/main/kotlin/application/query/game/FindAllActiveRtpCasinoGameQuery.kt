@@ -1,10 +1,11 @@
 package application.query.game
 
 import application.IQuery
+import domain.model.CasinoGame
 import domain.vo.Page
 import domain.vo.Pageable
 
-/** RTP bucket relative to [domain.model.CasinoGame.DEFAULT_RTP]. */
+/** RTP bucket relative to [CasinoGame.DEFAULT_RTP]. */
 enum class CasinoGameRtpType {
     HOT,
     COLD,
@@ -12,8 +13,9 @@ enum class CasinoGameRtpType {
 
 /**
  * Paged listing of ACTIVE games bucketed by RTP: [CasinoGameRtpType.HOT] = rtp above the
- * default ordered DESC, [CasinoGameRtpType.COLD] = rtp below the default ordered ASC.
- * Catalog position (`order`) is the secondary key (ASC) in both cases.
+ * default ordered DESC, [CasinoGameRtpType.COLD] = rtp below the default ordered ASC. A game
+ * with no measured rtp (unmeasured, never 0) falls in neither bucket. Catalog position
+ * (`order`) is the secondary key (ASC) in both cases.
  */
 data class FindAllActiveRtpCasinoGameQuery(
     val type: CasinoGameRtpType,
@@ -21,4 +23,4 @@ data class FindAllActiveRtpCasinoGameQuery(
     val filter: CasinoGameFilter,
 
     val pageable: Pageable,
-) : IQuery<Page<CasinoGameView>>
+) : IQuery<Page<CasinoGame>>

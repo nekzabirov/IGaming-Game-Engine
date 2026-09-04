@@ -1,7 +1,5 @@
-import application.Bus
-import application.command.aggregator.SyncAllActiveAggregatorCommand
 import application.port.external.IEventPublisherPort
-import infrastructure.koin.aggregatorModule
+import application.usecase.SyncCasinoCatalogUsecase
 import infrastructure.koin.busModule
 import infrastructure.koin.configModule
 import infrastructure.koin.externalModule
@@ -45,7 +43,6 @@ fun main() {
             usecaseModule,
             handlerModule,
             busModule,
-            aggregatorModule
         )
     }
 
@@ -55,10 +52,10 @@ fun main() {
     DatabaseFactory.init(dbConfig)
 
     runBlocking {
-        val bus = koin.get<Bus>()
+        val syncUsecase = koin.get<SyncCasinoCatalogUsecase>()
 
-        logger.info("Starting aggregator sync...")
-        bus(SyncAllActiveAggregatorCommand)
-        logger.info("Aggregator sync completed")
+        logger.info("Starting catalog sync...")
+        syncUsecase().getOrThrow()
+        logger.info("Catalog sync completed")
     }
 }

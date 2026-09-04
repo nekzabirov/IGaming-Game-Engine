@@ -5,10 +5,7 @@ import application.query.provider.FindCasinoProviderQuery
 import domain.model.CasinoProvider
 import infrastructure.persistence.dbRead
 import infrastructure.persistence.mapper.CasinoProviderMapper.toCasinoProvider
-import infrastructure.persistence.table.AggregatorTable
 import infrastructure.persistence.table.CasinoProviderTable
-import org.jetbrains.exposed.sql.JoinType
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.selectAll
 import java.util.Optional
 
@@ -17,7 +14,6 @@ class FindCasinoProviderQueryHandler : IQueryHandler<FindCasinoProviderQuery, Op
     override suspend fun handle(query: FindCasinoProviderQuery): Optional<CasinoProvider> = dbRead {
         Optional.ofNullable(
             CasinoProviderTable
-                .join(AggregatorTable, JoinType.INNER, CasinoProviderTable.aggregator, AggregatorTable.id)
                 .selectAll()
                 .where { CasinoProviderTable.identity eq query.identity.value }
                 .singleOrNull()

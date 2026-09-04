@@ -8,16 +8,11 @@ import domain.model.SpinType
 import domain.vo.Amount
 import domain.vo.Page
 import infrastructure.persistence.entity.CasinoGameEntity
-import infrastructure.persistence.entity.CasinoGameVariantEntity
-import infrastructure.persistence.entity.CasinoProviderEntity
 import infrastructure.persistence.entity.CasinoRoundEntity
-import infrastructure.persistence.entity.CasinoSessionEntity
 import infrastructure.persistence.mapper.CasinoRoundMapper.toDomain
 import infrastructure.persistence.table.CasinoGameTable
-import infrastructure.persistence.table.CasinoGameVariantTable
 import infrastructure.persistence.table.CasinoProviderTable
 import infrastructure.persistence.table.CasinoRoundTable
-import infrastructure.persistence.table.CasinoSessionTable
 import infrastructure.persistence.table.SpinTable
 import org.jetbrains.exposed.dao.with
 import org.jetbrains.exposed.sql.Case
@@ -52,50 +47,32 @@ class FindAllCasinoRoundQueryHandler : IQueryHandler<FindAllCasinoRoundQuery, Pa
 
         val whereConditions = buildList {
             query.playerId?.let { pid ->
-                add(Op.build {
-                    CasinoRoundTable.session inSubQuery (
-                            CasinoSessionTable
-                                .select(CasinoSessionTable.id)
-                                .where { CasinoSessionTable.playerId eq pid.value }
-                            )
-                })
+                add(Op.build { CasinoRoundTable.playerId eq pid.value })
             }
 
             query.gameIdentity?.let { gid ->
                 add(Op.build {
-                    CasinoRoundTable.gameVariant inSubQuery (
-                            CasinoGameVariantTable
-                                .select(CasinoGameVariantTable.id)
-                                .where {
-                                    CasinoGameVariantTable.game inSubQuery (
-                                            CasinoGameTable
-                                                .select(CasinoGameTable.id)
-                                                .where { CasinoGameTable.identity eq gid.value }
-                                            )
-                                }
-                            )
+                    CasinoRoundTable.game inSubQuery (
+                        CasinoGameTable
+                            .select(CasinoGameTable.id)
+                            .where { CasinoGameTable.identity eq gid.value }
+                    )
                 })
             }
 
             query.providerIdentity?.let { pid ->
                 add(Op.build {
-                    CasinoRoundTable.gameVariant inSubQuery (
-                            CasinoGameVariantTable
-                                .select(CasinoGameVariantTable.id)
-                                .where {
-                                    CasinoGameVariantTable.game inSubQuery (
-                                            CasinoGameTable
-                                                .select(CasinoGameTable.id)
-                                                .where {
-                                                    CasinoGameTable.provider inSubQuery (
-                                                            CasinoProviderTable
-                                                                .select(CasinoProviderTable.id)
-                                                                .where { CasinoProviderTable.identity eq pid.value }
-                                                            )
-                                                }
-                                            )
-                                }
-                            )
+                    CasinoRoundTable.game inSubQuery (
+                        CasinoGameTable
+                            .select(CasinoGameTable.id)
+                            .where {
+                                CasinoGameTable.provider inSubQuery (
+                                    CasinoProviderTable
+                                        .select(CasinoProviderTable.id)
+                                        .where { CasinoProviderTable.identity eq pid.value }
+                                )
+                            }
+                    )
                 })
             }
 
@@ -154,13 +131,9 @@ class FindAllCasinoRoundQueryHandler : IQueryHandler<FindAllCasinoRoundQuery, Pa
 
         val rounds = CasinoRoundEntity.forEntityIds(roundIds)
             .with(
-                CasinoRoundEntity::session,
-                CasinoRoundEntity::gameVariant,
-                CasinoSessionEntity::gameVariant,
-                CasinoGameVariantEntity::game,
+                CasinoRoundEntity::game,
                 CasinoGameEntity::provider,
                 CasinoGameEntity::collections,
-                CasinoProviderEntity::aggregator,
             )
             .toList()
             .associateBy { it.id }

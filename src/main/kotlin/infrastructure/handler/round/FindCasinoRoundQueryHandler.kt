@@ -7,10 +7,7 @@ import application.query.round.FindCasinoRoundQuery
 import domain.model.SpinType
 import domain.vo.Amount
 import infrastructure.persistence.entity.CasinoGameEntity
-import infrastructure.persistence.entity.CasinoGameVariantEntity
-import infrastructure.persistence.entity.CasinoProviderEntity
 import infrastructure.persistence.entity.CasinoRoundEntity
-import infrastructure.persistence.entity.CasinoSessionEntity
 import infrastructure.persistence.mapper.CasinoRoundMapper.toDomain
 import infrastructure.persistence.table.SpinTable
 import org.jetbrains.exposed.dao.load
@@ -22,13 +19,9 @@ class FindCasinoRoundQueryHandler : IQueryHandler<FindCasinoRoundQuery, Optional
     override suspend fun handle(query: FindCasinoRoundQuery): Optional<CasinoRoundView> = dbRead {
         val roundEntity = CasinoRoundEntity.findById(query.id)
             ?.load(
-                CasinoRoundEntity::session,
-                CasinoRoundEntity::gameVariant,
-                CasinoSessionEntity::gameVariant,
-                CasinoGameVariantEntity::game,
+                CasinoRoundEntity::game,
                 CasinoGameEntity::provider,
                 CasinoGameEntity::collections,
-                CasinoProviderEntity::aggregator,
             )
             ?: return@dbRead Optional.empty()
 

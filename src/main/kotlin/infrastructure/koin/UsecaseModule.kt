@@ -2,14 +2,9 @@ package infrastructure.koin
 
 import application.usecase.DecreasePlayerLimitUsecase
 import application.usecase.FinishCasinoRoundUsecase
-import application.usecase.JackpotBroadcaster
 import application.usecase.OpenCasinoSessionUsecase
-import application.usecase.OpenSportbookUsecase
-import application.usecase.ProcessBetUsecase
 import application.usecase.ProcessSpinUsecase
-import application.usecase.ProcessWheelUsecase
-import application.usecase.RecalculateCasinoGameRtpUsecase
-import application.usecase.SyncAggregatorUsecase
+import application.usecase.SyncCasinoCatalogUsecase
 import org.koin.dsl.module
 
 val usecaseModule = module {
@@ -26,17 +21,8 @@ val usecaseModule = module {
     }
     single {
         OpenCasinoSessionUsecase(
-            aggregatorFactory = get(),
-            aggregatorRepository = get(),
-            sessionRepository = get(),
-            freespinRepository = get(),
+            gameHubClient = get(),
             eventPublisher = get(),
-        )
-    }
-    single {
-        JackpotBroadcaster(
-            aggregatorRepository = get(),
-            aggregatorFactory = get(),
         )
     }
     single {
@@ -51,38 +37,10 @@ val usecaseModule = module {
         )
     }
     single {
-        RecalculateCasinoGameRtpUsecase(
-            spinRepository = get(),
+        SyncCasinoCatalogUsecase(
+            gameHubClient = get(),
             gameRepository = get(),
-        )
-    }
-    single {
-        SyncAggregatorUsecase(
-            aggregatorFactory = get(),
-            gameRepository = get(),
-            gameVariantRepository = get(),
             providerRepository = get(),
-        )
-    }
-    single {
-        OpenSportbookUsecase(
-            aggregatorRepository = get(),
-            sessionRepository = get(),
-            aggregatorFactory = get(),
-            eventPublisher = get(),
-        )
-    }
-    single {
-        ProcessBetUsecase(
-            betRepository = get(),
-            walletPort = get(),
-            eventPublisher = get(),
-        )
-    }
-    single {
-        ProcessWheelUsecase(
-            walletPort = get(),
-            guardPort = get(),
         )
     }
 }

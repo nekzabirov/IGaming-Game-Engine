@@ -1,6 +1,5 @@
 package infrastructure.persistence.search
 
-import infrastructure.persistence.table.AggregatorTable
 import infrastructure.persistence.table.CasinoGameTable
 import infrastructure.persistence.table.CasinoProviderTable
 import infrastructure.persistence.table.CollectionTable
@@ -19,13 +18,10 @@ object SearchIndexes {
     val providers = SearchIndex(
         CasinoProviderTable.name,
         CasinoProviderTable.identity,
-        CasinoProviderTable.aliases.castTo<String>(TextColumnType()),
     )
 
     val collections = SearchIndex(
         CollectionTable.name.castTo<String>(TextColumnType()),
         CollectionTable.identity,
     )
-
-    val aggregators = SearchIndex(AggregatorTable.identity)
 }

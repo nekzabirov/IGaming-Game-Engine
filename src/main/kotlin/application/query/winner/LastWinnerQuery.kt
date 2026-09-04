@@ -3,7 +3,6 @@ package application.query.winner
 import application.IQuery
 import application.query.game.CasinoGameFilter
 import domain.model.CasinoGame
-import domain.model.CasinoGameVariant
 import domain.vo.Amount
 import domain.vo.Currency
 import domain.vo.Page
@@ -13,7 +12,6 @@ import kotlinx.datetime.Instant
 
 data class LastWin(
     val game: CasinoGame,
-    val variant: CasinoGameVariant?,
     val amount: Amount,
     val currency: Currency,
     val playerId: PlayerId,

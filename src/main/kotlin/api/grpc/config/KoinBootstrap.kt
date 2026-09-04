@@ -1,6 +1,5 @@
 package api.grpc.config
 
-import infrastructure.koin.aggregatorModule
 import infrastructure.koin.busModule
 import infrastructure.koin.configModule
 import infrastructure.koin.externalModule
@@ -33,7 +32,6 @@ fun Application.configureKoin() {
             usecaseModule,
             handlerModule,
             busModule,
-            aggregatorModule,
             grpcModule,
         )
     }

@@ -6,7 +6,6 @@ import domain.model.CasinoProvider
 import infrastructure.persistence.entity.CasinoProviderEntity
 import infrastructure.persistence.mapper.CasinoProviderMapper.toDomain
 import infrastructure.persistence.table.CasinoProviderTable
-import org.jetbrains.exposed.dao.with
 import org.jetbrains.exposed.sql.SortOrder
 import infrastructure.persistence.dbRead
 
@@ -17,7 +16,6 @@ class BatchCasinoProviderQueryHandler : IQueryHandler<BatchCasinoProviderQuery, 
 
         CasinoProviderEntity.find { CasinoProviderTable.identity inList identityValues }
             .orderBy(CasinoProviderTable.sortOrder to SortOrder.ASC)
-            .with(CasinoProviderEntity::aggregator)
             .map { it.toDomain() }
     }
 }

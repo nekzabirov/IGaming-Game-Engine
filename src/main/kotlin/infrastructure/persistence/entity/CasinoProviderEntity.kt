@@ -11,10 +11,9 @@ class CasinoProviderEntity(id: EntityID<Long>) : LongEntity(id) {
     var identity by CasinoProviderTable.identity
     var name by CasinoProviderTable.name
     var images by CasinoProviderTable.images
+    var customImages by CasinoProviderTable.customImages
     var sortOrder by CasinoProviderTable.sortOrder
     var active by CasinoProviderTable.active
-    var aggregator by AggregatorEntity referencedOn CasinoProviderTable.aggregator
     var blockedCountry by CasinoProviderTable.blockedCountry
     var tags by CasinoProviderTable.tags
-    var aliases by CasinoProviderTable.aliases
 }

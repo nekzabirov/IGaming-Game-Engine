@@ -36,8 +36,8 @@ class ProcessSpinUsecase(
 
     suspend operator fun invoke(spin: Spin): Result<Response> = runCatching {
         logger.info(
-            "Processing spin: type={} session={} round={} amount={} freespin={}",
-            spin.type, spin.round.session.id, spin.round.id, spin.amount, spin.round.freespinId,
+            "Processing spin: type={} round={} amount={} freespin={}",
+            spin.type, spin.round.id, spin.amount, spin.round.freespinId,
         )
 
         // A free round's BET costs nothing, so it neither checks nor moves the balance. Its
@@ -70,10 +70,7 @@ class ProcessSpinUsecase(
         Response(spin = updatedSpin, balance = result.balance)
     }.onFailure { e ->
         if (e !is DomainException) {
-            logger.error(
-                "Failed to process spin: type={} session={} round={}",
-                spin.type, spin.round.session.id, spin.round.id, e,
-            )
+            logger.error("Failed to process spin: type={} round={}", spin.type, spin.round.id, e)
         }
     }
 
@@ -84,8 +81,8 @@ class ProcessSpinUsecase(
      */
     private suspend fun offWallet(spin: Spin): SpinResult {
         val balance = walletPort.findBalance(
-            playerId = spin.round.session.playerId,
-            currency = spin.round.session.currency,
+            playerId = spin.round.playerId,
+            currency = spin.round.currency,
         )
         return SpinResult(spin = spin, balance = balance)
     }
@@ -113,24 +110,24 @@ class ProcessSpinUsecase(
     }
 
     private suspend fun updateBalance(spin: Spin) {
-        val session = spin.round.session
+        val round = spin.round
         // PLACE takes money, SETTLE gives it back. A ROLLBACK moves it opposite to the spin it
         // reverses, so rolling back a win is a withdrawal, not a deposit.
         val takesMoney = spin.isPlace || (spin.isRollback && spin.reference?.isSettle == true)
         val reference = reference(spin)
         if (takesMoney) {
             walletPort.withdraw(
-                playerId = session.playerId,
+                playerId = round.playerId,
                 transactionId = reference,
-                currency = session.currency,
+                currency = round.currency,
                 realAmount = spin.realAmount,
                 bonusAmount = spin.bonusAmount,
             )
         } else {
             walletPort.deposit(
-                playerId = session.playerId,
+                playerId = round.playerId,
                 transactionId = reference,
-                currency = session.currency,
+                currency = round.currency,
                 realAmount = spin.realAmount,
                 bonusAmount = spin.bonusAmount,
             )
@@ -138,26 +135,25 @@ class ProcessSpinUsecase(
     }
 
     /**
-     * The wallet key of ONE movement. It has to name the spin, not the session: the wallet is
-     * idempotent by this string, so a session-wide key would make every spin after the first look
-     * like a retry of it and move no money at all. `externalId` is the aggregator's spin id and is
+     * The wallet key of ONE movement. It has to name the spin, not the round, so the wallet is
+     * idempotent by this string, and a round-wide key would make every spin after the first look
+     * like a retry of it and move no money at all. `externalId` is the hub's own leg id and is
      * already unique-constrained here, and the type separates the place from the settle that
-     * follows it — which is also what makes a redelivered webhook harmless.
+     * follows it — which is also what makes a redelivered call harmless.
      */
     private fun reference(spin: Spin): String =
         "spin:${spin.type.name.lowercase()}:${spin.externalId.value}"
 
     private suspend fun calculateResult(spin: Spin): SpinResult {
-        val session = spin.round.session
-        val playerBalance = walletPort.findBalance(playerId = session.playerId, currency = session.currency)
+        val round = spin.round
+        val playerBalance = walletPort.findBalance(playerId = round.playerId, currency = round.currency)
         return SpinBalanceCalculator.process(balance = playerBalance, spin = spin)
     }
 
     private suspend fun checkLimits(spin: Spin) {
         if (!spin.isPlace) return
 
-        val session = spin.round.session
-        val playerMaxPlaceAmount = playerLimitPort.getMaxPlaceAmount(playerId = session.playerId) ?: return
+        val playerMaxPlaceAmount = playerLimitPort.getMaxPlaceAmount(playerId = spin.round.playerId) ?: return
 
         domainRequire(playerMaxPlaceAmount > spin.amount) { MaxPlaceSpinException() }
     }

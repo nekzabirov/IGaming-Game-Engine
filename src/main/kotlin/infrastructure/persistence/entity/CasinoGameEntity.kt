@@ -15,9 +15,18 @@ class CasinoGameEntity(id: EntityID<Long>) : LongEntity(id) {
     var bonusBetEnable by CasinoGameTable.bonusBetEnable
     var bonusWageringEnable by CasinoGameTable.bonusWageringEnable
     var tags by CasinoGameTable.tags
+    var rtp by CasinoGameTable.rtp
+    var freeSpinEnable by CasinoGameTable.freeSpinEnable
+    var freeChipEnable by CasinoGameTable.freeChipEnable
+    var jackpotEnable by CasinoGameTable.jackpotEnable
+    var demoEnable by CasinoGameTable.demoEnable
+    var bonusBuyEnable by CasinoGameTable.bonusBuyEnable
+    var locales by CasinoGameTable.locales
+    var platforms by CasinoGameTable.platforms
+    var playLines by CasinoGameTable.playLines
     var active by CasinoGameTable.active
     var images by CasinoGameTable.images
+    var customImages by CasinoGameTable.customImages
     var sortOrder by CasinoGameTable.sortOrder
-    var rtp by CasinoGameTable.rtp
     var collections by CollectionEntity via CasinoGameCollectionTable
 }

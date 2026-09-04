@@ -2,31 +2,21 @@ package infrastructure.handler.game
 
 import application.IQueryHandler
 import application.query.game.FindCasinoGameQuery
-import application.query.game.CasinoGameView
+import domain.model.CasinoGame
 import infrastructure.persistence.dbRead
 import infrastructure.persistence.entity.CasinoGameEntity
-import infrastructure.persistence.entity.CasinoProviderEntity
 import infrastructure.persistence.mapper.CasinoGameMapper.toDomain
-import infrastructure.persistence.mapper.CasinoGameVariantMapper.toDomain
 import infrastructure.persistence.table.CasinoGameTable
 import org.jetbrains.exposed.dao.with
 import java.util.Optional
 
-class FindCasinoGameQueryHandler : IQueryHandler<FindCasinoGameQuery, Optional<CasinoGameView>> {
+class FindCasinoGameQueryHandler : IQueryHandler<FindCasinoGameQuery, Optional<CasinoGame>> {
 
-    override suspend fun handle(query: FindCasinoGameQuery): Optional<CasinoGameView> = dbRead {
+    override suspend fun handle(query: FindCasinoGameQuery): Optional<CasinoGame> = dbRead {
         val entity = CasinoGameEntity.find { CasinoGameTable.identity eq query.identity.value }
-            .with(CasinoGameEntity::provider, CasinoGameEntity::collections, CasinoProviderEntity::aggregator)
+            .with(CasinoGameEntity::provider, CasinoGameEntity::collections)
             .firstOrNull() ?: return@dbRead Optional.empty()
 
-        // Same rule as every listing: the provider's aggregator first, any other active one after.
-        val variantEntity = entity.variantFrom(listOf(entity).loadVariantMap())
-
-        Optional.of(
-            CasinoGameView(
-                game = entity.toDomain(),
-                variant = variantEntity?.toDomain(),
-            )
-        )
+        Optional.of(entity.toDomain())
     }
 }

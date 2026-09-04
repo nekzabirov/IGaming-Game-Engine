@@ -5,8 +5,6 @@ import domain.vo.Country
 import domain.vo.Identity
 import domain.vo.ImageMap
 import infrastructure.persistence.entity.CasinoProviderEntity
-import infrastructure.persistence.mapper.AggregatorMapper.toAggregator
-import infrastructure.persistence.mapper.AggregatorMapper.toDomain
 import infrastructure.persistence.table.CasinoProviderTable
 import org.jetbrains.exposed.sql.ResultRow
 
@@ -16,23 +14,21 @@ object CasinoProviderMapper {
         identity = Identity(identity),
         name = name,
         images = ImageMap(images.toMutableMap()),
+        customImages = ImageMap(customImages.toMutableMap()),
         order = sortOrder,
         active = active,
-        aggregator = aggregator.toDomain(),
         blockedCountry = blockedCountry.map { Country(it) },
         tags = tags,
-        aliases = aliases,
     )
 
     fun ResultRow.toCasinoProvider(): CasinoProvider = CasinoProvider(
         identity = Identity(this[CasinoProviderTable.identity]),
         name = this[CasinoProviderTable.name],
         images = ImageMap(this[CasinoProviderTable.images].toMutableMap()),
+        customImages = ImageMap(this[CasinoProviderTable.customImages].toMutableMap()),
         order = this[CasinoProviderTable.sortOrder],
         active = this[CasinoProviderTable.active],
-        aggregator = toAggregator(),
         blockedCountry = this[CasinoProviderTable.blockedCountry].map { Country(it) },
         tags = this[CasinoProviderTable.tags],
-        aliases = this[CasinoProviderTable.aliases],
     )
 }

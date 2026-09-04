@@ -2,19 +2,17 @@ package infrastructure.handler.game
 
 import application.IQueryHandler
 import application.query.game.FindAllCasinoGameQuery
-import application.query.game.CasinoGameView
+import domain.model.CasinoGame
 import domain.vo.Page
 import infrastructure.persistence.dbRead
 import infrastructure.persistence.entity.CasinoGameEntity
-import infrastructure.persistence.entity.CasinoProviderEntity
 import infrastructure.persistence.mapper.CasinoGameMapper.toDomain
-import infrastructure.persistence.mapper.CasinoGameVariantMapper.toDomain
 import infrastructure.persistence.search.searchPass
 import org.jetbrains.exposed.dao.with
 
-class FindAllCasinoGameQueryHandler : IQueryHandler<FindAllCasinoGameQuery, Page<CasinoGameView>> {
+class FindAllCasinoGameQueryHandler : IQueryHandler<FindAllCasinoGameQuery, Page<CasinoGame>> {
 
-    override suspend fun handle(query: FindAllCasinoGameQuery): Page<CasinoGameView> = dbRead {
+    override suspend fun handle(query: FindAllCasinoGameQuery): Page<CasinoGame> = dbRead {
         val filter = query.filter
         val pass = searchPass(
             relaxable = filter.isRelaxable(),
@@ -25,21 +23,12 @@ class FindAllCasinoGameQueryHandler : IQueryHandler<FindAllCasinoGameQuery, Page
         val totalItems = pass.totalItems
         val pageable = query.pageable
 
-        val entities = baseQuery
+        val items = baseQuery
             .orderBy(*filter.toOrdering())
             .limit(pageable.sizeReal)
             .offset(pageable.offset)
-            .with(CasinoGameEntity::provider, CasinoGameEntity::collections, CasinoProviderEntity::aggregator)
-            .toList()
-
-        val variantMap = entities.loadVariantMap()
-
-        val items = entities.map { entity ->
-            CasinoGameView(
-                game = entity.toDomain(),
-                variant = entity.variantFrom(variantMap)?.toDomain(),
-            )
-        }
+            .with(CasinoGameEntity::provider, CasinoGameEntity::collections)
+            .map { it.toDomain() }
 
         Page(
             items = items,

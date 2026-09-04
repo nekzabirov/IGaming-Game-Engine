@@ -5,17 +5,13 @@ package game.v1;
 option java_package = "com.nekgamebling.game.v1";
 option java_multiple_files = true;
 
-import "game/v1/dto/aggregator.dto.proto";
 import "game/v1/dto/casino_provider.dto.proto";
 import "game/v1/dto/common.dto.proto";
 
 // ---------------------------------------------------------------------------
 // CasinoProvider catalog service — read + upsert. Providers are contract artefacts
-// and cannot be deleted once registered.
-//
-// Every Save is a typed upsert mirroring
-// `application.command.provider.SaveCasinoProviderCommand`. FindAll takes a
-// dedicated CasinoProviderFilter sub-message.
+// and cannot be deleted once registered. `name`, `images` and `tags` are synced
+// from GameHub and no longer accepted on Save — see SaveCasinoProviderCommand.
 // ---------------------------------------------------------------------------
 service CasinoProviderService {
   rpc Save(SaveCasinoProviderCommand) returns (Empty);
@@ -35,27 +31,20 @@ service CasinoProviderService {
 // Commands
 // ---------------------------------------------------------------------------
 
+// Update-only: fails NOT_FOUND unless the catalog sync already created this provider from GameHub.
+// `name`/`images`/`tags` are GameHub's — not accepted here any more.
 message SaveCasinoProviderCommand {
   string identity = 1;
-
-  string name = 2;
 
   int32 order = 3;
 
   bool active = 4;
 
-  string aggregator_identity = 5;
-
   repeated string blocked_country = 6;
-
-  repeated string tags = 7;
-
-  // Save is a full upsert. Omitting this wipes the aliases the catalog sync learned, which would
-  // let the merged vendor split back into two providers on the next run — read the provider first
-  // and send its aliases back.
-  repeated string aliases = 8;
 }
 
+// Sets a LOCAL override on top of the hub's synced artwork — see CasinoProviderDto.images,
+// which is already the merged result.
 message UpdateCasinoProviderImageCommand {
   string identity = 1;
 
@@ -81,8 +70,6 @@ message FindCasinoProviderQuery {
 
   message Result {
     CasinoProviderDto item = 1;
-
-    AggregatorDto aggregator = 2;
   }
 }
 
@@ -90,8 +77,6 @@ message CasinoProviderFilter {
   string query = 1;
 
   optional bool active = 2;
-
-  optional string aggregator_identity = 3;
 
   repeated string in_collection_identities = 4;
 
@@ -107,9 +92,6 @@ message FindAllCasinoProviderQuery {
 
   message Result {
     repeated CasinoProviderDto items = 1;
-
-    // Denormalized aggregators referenced by any provider in `items`.
-    repeated AggregatorDto aggregators = 2;
 
     int32 total_items = 3;
   }
@@ -135,7 +117,5 @@ message BatchCasinoProviderQuery {
 
   message Result {
     repeated CasinoProviderDto items = 1;
-
-    repeated AggregatorDto aggregators = 2;
   }
 }

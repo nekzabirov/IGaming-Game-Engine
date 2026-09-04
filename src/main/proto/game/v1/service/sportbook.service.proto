@@ -6,45 +6,28 @@ option java_package = "com.nekgamebling.game.v1";
 option java_multiple_files = true;
 
 // ---------------------------------------------------------------------------
-// Sportbook service — opens the sportbook for a player.
-//
-// Open resolves the single active SPORTBOOK aggregator, mints a session with a
-// one-time public token and returns what the frontend needs to boot the
-// provider SDK. Mirrors `application.command.sportbook.OpenSportbookCommand`.
-//
-// Init is the anonymous half of the same bootstrap: it resolves the active
-// aggregator and returns the SDK init payload (partnerId, apiUrl) with no
-// player and no session — a guest browses the line with exactly this. The
-// aggregator config is the single source of these values; frontends must not
-// duplicate them in their own env.
+// Sportbook service — thin proxy onto the hub's GatewayService.OpenSportbook.
+// No player_id = guest: the line is visible, no bets, no session minted anywhere
+// (there is no separate anonymous-init RPC any more — the hub's own contract is
+// already player_id-optional).
 // ---------------------------------------------------------------------------
 service SportbookService {
   rpc Open(OpenSportbookCommand) returns (OpenSportbookCommand.Result);
-
-  rpc Init(InitSportbookQuery) returns (InitSportbookQuery.Result);
-}
-
-message InitSportbookQuery {
-  message Result {
-    // Aggregator integration key (e.g. "01TECHSPORT") — tells the frontend which SDK to load.
-    string integration = 1;
-
-    // Aggregator-specific anonymous SDK init payload (e.g. partnerId, apiUrl).
-    map<string, string> data = 2;
-  }
 }
 
 message OpenSportbookCommand {
-  string player_id = 1;
+  optional string player_id = 1;
 
-  // Player wallet currency (ISO 4217 / crypto code, e.g. "USD").
+  // Player wallet currency (ISO 4217 / crypto code, e.g. "USD"). Ignored in guest mode.
   string currency = 2;
 
+  string locale = 3;
+
   message Result {
-    // Aggregator integration key (e.g. "01TECHSPORT") — tells the frontend which SDK to load.
+    // `partners.integration` from the hub — tells the frontend which SDK to load.
     string integration = 1;
 
-    // Aggregator-specific SDK init payload (e.g. public token, partnerId).
+    // Vendor-specific launch data (apiUrl, partnerId, token, currency...).
     map<string, string> data = 2;
   }
 }

@@ -1,36 +1,30 @@
 package domain.model
 
-import domain.service.CasinoRoundFactory
+import domain.util.ext.InstantExt
 import domain.vo.Currency
-import domain.vo.ExternalCasinoRoundId
-import domain.vo.FreespinId
 import domain.vo.Locale
 import domain.vo.PlayerId
-import domain.vo.CasinoSessionToken
+import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 
+/**
+ * A record that a player opened a game — nothing more. The hub owns the actual session (its own
+ * token, its own launch bookkeeping); this value exists only so `OpenCasinoSessionUsecase` has
+ * something to publish on `session.events` for crm-engine. It is never persisted and never looked
+ * up — wallet calls from the hub carry `playerId`/`game`/`currency` directly, with no session
+ * indirection at all.
+ */
 @Serializable
 data class CasinoSession(
-    val id: Long = Long.MIN_VALUE,
-
-    val gameVariant: CasinoGameVariant,
-
     val playerId: PlayerId,
 
-    val token: CasinoSessionToken,
-
-    val externalToken: String?,
+    val game: CasinoGame,
 
     val currency: Currency,
 
     val locale: Locale,
 
     val platform: Platform,
-) {
-    /**
-     * Opens a new [CasinoRound] against this session. Keeps round creation anchored to its
-     * parent aggregate so usecases don't have to know about [CasinoRoundFactory].
-     */
-    fun openRound(externalId: ExternalCasinoRoundId, freespinId: FreespinId? = null): CasinoRound =
-        CasinoRoundFactory.open(session = this, externalId = externalId, freespinId = freespinId)
-}
+
+    val createdAt: Instant = InstantExt.now(),
+)

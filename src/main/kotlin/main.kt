@@ -1,16 +1,7 @@
 import api.grpc.config.configureKoin
 import api.grpc.configureGrpc
-import api.grpc.service.AggregatorGrpcService
-import api.grpc.service.CollectionGrpcService
-import api.grpc.service.FreespinGrpcService
-import api.grpc.service.CasinoGameGrpcService
-import api.grpc.service.CasinoProviderGrpcService
-import api.grpc.service.WinnerGrpcService
-import api.webhook.configureRestInspector
-import api.webhook.configureWebhook
 import infrastructure.persistence.DatabaseConfig
 import infrastructure.persistence.DatabaseFactory
-import io.grpc.ServerBuilder
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
@@ -18,15 +9,10 @@ import io.ktor.server.cio.CIO
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.plugins.calllogging.CallLogging
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.server.routing.routing
 import com.rabbitmq.client.Channel
-import infrastructure.aggregator.onegamehub.webhook.OneGameHubWebhook
-import infrastructure.aggregator.pragmatic.webhook.PragmaticWebhook
 import infrastructure.rabbitmq.EVENT_EXCHANGE
 import infrastructure.rabbitmq.PlaceSpinEventConsumer
 import infrastructure.rabbitmq.declareEventExchange
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.koin.ktor.ext.get
 import org.slf4j.LoggerFactory
@@ -48,9 +34,7 @@ fun main() {
         configureDatabase()
         configureSerialization()
         configureCallLogging()
-        configureRestInspector()
         configureRabbitMqTopology()
-        configureWebhook()
         configureGrpc()
         configureConsumers()
     }.start(wait = true)

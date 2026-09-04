@@ -24,16 +24,8 @@ application {
 // Task to run the sync aggregators CLI
 tasks.register<JavaExec>("runSync") {
     group = "application"
-    description = "Run the sync all aggregators CLI"
+    description = "Run the GameHub catalog sync CLI"
     mainClass.set("SyncJobKt")
-    classpath = sourceSets.main.get().runtimeClasspath
-}
-
-// Task to run the daily RTP recalculation job locally
-tasks.register<JavaExec>("runDailyRtp") {
-    group = "application"
-    description = "Run the daily game RTP recalculation job"
-    mainClass.set("DailyRtpJobKt")
     classpath = sourceSets.main.get().runtimeClasspath
 }
 
@@ -51,16 +43,9 @@ tasks.named<CreateStartScripts>("startScripts") {
 }
 
 val syncStartScripts by tasks.registering(CreateStartScripts::class) {
-    applicationName = "sync-aggregators"
+    applicationName = "sync-catalog"
     mainClass.set("SyncJobKt")
     outputDir = layout.buildDirectory.dir("syncScripts").get().asFile
-    classpath = tasks.named<Jar>("jar").get().outputs.files + configurations.runtimeClasspath.get()
-}
-
-val dailyRtpStartScripts by tasks.registering(CreateStartScripts::class) {
-    applicationName = "daily-rtp"
-    mainClass.set("DailyRtpJobKt")
-    outputDir = layout.buildDirectory.dir("dailyRtpScripts").get().asFile
     classpath = tasks.named<Jar>("jar").get().outputs.files + configurations.runtimeClasspath.get()
 }
 
@@ -75,9 +60,6 @@ distributions {
     main {
         contents {
             from(syncStartScripts) {
-                into("bin")
-            }
-            from(dailyRtpStartScripts) {
                 into("bin")
             }
             from(dbMigrateStartScripts) {

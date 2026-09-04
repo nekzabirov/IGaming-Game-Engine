@@ -9,7 +9,6 @@ import infrastructure.persistence.mapper.CasinoProviderMapper.toCasinoProvider
 import infrastructure.persistence.search.SearchIndexes
 import infrastructure.persistence.search.searchCanRelax
 import infrastructure.persistence.search.searchPass
-import infrastructure.persistence.table.AggregatorTable
 import infrastructure.persistence.table.CollectionTable
 import infrastructure.persistence.table.CasinoGameCollectionTable
 import infrastructure.persistence.table.CasinoGameTable
@@ -17,7 +16,6 @@ import infrastructure.persistence.table.CasinoProviderTable
 import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.TextColumnType
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.castTo
@@ -39,7 +37,6 @@ class FindAllCasinoProviderQueryHandler : IQueryHandler<FindAllCasinoProviderQue
         val totalItems = pass.totalItems
 
         val items = CasinoProviderTable
-            .join(AggregatorTable, JoinType.INNER, CasinoProviderTable.aggregator, AggregatorTable.id)
             .selectAll()
             .where { filterCondition }
             .orderBy(
@@ -64,14 +61,6 @@ class FindAllCasinoProviderQueryHandler : IQueryHandler<FindAllCasinoProviderQue
                 add(SearchIndexes.providers.matches(query.query, relaxed))
             }
             query.active?.let { add(Op.build { CasinoProviderTable.active eq it }) }
-            query.aggregatorId?.let { aggId ->
-                add(Op.build {
-                    CasinoProviderTable.aggregator inSubQuery (
-                        AggregatorTable.select(AggregatorTable.id)
-                            .where { AggregatorTable.identity eq aggId }
-                    )
-                })
-            }
 
             if (query.inCollectionIdentities.isNotEmpty()) {
                 add(exists(

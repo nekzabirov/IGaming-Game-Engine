@@ -1,3 +1,3 @@
 package domain.exception.conflict
 
-class DemoNotSupportedException : ConflictException("CasinoGame variant does not support demo play")
+class DemoNotSupportedException : ConflictException("CasinoGame does not support demo play")

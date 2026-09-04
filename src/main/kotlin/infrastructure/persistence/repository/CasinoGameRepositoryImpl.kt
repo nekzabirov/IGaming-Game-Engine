@@ -24,7 +24,6 @@ class CasinoGameRepositoryImpl : ICasinoGameRepository {
     private val gameChain = arrayOf(
         CasinoGameEntity::provider,
         CasinoGameEntity::collections,
-        CasinoProviderEntity::aggregator,
     )
 
     override suspend fun save(game: CasinoGame): CasinoGame = dbTransaction {
@@ -42,8 +41,17 @@ class CasinoGameRepositoryImpl : ICasinoGameRepository {
                 bonusWageringEnable = game.bonusWageringEnable
                 tags = game.tags
                 rtp = game.rtp
+                freeSpinEnable = game.freeSpinEnable
+                freeChipEnable = game.freeChipEnable
+                jackpotEnable = game.jackpotEnable
+                demoEnable = game.demoEnable
+                bonusBuyEnable = game.bonusBuyEnable
+                locales = game.locales.map { it.value }
+                platforms = game.platforms.map { it.name }
+                playLines = game.playLines
                 active = game.active
                 images = game.images.data
+                customImages = game.customImages.data
                 sortOrder = game.order
             }
         } else {
@@ -55,8 +63,17 @@ class CasinoGameRepositoryImpl : ICasinoGameRepository {
                 bonusWageringEnable = game.bonusWageringEnable
                 tags = game.tags
                 rtp = game.rtp
+                freeSpinEnable = game.freeSpinEnable
+                freeChipEnable = game.freeChipEnable
+                jackpotEnable = game.jackpotEnable
+                demoEnable = game.demoEnable
+                bonusBuyEnable = game.bonusBuyEnable
+                locales = game.locales.map { it.value }
+                platforms = game.platforms.map { it.name }
+                playLines = game.playLines
                 active = game.active
                 images = game.images.data
+                customImages = game.customImages.data
                 sortOrder = game.order
             }
         }
@@ -86,8 +103,17 @@ class CasinoGameRepositoryImpl : ICasinoGameRepository {
             this[CasinoGameTable.bonusWageringEnable] = game.bonusWageringEnable
             this[CasinoGameTable.tags] = game.tags
             this[CasinoGameTable.rtp] = game.rtp
+            this[CasinoGameTable.freeSpinEnable] = game.freeSpinEnable
+            this[CasinoGameTable.freeChipEnable] = game.freeChipEnable
+            this[CasinoGameTable.jackpotEnable] = game.jackpotEnable
+            this[CasinoGameTable.demoEnable] = game.demoEnable
+            this[CasinoGameTable.bonusBuyEnable] = game.bonusBuyEnable
+            this[CasinoGameTable.locales] = game.locales.map { it.value }
+            this[CasinoGameTable.platforms] = game.platforms.map { it.name }
+            this[CasinoGameTable.playLines] = game.playLines
             this[CasinoGameTable.active] = game.active
             this[CasinoGameTable.images] = game.images.data
+            this[CasinoGameTable.customImages] = game.customImages.data
             this[CasinoGameTable.sortOrder] = game.order
         }
 
@@ -131,7 +157,7 @@ class CasinoGameRepositoryImpl : ICasinoGameRepository {
             val entity = domainRequireNotNull(
                 CasinoGameEntity.find { CasinoGameTable.identity eq identity.value }.firstOrNull()
             ) { CasinoGameNotFoundException() }
-            entity.images = entity.images.toMutableMap().apply { put(key, url) }
+            entity.customImages = entity.customImages.toMutableMap().apply { put(key, url) }
         }
     }
 }

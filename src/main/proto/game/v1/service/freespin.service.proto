@@ -8,10 +8,13 @@ option java_multiple_files = true;
 import "game/v1/dto/common.dto.proto";
 import "google/protobuf/struct.proto";
 
+// Thin proxy onto the hub's GatewayService — GameHub is the sole source of grant state, casino-engine
+// keeps no local record. Create mints and returns the grant id; the caller must hold onto it for
+// Cancel and for recognising the grant on spin/round events (freespinId on the wire).
 service FreespinService {
   rpc GetPreset(GetFreespinPresetQuery) returns (GetFreespinPresetQuery.Result);
 
-  rpc Create(CreateFreespinCommand) returns (Empty);
+  rpc Create(CreateFreespinCommand) returns (CreateFreespinCommand.Result);
 
   rpc Cancel(CancelFreespinCommand) returns (Empty);
 }
@@ -29,23 +32,21 @@ message CreateFreespinCommand {
 
   string player_id = 2;
 
-  string reference_id = 3;
+  string currency = 3;
 
-  string currency = 4;
+  google.protobuf.Struct preset_values = 4;
 
-  string start_at = 5;
+  int64 spin_amount = 5;
 
-  string end_at = 6;
+  int32 spin_count = 6;
 
-  google.protobuf.Struct preset_values = 7;
-
-  int64 spin_amount = 8;
-
-  int32 spin_count = 9;
+  message Result {
+    // The hub's own grant id.
+    string id = 1;
+  }
 }
 
 message CancelFreespinCommand {
-  string game_identity = 1;
-
-  string reference_id = 2;
+  // The id CreateFreespinCommand.Result returned.
+  string id = 1;
 }

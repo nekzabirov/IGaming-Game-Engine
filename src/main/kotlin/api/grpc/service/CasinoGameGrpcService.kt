@@ -1,7 +1,6 @@
 package api.grpc.service
 
 import api.grpc.config.handleGrpcCall
-import api.grpc.mapper.AggregatorProtoMapper.toProto
 import api.grpc.mapper.CollectionProtoMapper.toProto
 import api.grpc.mapper.CasinoGameFilterProtoMapper.toDomain
 import api.grpc.mapper.CasinoGamePageProtoMapper.toCasinoGamePageDto
@@ -60,11 +59,8 @@ class CasinoGameGrpcService(
         bus(
             SaveCasinoGameCqrs(
                 identity = Identity(request.identity),
-                name = request.name,
                 bonusBetEnable = request.bonusBetEnable,
                 bonusWageringEnable = request.bonusWageringEnable,
-                tags = request.tagsList,
-                providerIdentity = Identity(request.providerIdentity),
                 active = request.active,
                 order = request.order,
             )
@@ -73,14 +69,13 @@ class CasinoGameGrpcService(
     }
 
     override suspend fun find(request: FindCasinoGameProto): FindCasinoGameProto.Result = handleGrpcCall {
-        val view = bus(FindCasinoGameQuery(identity = Identity(request.identity)))
+        val game = bus(FindCasinoGameQuery(identity = Identity(request.identity)))
             .orElseThrow { CasinoGameNotFoundException() }
 
         FindCasinoGameQueryKt.result {
-            item = view.game.toProto(view.variant)
-            provider = view.game.provider.toProto()
-            aggregator = view.game.provider.aggregator.toProto()
-            collections.addAll(view.game.collections.map { it.toProto() })
+            item = game.toProto()
+            provider = game.provider.toProto()
+            collections.addAll(game.collections.map { it.toProto() })
         }
     }
 
@@ -127,18 +122,16 @@ class CasinoGameGrpcService(
     }
 
     override suspend fun batch(request: BatchCasinoGameProto): BatchCasinoGameProto.Result = handleGrpcCall {
-        val views = bus(BatchCasinoGameQuery(
+        val games = bus(BatchCasinoGameQuery(
             identities = request.identitiesList.map { Identity(it) },
         ))
 
-        val uniqueProviders = views.map { it.game.provider }.distinctBy { it.identity.value }
-        val uniqueAggregators = uniqueProviders.map { it.aggregator }.distinctBy { it.identity.value }
-        val uniqueCollections = views.flatMap { it.game.collections }.distinctBy { it.identity.value }
+        val uniqueProviders = games.map { it.provider }.distinctBy { it.identity.value }
+        val uniqueCollections = games.flatMap { it.collections }.distinctBy { it.identity.value }
 
         BatchCasinoGameQueryKt.result {
-            items.addAll(views.map { it.game.toProto(it.variant) })
+            items.addAll(games.map { it.toProto() })
             providers.addAll(uniqueProviders.map { it.toProto() })
-            aggregators.addAll(uniqueAggregators.map { it.toProto() })
             collections.addAll(uniqueCollections.map { it.toProto() })
         }
     }
@@ -168,7 +161,6 @@ class CasinoGameGrpcService(
 
         PlayCasinoGameCommandKt.result {
             this.launchUrl = result.launchUrl
-            this.sessionToken = result.sessionToken.value
         }
     }
 

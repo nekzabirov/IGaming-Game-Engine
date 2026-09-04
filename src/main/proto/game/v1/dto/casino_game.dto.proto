@@ -53,7 +53,7 @@ message CasinoGameDto {
 
   int32 play_lines = 21;
 
-  // Return-to-player percentage. Defaults to 96; recalculated daily from the
-  // last 24h of spins by the daily-rtp job for games that had bets in that window.
+  // Return-to-player percentage, synced from GameHub. 0 when GameHub reports no measured value
+  // (no bets in its last window) — see domain.model.CasinoGame.rtp, which is nullable.
   double rtp = 22;
 }

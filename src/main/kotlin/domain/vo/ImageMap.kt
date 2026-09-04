@@ -19,6 +19,10 @@ value class ImageMap(val data: Map<String, String>) {
 
     fun without(key: String): ImageMap = ImageMap(data - key)
 
+    /** Right-biased union — [overrides] wins per key. Used to show the hub's synced artwork with
+     *  a local override on top, without ever mutating either side. */
+    fun mergedWith(overrides: ImageMap): ImageMap = ImageMap(data + overrides.data)
+
     companion object {
         val EMPTY: ImageMap
             get() = ImageMap(emptyMap())

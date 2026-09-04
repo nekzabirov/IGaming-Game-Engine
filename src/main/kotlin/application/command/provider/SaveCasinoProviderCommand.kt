@@ -4,20 +4,15 @@ import application.ICommand
 import domain.vo.Country
 import domain.vo.Identity
 
+/** Update-only — `name`/`images`/`tags` are GameHub's, written only by the catalog sync. Fails
+ *  with [domain.exception.notfound.CasinoProviderNotFoundException] unless sync already created
+ *  the provider. */
 data class SaveCasinoProviderCommand(
     val identity: Identity,
-
-    val name: String,
 
     val order: Int,
 
     val active: Boolean,
 
-    val aggregatorIdentity: Identity,
-
     val blockedCountry: List<Country> = emptyList(),
-
-    val tags: List<String> = emptyList(),
-
-    val aliases: List<String> = emptyList(),
 ) : ICommand<Unit>

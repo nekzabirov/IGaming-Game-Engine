@@ -2,54 +2,45 @@ package infrastructure.handler.game
 
 import application.IQueryHandler
 import application.query.game.FindAllCasinoGamePlayerLastQuery
-import application.query.game.CasinoGameView
+import domain.model.CasinoGame
 import domain.vo.Page
 import infrastructure.persistence.dbRead
 import infrastructure.persistence.entity.CasinoGameEntity
-import infrastructure.persistence.entity.CasinoProviderEntity
 import infrastructure.persistence.mapper.CasinoGameMapper.toDomain
-import infrastructure.persistence.mapper.CasinoGameVariantMapper.toDomain
-import infrastructure.persistence.table.CasinoGameVariantTable
-import infrastructure.persistence.table.CasinoSessionTable
-import org.jetbrains.exposed.dao.with
+import infrastructure.persistence.table.CasinoGameTable
+import infrastructure.persistence.table.CasinoRoundTable
 import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.max
+import org.jetbrains.exposed.dao.with
 
-class FindAllCasinoGamePlayerLastQueryHandler : IQueryHandler<FindAllCasinoGamePlayerLastQuery, Page<CasinoGameView>> {
+class FindAllCasinoGamePlayerLastQueryHandler : IQueryHandler<FindAllCasinoGamePlayerLastQuery, Page<CasinoGame>> {
 
-    override suspend fun handle(query: FindAllCasinoGamePlayerLastQuery): Page<CasinoGameView> = dbRead {
-        // Sessions carry no timestamp column — the monotonic PK is the recency order,
-        // same convention the favourites listing uses.
-        val lastSessionId = CasinoSessionTable.id.max()
+    override suspend fun handle(query: FindAllCasinoGamePlayerLastQuery): Page<CasinoGame> = dbRead {
+        // The round's own PK is the recency order — a sportsbook leg (game == null) is excluded.
+        val lastRoundId = CasinoRoundTable.id.max()
 
-        val baseQuery = (CasinoSessionTable innerJoin CasinoGameVariantTable)
-            .select(CasinoGameVariantTable.game, lastSessionId)
-            .where { CasinoSessionTable.playerId eq query.playerId.value }
-            .groupBy(CasinoGameVariantTable.game)
+        val baseQuery = CasinoRoundTable
+            .select(CasinoRoundTable.game, lastRoundId)
+            .where { (CasinoRoundTable.playerId eq query.playerId.value) and CasinoRoundTable.game.isNotNull() }
+            .groupBy(CasinoRoundTable.game)
 
         val totalItems = baseQuery.count()
         val pageable = query.pageable
 
         val gameIds = baseQuery
-            .orderBy(lastSessionId to SortOrder.DESC)
+            .orderBy(lastRoundId to SortOrder.DESC)
             .limit(pageable.sizeReal)
             .offset(pageable.offset)
-            .map { it[CasinoGameVariantTable.game] }
+            .mapNotNull { it[CasinoRoundTable.game] }
 
         val entities = CasinoGameEntity.forEntityIds(gameIds)
-            .with(CasinoGameEntity::provider, CasinoGameEntity::collections, CasinoProviderEntity::aggregator)
+            .with(CasinoGameEntity::provider, CasinoGameEntity::collections)
             .toList()
 
-        val variantMap = entities.loadVariantMap()
+        val gamesById = entities.associate { it.id to it.toDomain() }
 
-        val viewsById = entities.associate { entity ->
-            entity.id to CasinoGameView(
-                game = entity.toDomain(),
-                variant = entity.variantFrom(variantMap)?.toDomain(),
-            )
-        }
-
-        val items = gameIds.mapNotNull { id -> viewsById[id] }
+        val items = gameIds.mapNotNull { id -> gamesById[id] }
 
         Page(
             items = items,

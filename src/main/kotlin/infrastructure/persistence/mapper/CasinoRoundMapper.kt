@@ -1,11 +1,12 @@
 package infrastructure.persistence.mapper
 
 import domain.model.CasinoRound
+import domain.vo.Currency
 import domain.vo.ExternalCasinoRoundId
 import domain.vo.FreespinId
+import domain.vo.PlayerId
 import infrastructure.persistence.entity.CasinoRoundEntity
-import infrastructure.persistence.mapper.CasinoGameVariantMapper.toDomain
-import infrastructure.persistence.mapper.CasinoSessionMapper.toDomain
+import infrastructure.persistence.mapper.CasinoGameMapper.toDomain
 
 object CasinoRoundMapper {
 
@@ -13,8 +14,9 @@ object CasinoRoundMapper {
         id = id.value,
         externalId = ExternalCasinoRoundId(externalId),
         freespinId = freespinId?.let { FreespinId(it) },
-        session = session.toDomain(),
-        gameVariant = gameVariant.toDomain(),
+        playerId = PlayerId(playerId),
+        game = game?.toDomain(),
+        currency = Currency(currency),
         createdAt = createdAt,
         finishedAt = finishedAt,
     )

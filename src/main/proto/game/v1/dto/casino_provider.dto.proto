@@ -16,14 +16,7 @@ message CasinoProviderDto {
 
   bool active = 5;
 
-  string aggregator_identity = 6;
-
   repeated string blocked_country = 7;
 
   repeated string tags = 8;
-
-  // Other spellings of this same vendor used by other aggregators (`egt` for `amusnet`,
-  // `pragmatic` for `pragmatic_play`). The catalog sync writes these itself when it merges a
-  // duplicate; sending the field back empty on Save erases what it learned.
-  repeated string aliases = 9;
 }

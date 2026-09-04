@@ -1,10 +1,7 @@
 package support
 
-import domain.model.Aggregator
-import domain.model.AggregatorType
 import domain.model.Collection
 import domain.model.CasinoGame
-import domain.model.CasinoGameVariant
 import domain.model.Platform
 import domain.model.PlayerBalance
 import domain.model.CasinoProvider
@@ -18,10 +15,8 @@ import domain.vo.Identity
 import domain.vo.ExternalCasinoRoundId
 import domain.vo.ExternalSpinId
 import domain.vo.FreespinId
-import domain.vo.CasinoGameSymbol
 import domain.vo.Locale
 import domain.vo.PlayerId
-import domain.vo.CasinoSessionToken
 
 /**
  * Reusable builders for domain fixtures in unit tests. Defaults to a minimal valid
@@ -29,28 +24,12 @@ import domain.vo.CasinoSessionToken
  */
 object TestFixtures {
 
-    fun aggregator(
-        identity: String = "test_agg",
-        integration: String = "ONEGAMEHUB",
-        active: Boolean = true,
-        config: Map<String, Any> = emptyMap(),
-        type: AggregatorType = AggregatorType.CASINO,
-    ): Aggregator = Aggregator(
-        identity = Identity(identity),
-        integration = integration,
-        config = config,
-        active = active,
-        type = type,
-    )
-
     fun provider(
         identity: String = "test_provider",
-        aggregator: Aggregator = aggregator(),
         active: Boolean = true,
     ): CasinoProvider = CasinoProvider(
         identity = Identity(identity),
         name = "Test CasinoProvider",
-        aggregator = aggregator,
         active = active,
     )
 
@@ -65,6 +44,8 @@ object TestFixtures {
         collections: List<Collection> = emptyList(),
         bonusBetEnable: Boolean = true,
         active: Boolean = true,
+        locales: List<Locale> = listOf(Locale("en")),
+        platforms: List<Platform> = listOf(Platform.DESKTOP, Platform.MOBILE),
     ): CasinoGame = CasinoGame(
         identity = Identity(identity),
         name = "Test CasinoGame",
@@ -72,44 +53,22 @@ object TestFixtures {
         collections = collections,
         bonusBetEnable = bonusBetEnable,
         active = active,
-    )
-
-    fun gameVariant(
-        game: CasinoGame = game(),
-        symbol: String = "tg_01",
-        locales: List<Locale> = listOf(Locale("en")),
-        platforms: List<Platform> = listOf(Platform.DESKTOP, Platform.MOBILE),
-    ): CasinoGameVariant = CasinoGameVariant(
-        id = 1L,
-        symbol = CasinoGameSymbol(symbol),
-        name = game.name,
-        integration = game.provider.aggregator.integration,
-        game = game,
-        providerName = game.provider.name,
         freeSpinEnable = true,
-        freeChipEnable = false,
-        jackpotEnable = false,
         demoEnable = true,
-        bonusBuyEnable = false,
         locales = locales,
         platforms = platforms,
         playLines = 20,
     )
 
     fun session(
-        id: Long = 1L,
-        variant: CasinoGameVariant = gameVariant(),
+        game: CasinoGame = game(),
         currency: String = "USD",
         locale: String = "en",
         platform: Platform = Platform.DESKTOP,
         playerId: String = "player_1",
-        token: String = "token_abc",
     ): CasinoSession = CasinoSession(
-        id = id,
-        gameVariant = variant,
         playerId = PlayerId(playerId),
-        token = CasinoSessionToken(token),
-        externalToken = null,
+        game = game,
         currency = Currency(currency),
         locale = Locale(locale),
         platform = platform,
@@ -117,14 +76,18 @@ object TestFixtures {
 
     fun round(
         id: Long = 1L,
-        session: CasinoSession = session(),
+        game: CasinoGame? = game(),
+        playerId: String = "player_1",
+        currency: String = "USD",
         externalId: String = "round_1",
         freespinId: String? = null,
     ): CasinoRound = CasinoRound(
         id = id,
         externalId = ExternalCasinoRoundId(externalId),
         freespinId = freespinId?.let { FreespinId(it) },
-        session = session,
+        playerId = PlayerId(playerId),
+        game = game,
+        currency = Currency(currency),
     )
 
     fun spin(

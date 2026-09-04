@@ -2,40 +2,23 @@ package infrastructure.handler.provider
 
 import application.ICommandHandler
 import application.command.provider.SaveCasinoProviderCommand
-import domain.repository.IAggregatorRepository
 import domain.repository.ICasinoProviderRepository
 import domain.exception.domainRequireNotNull
-import domain.exception.notfound.AggregatorNotFoundException
-import domain.model.CasinoProvider
+import domain.exception.notfound.CasinoProviderNotFoundException
 
 class SaveCasinoProviderCommandHandler(
     private val providerRepository: ICasinoProviderRepository,
-    private val aggregatorRepository: IAggregatorRepository,
 ) : ICommandHandler<SaveCasinoProviderCommand, Unit> {
 
     override suspend fun handle(command: SaveCasinoProviderCommand): Result<Unit> = runCatching {
-        val aggregator = domainRequireNotNull(
-            aggregatorRepository.findByIdentity(command.aggregatorIdentity)
-        ) { AggregatorNotFoundException() }
+        val existing = domainRequireNotNull(
+            providerRepository.findByIdentity(command.identity)
+        ) { CasinoProviderNotFoundException() }
 
-        val existing = providerRepository.findByIdentity(command.identity)
-        val provider = existing?.copy(
-            name = command.name,
+        val provider = existing.copy(
             order = command.order,
             active = command.active,
-            aggregator = aggregator,
             blockedCountry = command.blockedCountry,
-            tags = command.tags,
-            aliases = command.aliases,
-        ) ?: CasinoProvider(
-            identity = command.identity,
-            name = command.name,
-            order = command.order,
-            active = command.active,
-            aggregator = aggregator,
-            blockedCountry = command.blockedCountry,
-            tags = command.tags,
-            aliases = command.aliases,
         )
 
         providerRepository.save(provider)

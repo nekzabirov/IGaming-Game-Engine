@@ -7,7 +7,6 @@ option java_multiple_files = true;
 
 import "game/v1/dto/casino_game.dto.proto";
 import "game/v1/dto/casino_provider.dto.proto";
-import "game/v1/dto/aggregator.dto.proto";
 import "game/v1/dto/collection.dto.proto";
 import "game/v1/dto/common.dto.proto";
 import "game/v1/dto/casino_game_filter.dto.proto";
@@ -15,16 +14,18 @@ import "game/v1/dto/casino_game_page.dto.proto";
 
 // ---------------------------------------------------------------------------
 // CasinoGame catalog service — read + upsert + gameplay entrypoints. No delete:
-// games, providers and collections are contract artefacts that must not be
-// removed once they are in the catalog.
+// games and providers are contract artefacts that must not be removed once they
+// are in the catalog. `name`/`tags`/`images`/every former-variant field (symbol,
+// freeSpinEnable, platforms, ...) and `rtp` are synced from GameHub — SaveCasinoGameCommand
+// no longer accepts them, and Save fails NOT_FOUND unless sync already created the game.
 //
 // Naming convention (uniform across CasinoGame / Collection / CasinoProvider):
-//   Save<X>Command     — create-or-update (upsert) with typed fields
+//   Save<X>Command     — update-only, typed fields
 //   Find<X>Query       — read one by identity; Result carries denormalized
-//                        related entities (provider + aggregator + collections)
+//                        related entities (provider + collections)
 //   FindAll<X>Query    — paged read; carries a single <X>Filter sub-message
 //   Batch<X>Query      — read many by repeated string identities
-//   Update<X>ImageCommand — attach/replace a keyed image URL
+//   Update<X>ImageCommand — attach/replace a keyed LOCAL image override
 // ---------------------------------------------------------------------------
 service CasinoGameService {
   rpc Save(SaveCasinoGameCommand) returns (Empty);
@@ -61,15 +62,9 @@ service CasinoGameService {
 message SaveCasinoGameCommand {
   string identity = 1;
 
-  string name = 2;
-
   bool bonus_bet_enable = 3;
 
   bool bonus_wagering_enable = 4;
-
-  repeated string tags = 5;
-
-  string provider_identity = 6;
 
   bool active = 7;
 
@@ -78,6 +73,8 @@ message SaveCasinoGameCommand {
   int32 order = 8;
 }
 
+// Sets a LOCAL override on top of the hub's synced artwork — see CasinoGameDto.images,
+// which is already the merged result.
 message UpdateCasinoGameImageCommand {
   string identity = 1;
 
@@ -110,10 +107,10 @@ message PlayCasinoGameCommand {
   message Result {
     string launch_url = 1;
 
-    // Our own session token (not the provider's). Wallet webhooks resolve the
-    // session by it, so a caller that drives them needs it without reading the
-    // sessions table.
-    string session_token = 2;
+    // Was the casino-engine session token — the hub owns the session now, there is nothing to
+    // hand back.
+    reserved 2;
+    reserved "session_token";
   }
 }
 
@@ -135,8 +132,6 @@ message FindCasinoGameQuery {
 
     CasinoProviderDto provider = 2;
 
-    AggregatorDto aggregator = 3;
-
     repeated CollectionDto collections = 4;
   }
 }
@@ -153,8 +148,10 @@ message FindAllCasinoGameQuery {
 
 // Paged listing of ACTIVE games bucketed by RTP relative to the default (96):
 // HOT = rtp above the default, ordered rtp DESC; COLD = rtp below the default,
-// ordered rtp ASC. Catalog position (`order`) is the secondary key (ASC) in both
-// cases. Reuses the shared `CasinoGameFilter` and returns the shared `CasinoGamePageDto`.
+// ordered rtp ASC. A game with no measured rtp (unmeasured, GameHub reports none)
+// falls in neither bucket. Catalog position (`order`) is the secondary key (ASC)
+// in both cases. Reuses the shared `CasinoGameFilter` and returns the shared
+// `CasinoGamePageDto`.
 message FindAllActiveRtpCasinoGameQuery {
   enum Type {
     TYPE_UNSPECIFIED = 0;
@@ -198,8 +195,6 @@ message BatchCasinoGameQuery {
 
     repeated CasinoProviderDto providers = 2;
 
-    repeated AggregatorDto aggregators = 3;
-
     repeated CollectionDto collections = 4;
   }
 }
@@ -218,8 +213,8 @@ message FindAllCasinoGamePlayerFavouriteQuery {
 }
 
 // Paged listing of the games a player has recently played, derived from the
-// player's sessions. Games are de-duplicated (one row per game) and ordered by
-// the most recent session first. Returns the shared `CasinoGamePageDto`.
+// player's rounds. Games are de-duplicated (one row per game) and ordered by
+// the most recent round first. Returns the shared `CasinoGamePageDto`.
 message FindAllCasinoGamePlayerLastQuery {
   string player_id = 1;
 

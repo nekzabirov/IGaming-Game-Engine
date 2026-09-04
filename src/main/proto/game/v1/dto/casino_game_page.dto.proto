@@ -7,7 +7,6 @@ option java_package = "com.nekgamebling.game.v1";
 
 import "game/v1/dto/casino_game.dto.proto";
 import "game/v1/dto/casino_provider.dto.proto";
-import "game/v1/dto/aggregator.dto.proto";
 import "game/v1/dto/collection.dto.proto";
 
 // Paged denormalized game-list result. Shared between every paged
@@ -18,14 +17,14 @@ import "game/v1/dto/collection.dto.proto";
 //
 // Join the denormalized sets back to each item by identity:
 //   - `CasinoGameDto.provider_identity`      → `providers`
-//   - `CasinoProviderDto.aggregator_identity` → `aggregators`
 //   - `CasinoGameDto.collection_identities`  → `collections`
 message CasinoGamePageDto {
+  reserved 3;
+  reserved "aggregators";
+
   repeated CasinoGameDto items = 1;
 
   repeated CasinoProviderDto providers = 2;
-
-  repeated AggregatorDto aggregators = 3;
 
   repeated CollectionDto collections = 4;
 

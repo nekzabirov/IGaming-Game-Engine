@@ -15,7 +15,7 @@ class FinishCasinoRoundUsecase(
     private val logger = LoggerFactory.getLogger(FinishCasinoRoundUsecase::class.java)
 
     suspend operator fun invoke(round: CasinoRound): Result<Unit> = runCatching {
-        logger.info("Finishing round: id={} session={}", round.id, round.session.id)
+        logger.info("Finishing round: id={}", round.id)
 
         val finishedRound = roundRepository.save(round.finish())
 
@@ -24,15 +24,15 @@ class FinishCasinoRoundUsecase(
             eventPublisher.publish(CasinoRoundEvent(finishedRound))
         } catch (e: Exception) {
             logger.error(
-                "EVENT PUBLISH FAILED (event lost): route={} roundId={} session={}",
-                CasinoRoundEvent.route, finishedRound.id, finishedRound.session.id, e,
+                "EVENT PUBLISH FAILED (event lost): route={} roundId={}",
+                CasinoRoundEvent.route, finishedRound.id, e,
             )
         }
 
         logger.info("CasinoRound finished: id={}", finishedRound.id)
     }.onFailure { e ->
         if (e !is DomainException) {
-            logger.error("Failed to finish round: id={} session={}", round.id, round.session.id, e)
+            logger.error("Failed to finish round: id={}", round.id, e)
         }
     }
 }

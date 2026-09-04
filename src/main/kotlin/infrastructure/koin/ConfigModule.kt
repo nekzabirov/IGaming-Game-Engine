@@ -1,5 +1,6 @@
 package infrastructure.koin
 
+import infrastructure.gamehub.GameHubConfig
 import infrastructure.pam.PamConfig
 import infrastructure.persistence.CASINO_DB_NAME
 import infrastructure.persistence.DatabaseConfig
@@ -35,6 +36,15 @@ val configModule = module {
             user = System.getenv("RABBIT_USER") ?: "guest",
             password = System.getenv("RABBIT_PASSWORD") ?: "guest",
             tls = System.getenv("RABBIT_TLS")?.toBoolean() ?: false,
+        )
+    }
+    single {
+        GameHubConfig(
+            grpcHost = System.getenv("GAMEHUB_GRPC_HOST") ?: "localhost",
+            grpcPort = (System.getenv("GAMEHUB_GRPC_PORT") ?: "443").toInt(),
+            operatorId = System.getenv("GAMEHUB_OPERATOR_ID") ?: "",
+            operatorKey = System.getenv("GAMEHUB_OPERATOR_KEY") ?: "",
+            plaintext = System.getenv("GAMEHUB_GRPC_PLAINTEXT")?.toBoolean() ?: false,
         )
     }
 }

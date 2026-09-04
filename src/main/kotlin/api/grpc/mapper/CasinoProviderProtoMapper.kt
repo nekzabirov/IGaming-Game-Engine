@@ -9,12 +9,10 @@ object CasinoProviderProtoMapper {
     fun CasinoProvider.toProto(): CasinoProviderDto = casinoProviderDto {
         identity = this@toProto.identity.value
         name = this@toProto.name
-        images.putAll(this@toProto.images.data)
+        images.putAll(this@toProto.resolvedImages().data)
         order = this@toProto.order
         active = this@toProto.active
-        aggregatorIdentity = this@toProto.aggregator.identity.value
         blockedCountry.addAll(this@toProto.blockedCountry.map { it.value })
         tags.addAll(this@toProto.tags)
-        aliases.addAll(this@toProto.aliases)
     }
 }

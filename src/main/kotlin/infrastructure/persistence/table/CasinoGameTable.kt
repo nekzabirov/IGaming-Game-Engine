@@ -21,12 +21,41 @@ object CasinoGameTable : LongIdTable("casino_games") {
         { Json.encodeToString(stringListSerializer, it) },
         { Json.decodeFromString(stringListSerializer, it) }
     )
+
+    // Null means unmeasured — the hub had no bets to score, never 0.
+    val rtp = double("rtp").nullable()
+
+    // Absorbed from the old casino_game_variants: one vendor now, one row, nothing left to vary.
+    val freeSpinEnable = bool("free_spin_enable").default(false)
+    val freeChipEnable = bool("free_chip_enable").default(false)
+    val jackpotEnable = bool("jackpot_enable").default(false)
+    val demoEnable = bool("demo_enable").default(false)
+    val bonusBuyEnable = bool("bonus_buy_enable").default(false)
+    val locales = json(
+        "locales",
+        { Json.encodeToString(stringListSerializer, it) },
+        { Json.decodeFromString(stringListSerializer, it) }
+    )
+    val platforms = json(
+        "platforms",
+        { Json.encodeToString(stringListSerializer, it) },
+        { Json.decodeFromString(stringListSerializer, it) }
+    )
+    val playLines = integer("play_lines").default(0)
+
     val active = bool("active")
     val images = json(
         "images",
         { Json.encodeToString(stringMapSerializer, it) },
         { Json.decodeFromString(stringMapSerializer, it) }
     )
+
+    // Local-only, never written by sync. Wins per key over `images` on the wire.
+    val customImages = json(
+        "custom_images",
+        { Json.encodeToString(stringMapSerializer, it) },
+        { Json.decodeFromString(stringMapSerializer, it) }
+    ).default(emptyMap())
+
     val sortOrder = integer("sort_order")
-    val rtp = double("rtp").default(96.0)
 }

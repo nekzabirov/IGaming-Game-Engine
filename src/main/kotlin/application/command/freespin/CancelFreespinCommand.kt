@@ -1,10 +1,9 @@
 package application.command.freespin
 
 import application.ICommand
-import domain.vo.Identity
 
+/** [id] is the grant id [infrastructure.gamehub.GameHubClient.createFreespin] returned — casino-engine
+ *  keeps no local record to resolve a caller-chosen key against. */
 data class CancelFreespinCommand(
-    val gameIdentity: Identity,
-
-    val referenceId: String,
+    val id: String,
 ) : ICommand<Unit>

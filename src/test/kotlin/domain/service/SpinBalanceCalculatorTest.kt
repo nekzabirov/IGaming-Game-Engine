@@ -20,9 +20,7 @@ class SpinBalanceCalculatorTest : FunSpec({
 
     fun placeSpin(bonusEnabled: Boolean, amount: Long) = TestFixtures.spin(
         round = TestFixtures.round(
-            session = TestFixtures.session(
-                variant = TestFixtures.gameVariant(game = if (bonusEnabled) bonusGame else realOnlyGame)
-            )
+            game = if (bonusEnabled) bonusGame else realOnlyGame,
         ),
         type = SpinType.PLACE,
         amount = Amount(amount),

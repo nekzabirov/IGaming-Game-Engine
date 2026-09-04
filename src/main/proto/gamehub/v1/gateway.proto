@@ -1,0 +1,162 @@
+syntax = "proto3";
+
+package gamehub.v1;
+
+// Единственная дверь оператора.
+//
+// Оператор аутентифицируется метаданными (`x-operator-id`, `x-operator-key`) на КАЖДОМ вызове; ни
+// один запрос не несёт идентификатор оператора в теле — иначе его можно было бы подделать, не
+// подделав креды. Той же парой хаб представляется оператору в `WebhookService`: проверка обоюдная.
+//
+// Отказ несёт машиночитаемую причину в метаданных `x-error-code` — `UNAUTHENTICATED`, `NOT_FOUND`,
+// `NO_ROUTE`, `UNSUPPORTED`, `INVALID_ARGUMENT`, `INTERNAL`. Кода статуса недостаточно: под
+// `FAILED_PRECONDITION` лежат и «не замаршрутизирована», и «партнёр не умеет». Словарь целиком:
+// docs/ERRORS.md.
+//
+// Деньги здесь не ходят. Их двигает хаб, вызывая кошелёк оператора, когда приходит колбэк вендора.
+service GatewayService {
+  // Весь каталог, доступный ЭТОМУ оператору: игры и провайдеры отдельными списками, чтобы
+  // провайдер не повторялся в каждой из тысяч игр.
+  rpc ListCasino(ListCasinoRequest) returns (ListCasinoResponse);
+
+  // Боевой запуск. Возвращает URL, который отдаётся игроку.
+  rpc LaunchCasino(LaunchCasinoRequest) returns (LaunchCasinoResponse);
+
+  // Демо: денег не двигает, колбэков за ним не приходит, игрока не требует.
+  rpc LaunchCasinoDemo(LaunchCasinoDemoRequest) returns (LaunchCasinoResponse);
+
+  // Что вендор позволяет настроить в гранте на эту игру: границы ставки и числа раундов.
+  // Спрашивается ДО создания — вендор отвергает грант, вышедший за них.
+  rpc FreespinPresetsCasino(FreespinPresetsRequest) returns (FreespinPresetsResponse);
+
+  rpc CreateFreespin(CreateFreespinRequest) returns (CreateFreespinResponse);
+
+  rpc CancelFreespin(CancelFreespinRequest) returns (CancelFreespinResponse);
+
+  // Спортсбук. Возвращает НЕ ссылку, а набор данных, которым фронт поднимает SDK вендора: его
+  // адрес, идентификатор партнёра, токен сессии. Страницы, на которую можно отправить игрока,
+  // здесь нет — спортсбук встраивается в сайт оператора, а не открывается отдельным окном.
+  //
+  // Без `player_id` — режим ГОСТЯ: линию видно, ставок нет и сессии не заводится.
+  rpc OpenSportbook(OpenSportbookRequest) returns (OpenSportbookResponse);
+}
+
+message ListCasinoRequest {}
+
+message ListCasinoResponse {
+  repeated Game games = 1;
+  repeated Provider providers = 2;
+}
+
+message Game {
+  // Наш канонический слаг. По нему оператор и запускает игру.
+  string identity = 1;
+  string name = 2;
+  // Слаг провайдера — ключ в списке providers, а не вложенный объект.
+  string provider = 3;
+  // Ключ размера -> URL: `1x1`, `2x3`, `4x3`.
+  map<string, string> images = 4;
+  repeated string tags = 5;
+  repeated string locales = 6;
+  repeated string platforms = 7;
+  int32 play_lines = 8;
+  bool demo_enable = 9;
+  bool freespin_enable = 10;
+  bool bonus_buy_enable = 11;
+  bool jackpot_enable = 12;
+  // Отсутствует — не то же самое, что 0: за окно перерасчёта не было ставок, показатель ещё не
+  // измерен.
+  optional double rtp = 13;
+}
+
+message Provider {
+  string identity = 1;
+  string name = 2;
+  map<string, string> images = 3;
+  repeated string tags = 4;
+}
+
+message LaunchCasinoRequest {
+  // Наш слаг игры, как он пришёл в ListCasino.
+  string game = 1;
+  // Игрок словами ОПЕРАТОРА. Хаб не заводит игроков и не хранит их.
+  string player_id = 2;
+  string currency = 3;
+  string locale = 4;
+  // Куда игра отправит игрока, который из неё вышел.
+  string lobby_url = 5;
+  // Грант, под который открывается сессия. Часть вендоров привязывает бонус в момент создания
+  // сессии и не может прицепить его позже.
+  optional string freespin_id = 6;
+  Platform platform = 7;
+}
+
+message LaunchCasinoDemoRequest {
+  string game = 1;
+  string currency = 2;
+  string locale = 3;
+  string lobby_url = 4;
+  Platform platform = 5;
+}
+
+message LaunchCasinoResponse {
+  string url = 1;
+}
+
+enum Platform {
+  PLATFORM_UNSPECIFIED = 0;
+  PLATFORM_DESKTOP = 1;
+  PLATFORM_MOBILE = 2;
+}
+
+message FreespinPresetsRequest {
+  string game = 1;
+}
+
+// Границы, которые вендор ставит на грант. Пусто означает «вендор не сообщает ограничений», а не
+// «ограничений нет».
+message FreespinPresetsResponse {
+  // Ставка за раунд, nano.
+  optional int64 min_amount = 1;
+  optional int64 max_amount = 2;
+  optional int32 min_count = 3;
+  optional int32 max_count = 4;
+  // Вендор-специфичные ручки, например `paylines`. Что положить — говорит этот же вызов.
+  map<string, string> presets = 5;
+}
+
+message CreateFreespinRequest {
+  string game = 1;
+  string player_id = 2;
+  // Ставка за раунд, nano. Хаб везде считает в nano; в единицы вендора это переводится на границе.
+  int64 amount = 3;
+  int32 count = 4;
+  string currency = 5;
+  map<string, string> presets = 6;
+}
+
+message CreateFreespinResponse {
+  // Наш идентификатор гранта. С ним же приходит отмена и им же вендор ссылается на грант в колбэке.
+  string id = 1;
+}
+
+message CancelFreespinRequest {
+  string id = 1;
+}
+
+message CancelFreespinResponse {}
+
+message OpenSportbookRequest {
+  // Пусто — гость. Линия видна, ставок нет.
+  optional string player_id = 1;
+  string currency = 2;
+  string locale = 3;
+}
+
+message OpenSportbookResponse {
+  // `partners.integration` — по нему фронт понимает, чей SDK грузить.
+  string integration = 1;
+  // Вендор-специфичные данные запуска: `apiUrl`, `partnerId`, `token`, `currency`. Ключи разные у
+  // разных поставщиков, поэтому это карта, а не поля.
+  map<string, string> data = 2;
+}

@@ -18,9 +18,16 @@ object CasinoProviderTable : LongIdTable("casino_providers") {
         { Json.encodeToString(stringMapSerializer, it) },
         { Json.decodeFromString(stringMapSerializer, it) }
     )
+
+    // Local-only, never written by sync. Wins per key over `images` on the wire.
+    val customImages = json<Map<String, String>>(
+        "custom_images",
+        { Json.encodeToString(stringMapSerializer, it) },
+        { Json.decodeFromString(stringMapSerializer, it) }
+    ).default(emptyMap())
+
     val sortOrder = integer("sort_order").default(100)
     val active = bool("active").default(false)
-    val aggregator = reference("aggregator_id", AggregatorTable)
     val blockedCountry = json<List<String>>(
         "blocked_country",
         { Json.encodeToString(stringListSerializer, it) },
@@ -28,11 +35,6 @@ object CasinoProviderTable : LongIdTable("casino_providers") {
     ).default(emptyList())
     val tags = json<List<String>>(
         "tags",
-        { Json.encodeToString(stringListSerializer, it) },
-        { Json.decodeFromString(stringListSerializer, it) }
-    ).default(emptyList())
-    val aliases = json<List<String>>(
-        "aliases",
         { Json.encodeToString(stringListSerializer, it) },
         { Json.decodeFromString(stringListSerializer, it) }
     ).default(emptyList())

@@ -5,7 +5,7 @@ import kotlinx.serialization.KSerializer
 
 data class CasinoRoundEvent(override val data: CasinoRound) : AppEvent<CasinoRound> {
 
-    override val playerId = data.session.playerId.value
+    override val playerId = data.playerId.value
 
     companion object : AppEvent.Meta<CasinoRound> {
         override val route = "round.events"

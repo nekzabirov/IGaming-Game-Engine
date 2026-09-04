@@ -3,11 +3,9 @@ package infrastructure.handler.game
 import application.query.game.CasinoGameFilter
 import infrastructure.persistence.search.SearchIndexes
 import infrastructure.persistence.search.searchCanRelax
-import infrastructure.persistence.table.AggregatorTable
 import infrastructure.persistence.table.CollectionTable
 import infrastructure.persistence.table.CasinoGameCollectionTable
 import infrastructure.persistence.table.CasinoGameTable
-import infrastructure.persistence.table.CasinoGameVariantTable
 import infrastructure.persistence.table.CasinoProviderTable
 import org.jetbrains.exposed.sql.Expression
 import org.jetbrains.exposed.sql.JoinType
@@ -20,37 +18,6 @@ import org.jetbrains.exposed.sql.exists
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.wrapAsExpression
 
-/**
- * A game is listable only when it can actually be opened, which takes two things:
- *
- *  - a variant from the aggregator set on its PROVIDER, and that aggregator switched on. The
- *    binding is strict: another aggregator carrying the same game does not make it listable
- *    (see [loadVariantMap]);
- *  - an active provider.
- *
- * Everything the storefront renders about a game — symbol, platforms, demo, paylines — is read off
- * that variant, and launching resolves it the same way. With nothing to serve it the game would
- * render with every variant field at its default (demo false, empty platforms, zero paylines) and
- * answer `CasinoGame not found` on click. Moving a provider to an aggregator that carries only part
- * of its catalogue is exactly when this happens.
- */
-private fun playableOnProviderAggregator(): Op<Boolean> = exists(
-    CasinoProviderTable
-        .join(AggregatorTable, JoinType.INNER, CasinoProviderTable.aggregator, AggregatorTable.id)
-        .join(
-            CasinoGameVariantTable,
-            JoinType.INNER,
-            AggregatorTable.integration,
-            CasinoGameVariantTable.integration,
-        )
-        .select(CasinoGameVariantTable.id)
-        .where {
-            (CasinoProviderTable.id eq CasinoGameTable.provider) and
-                (AggregatorTable.active eq true) and
-                (CasinoGameVariantTable.game eq CasinoGameTable.id)
-        }
-)
-
 private fun providerIsActive(): Op<Boolean> = exists(
     CasinoProviderTable
         .select(CasinoProviderTable.id)
@@ -61,8 +28,6 @@ private fun providerIsActive(): Op<Boolean> = exists(
 
 fun CasinoGameFilter.toCondition(relaxed: Boolean = false): Op<Boolean> {
     val conditions = buildList<Op<Boolean>> {
-        add(playableOnProviderAggregator())
-
         add(providerIsActive())
 
         if (query.isNotBlank()) {
@@ -101,33 +66,24 @@ fun CasinoGameFilter.toCondition(relaxed: Boolean = false): Op<Boolean> {
             })
         }
 
-        val variantConditions = buildList<Op<Boolean>> {
-            freeSpinEnable?.let {
-                add(Op.build { CasinoGameVariantTable.freeSpinEnable eq it })
-            }
-            freeChipEnable?.let {
-                add(Op.build { CasinoGameVariantTable.freeChipEnable eq it })
-            }
-            jackpotEnable?.let {
-                add(Op.build { CasinoGameVariantTable.jackpotEnable eq it })
-            }
-            demoEnable?.let {
-                add(Op.build { CasinoGameVariantTable.demoEnable eq it })
-            }
-            bonusBuyEnable?.let {
-                add(Op.build { CasinoGameVariantTable.bonusBuyEnable eq it })
-            }
+        freeSpinEnable?.let {
+            add(Op.build { CasinoGameTable.freeSpinEnable eq it })
         }
 
-        if (variantConditions.isNotEmpty()) {
-            val variantCondition = variantConditions.reduce { acc, op -> acc and op }
-            add(exists(
-                CasinoGameVariantTable
-                    .select(CasinoGameVariantTable.id)
-                    .where {
-                        (CasinoGameVariantTable.game eq CasinoGameTable.id) and variantCondition
-                    }
-            ))
+        freeChipEnable?.let {
+            add(Op.build { CasinoGameTable.freeChipEnable eq it })
+        }
+
+        jackpotEnable?.let {
+            add(Op.build { CasinoGameTable.jackpotEnable eq it })
+        }
+
+        demoEnable?.let {
+            add(Op.build { CasinoGameTable.demoEnable eq it })
+        }
+
+        bonusBuyEnable?.let {
+            add(Op.build { CasinoGameTable.bonusBuyEnable eq it })
         }
 
         if (inTags.isNotEmpty()) {

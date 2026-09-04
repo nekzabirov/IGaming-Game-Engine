@@ -10,8 +10,9 @@ class CasinoRoundEntity(id: EntityID<Long>) : LongEntity(id) {
 
     var externalId by CasinoRoundTable.externalId
     var freespinId by CasinoRoundTable.freespinId
-    var session by CasinoSessionEntity referencedOn CasinoRoundTable.session
-    var gameVariant by CasinoGameVariantEntity referencedOn CasinoRoundTable.gameVariant
+    var playerId by CasinoRoundTable.playerId
+    var game by CasinoGameEntity optionalReferencedOn CasinoRoundTable.game
+    var currency by CasinoRoundTable.currency
     var createdAt by CasinoRoundTable.createdAt
     var finishedAt by CasinoRoundTable.finishedAt
 }

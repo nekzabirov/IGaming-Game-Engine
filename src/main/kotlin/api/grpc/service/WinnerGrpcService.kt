@@ -43,7 +43,7 @@ class WinnerGrpcService(
         FindAllWinnersQueryKt.result {
             items.addAll(page.items.map { win ->
                 winnerItemDto {
-                    game = win.game.toProto(win.variant)
+                    game = win.game.toProto()
                     amount = win.amount.value
                     currency = win.currency.value
                     playerId = win.playerId.value

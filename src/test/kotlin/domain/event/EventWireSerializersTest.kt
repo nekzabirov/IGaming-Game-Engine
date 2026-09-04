@@ -16,17 +16,11 @@ class EventWireSerializersTest : FunSpec({
             put("amount", JsonPrimitive(100))
             putJsonObject("round") {
                 put("freespinId", JsonPrimitive("fs-123"))
-                putJsonObject("session") {
-                    put("currency", JsonPrimitive("USD"))
-                }
-                putJsonObject("gameVariant") {
-                    put("symbol", JsonPrimitive("vs20fruitsw"))
-                    put("providerName", JsonPrimitive("Pragmatic Play"))
-                    putJsonObject("game") {
-                        put("identity", JsonPrimitive("sweet_bonanza"))
-                        putJsonObject("provider") {
-                            put("identity", JsonPrimitive("pragmatic"))
-                        }
+                put("currency", JsonPrimitive("USD"))
+                putJsonObject("game") {
+                    put("identity", JsonPrimitive("sweet_bonanza"))
+                    putJsonObject("provider") {
+                        put("identity", JsonPrimitive("pragmatic"))
                     }
                 }
             }
@@ -34,26 +28,24 @@ class EventWireSerializersTest : FunSpec({
 
         val out = SpinWireSerializer.transformSerialize(nestedSpin).jsonObject
 
-        // flat fields the CRM bridge reads — game identity + provider are the Identity slugs, not the symbol
+        // flat fields the CRM bridge reads
         out["gameIdentity"] shouldBe JsonPrimitive("sweet_bonanza")
         out["gameProvider"] shouldBe JsonPrimitive("pragmatic")
         out["currency"] shouldBe JsonPrimitive("USD")
         out["freespinId"] shouldBe JsonPrimitive("fs-123")
 
         // additive — the nested aggregate (used by PlaceSpinEventConsumer) survives untouched
-        out["round"]!!.jsonObject["gameVariant"]!!.jsonObject["symbol"] shouldBe JsonPrimitive("vs20fruitsw")
+        out["round"]!!.jsonObject["game"]!!.jsonObject["identity"] shouldBe JsonPrimitive("sweet_bonanza")
         out["type"] shouldBe JsonPrimitive("PLACE")
     }
 
     test("freespinId is omitted when absent") {
         val nestedSpin = buildJsonObject {
             putJsonObject("round") {
-                putJsonObject("session") { put("currency", JsonPrimitive("EUR")) }
-                putJsonObject("gameVariant") {
-                    putJsonObject("game") {
-                        put("identity", JsonPrimitive("gates_of_olympus"))
-                        putJsonObject("provider") { put("identity", JsonPrimitive("pragmatic")) }
-                    }
+                put("currency", JsonPrimitive("EUR"))
+                putJsonObject("game") {
+                    put("identity", JsonPrimitive("gates_of_olympus"))
+                    putJsonObject("provider") { put("identity", JsonPrimitive("pragmatic")) }
                 }
             }
         }
@@ -63,5 +55,19 @@ class EventWireSerializersTest : FunSpec({
         out.containsKey("freespinId") shouldBe false
         out["gameIdentity"] shouldBe JsonPrimitive("gates_of_olympus")
         out["currency"] shouldBe JsonPrimitive("EUR")
+    }
+
+    test("a sportsbook leg (no game) carries no gameIdentity/gameProvider") {
+        val nestedSpin = buildJsonObject {
+            putJsonObject("round") {
+                put("currency", JsonPrimitive("USD"))
+            }
+        }
+
+        val out = SpinWireSerializer.transformSerialize(nestedSpin).jsonObject
+
+        out.containsKey("gameIdentity") shouldBe false
+        out.containsKey("gameProvider") shouldBe false
+        out["currency"] shouldBe JsonPrimitive("USD")
     }
 })

@@ -1,17 +1,26 @@
 package domain.service
 
+import domain.model.CasinoGame
 import domain.model.CasinoRound
-import domain.model.CasinoSession
+import domain.vo.Currency
 import domain.vo.ExternalCasinoRoundId
 import domain.vo.FreespinId
+import domain.vo.PlayerId
 
 object CasinoRoundFactory {
 
-    fun open(session: CasinoSession, externalId: ExternalCasinoRoundId, freespinId: FreespinId?): CasinoRound =
+    fun open(
+        playerId: PlayerId,
+        game: CasinoGame?,
+        currency: Currency,
+        externalId: ExternalCasinoRoundId,
+        freespinId: FreespinId?,
+    ): CasinoRound =
         CasinoRound(
             externalId = externalId,
             freespinId = freespinId,
-            session = session,
-            gameVariant = session.gameVariant,
+            playerId = playerId,
+            game = game,
+            currency = currency,
         )
 }

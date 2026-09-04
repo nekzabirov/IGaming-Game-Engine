@@ -2,13 +2,11 @@ package infrastructure.handler.game
 
 import application.IQueryHandler
 import application.query.game.FindAllCasinoGamePlayerFavoriteQuery
-import application.query.game.CasinoGameView
+import domain.model.CasinoGame
 import domain.vo.Page
 import infrastructure.persistence.dbRead
 import infrastructure.persistence.entity.CasinoGameEntity
-import infrastructure.persistence.entity.CasinoProviderEntity
 import infrastructure.persistence.mapper.CasinoGameMapper.toDomain
-import infrastructure.persistence.mapper.CasinoGameVariantMapper.toDomain
 import infrastructure.persistence.search.searchPass
 import infrastructure.persistence.table.CasinoGameFavouriteTable
 import infrastructure.persistence.table.CasinoGameTable
@@ -17,9 +15,9 @@ import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
 
-class FindAllCasinoGamePlayerFavoriteQueryHandler : IQueryHandler<FindAllCasinoGamePlayerFavoriteQuery, Page<CasinoGameView>> {
+class FindAllCasinoGamePlayerFavoriteQueryHandler : IQueryHandler<FindAllCasinoGamePlayerFavoriteQuery, Page<CasinoGame>> {
 
-    override suspend fun handle(query: FindAllCasinoGamePlayerFavoriteQuery): Page<CasinoGameView> = dbRead {
+    override suspend fun handle(query: FindAllCasinoGamePlayerFavoriteQuery): Page<CasinoGame> = dbRead {
         fun favourites(filterCondition: Op<Boolean>) =
             (CasinoGameFavouriteTable innerJoin CasinoGameTable)
                 .select(CasinoGameTable.id, CasinoGameFavouriteTable.id)
@@ -47,19 +45,12 @@ class FindAllCasinoGamePlayerFavoriteQueryHandler : IQueryHandler<FindAllCasinoG
             .map { it[CasinoGameTable.id] }
 
         val entities = CasinoGameEntity.forEntityIds(gameIds)
-            .with(CasinoGameEntity::provider, CasinoGameEntity::collections, CasinoProviderEntity::aggregator)
+            .with(CasinoGameEntity::provider, CasinoGameEntity::collections)
             .toList()
 
-        val variantMap = entities.loadVariantMap()
+        val gamesById = entities.associate { it.id to it.toDomain() }
 
-        val viewsById = entities.associate { entity ->
-            entity.id to CasinoGameView(
-                game = entity.toDomain(),
-                variant = entity.variantFrom(variantMap)?.toDomain(),
-            )
-        }
-
-        val items = gameIds.mapNotNull { id -> viewsById[id] }
+        val items = gameIds.mapNotNull { id -> gamesById[id] }
 
         Page(
             items = items,

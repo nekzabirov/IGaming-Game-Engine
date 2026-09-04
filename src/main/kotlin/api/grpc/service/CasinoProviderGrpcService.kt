@@ -1,7 +1,6 @@
 package api.grpc.service
 
 import api.grpc.config.handleGrpcCall
-import api.grpc.mapper.AggregatorProtoMapper.toProto
 import api.grpc.mapper.CasinoProviderProtoMapper.toProto
 import application.Bus
 import application.command.provider.SaveCasinoProviderCommand
@@ -35,13 +34,9 @@ class CasinoProviderGrpcService(
         bus(
             SaveCasinoProviderCommand(
                 identity = Identity(request.identity),
-                name = request.name,
                 order = request.order,
                 active = request.active,
-                aggregatorIdentity = Identity(request.aggregatorIdentity),
                 blockedCountry = request.blockedCountryList.map { Country(it) },
-                tags = request.tagsList,
-                aliases = request.aliasesList,
             )
         )
         Empty.getDefaultInstance()
@@ -53,7 +48,6 @@ class CasinoProviderGrpcService(
 
         FindCasinoProviderQueryKt.result {
             item = provider.toProto()
-            aggregator = provider.aggregator.toProto()
         }
     }
 
@@ -63,20 +57,14 @@ class CasinoProviderGrpcService(
             FindAllCasinoProviderCqrs(
                 query = filter.query,
                 active = if (filter.hasActive()) filter.active else null,
-                aggregatorId = if (filter.hasAggregatorIdentity()) filter.aggregatorIdentity else null,
                 inCollectionIdentities = filter.inCollectionIdentitiesList.map { Identity(it) },
                 inTags = filter.tagsList,
                 pageable = Pageable(request.pageNum, request.pageSize),
             )
         )
 
-        val uniqueAggregators = page.items
-            .map { it.aggregator }
-            .distinctBy { it.identity.value }
-
         FindAllCasinoProviderQueryKt.result {
             items.addAll(page.items.map { it.toProto() })
-            aggregators.addAll(uniqueAggregators.map { it.toProto() })
             totalItems = page.totalItems.toInt()
         }
     }
@@ -101,11 +89,8 @@ class CasinoProviderGrpcService(
             )
         )
 
-        val uniqueAggregators = providers.map { it.aggregator }.distinctBy { it.identity.value }
-
         BatchCasinoProviderQueryKt.result {
             items.addAll(providers.map { it.toProto() })
-            aggregators.addAll(uniqueAggregators.map { it.toProto() })
         }
     }
 

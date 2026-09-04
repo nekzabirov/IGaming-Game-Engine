@@ -18,9 +18,8 @@ COPY build/distributions/casino-engine-*.tar /tmp/
 RUN tar -xf /tmp/casino-engine-*.tar -C /app --strip-components=1 && \
     rm /tmp/casino-engine-*.tar && \
     chmod +x /app/bin/casino-engine && \
-    chmod +x /app/bin/sync-aggregators && \
+    chmod +x /app/bin/sync-catalog && \
     chmod +x /app/bin/db-migrate && \
-    chmod +x /app/bin/daily-rtp && \
     chown -R appuser:appgroup /app
 
 # Switch to non-root user

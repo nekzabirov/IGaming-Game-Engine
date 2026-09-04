@@ -11,8 +11,6 @@ data class FindAllCasinoProviderQuery(
 
     val active: Boolean? = null,
 
-    val aggregatorId: String? = null,
-
     val inCollectionIdentities: List<Identity> = emptyList(),
 
     val inTags: List<String> = emptyList(),

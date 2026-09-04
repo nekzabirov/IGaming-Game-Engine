@@ -5,17 +5,9 @@ import domain.model.Spin
 import domain.repository.ISpinRepository
 import infrastructure.persistence.dbRead
 import infrastructure.persistence.dbTransaction
-import infrastructure.persistence.entity.CasinoGameEntity
-import infrastructure.persistence.entity.CasinoGameVariantEntity
-import infrastructure.persistence.entity.CasinoProviderEntity
-import infrastructure.persistence.entity.CasinoRoundEntity
-import infrastructure.persistence.entity.CasinoSessionEntity
 import infrastructure.persistence.entity.SpinEntity
 import infrastructure.persistence.mapper.SpinMapper.toDomain
-import infrastructure.persistence.table.CasinoRoundTable
 import infrastructure.persistence.table.SpinTable
-import kotlinx.datetime.Instant
-import org.jetbrains.exposed.dao.with
 import org.jetbrains.exposed.exceptions.ExposedSQLException
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
@@ -49,26 +41,6 @@ class SpinRepositoryImpl : ISpinRepository {
     override suspend fun findByExternalId(externalId: String): Spin? = dbRead {
         SpinEntity.find { SpinTable.externalId eq externalId }
             .firstOrNull()?.toDomain()
-    }
-
-    override suspend fun findAllSince(since: Instant): List<Spin> = dbRead {
-        val rows = SpinTable.innerJoin(CasinoRoundTable)
-            .select(SpinTable.columns)
-            .where { CasinoRoundTable.createdAt greaterEq since }
-
-        SpinEntity.wrapRows(rows)
-            .with(
-                SpinEntity::reference,
-                SpinEntity::round,
-                CasinoRoundEntity::session,
-                CasinoRoundEntity::gameVariant,
-                CasinoSessionEntity::gameVariant,
-                CasinoGameVariantEntity::game,
-                CasinoGameEntity::provider,
-                CasinoGameEntity::collections,
-                CasinoProviderEntity::aggregator,
-            )
-            .map { it.toDomain() }
     }
 
     /** Postgres `unique_violation`; the driver exposes it as the SQLState, not as a typed error. */

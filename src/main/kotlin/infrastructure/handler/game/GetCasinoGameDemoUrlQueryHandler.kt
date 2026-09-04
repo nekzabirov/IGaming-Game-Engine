@@ -2,34 +2,27 @@ package infrastructure.handler.game
 
 import application.IQueryHandler
 import application.query.game.GetCasinoGameDemoUrlQuery
-import application.port.factory.IAggregatorFactory
-import domain.repository.IAggregatorRepository
-import domain.repository.ICasinoGameVariantRepository
 import domain.exception.domainRequireNotNull
-import domain.exception.notfound.AggregatorNotFoundException
 import domain.exception.notfound.CasinoGameNotFoundException
+import domain.repository.ICasinoGameRepository
+import infrastructure.gamehub.GameHubClient
 
 class GetCasinoGameDemoUrlQueryHandler(
-    private val gameVariantRepository: ICasinoGameVariantRepository,
-    private val aggregatorRepository: IAggregatorRepository,
-    private val aggregatorFactory: IAggregatorFactory,
+    private val gameRepository: ICasinoGameRepository,
+    private val gameHubClient: GameHubClient,
 ) : IQueryHandler<GetCasinoGameDemoUrlQuery, String> {
 
     override suspend fun handle(query: GetCasinoGameDemoUrlQuery): String {
-        val gameVariant = domainRequireNotNull(
-            gameVariantRepository.findActiveByGameIdentity(query.identity)
+        val game = domainRequireNotNull(
+            gameRepository.findByIdentity(query.identity)
         ) { CasinoGameNotFoundException() }
 
-        val gameAdapter = aggregatorFactory.createGameAdapter(
-            domainRequireNotNull(aggregatorRepository.findByIntegration(gameVariant.integration)) { AggregatorNotFoundException() }
-        )
-
-        return gameAdapter.getDemoUrl(
-            gameSymbol = gameVariant.symbol.value,
-            locale = query.locale,
-            platform = query.platform,
-            currency = query.currency,
+        return gameHubClient.launchCasinoDemo(
+            game = game.identity.value,
+            currency = query.currency.value,
+            locale = query.locale.value,
             lobbyUrl = query.lobbyUrl,
+            platform = query.platform,
         )
     }
 }

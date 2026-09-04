@@ -5,7 +5,7 @@ import kotlinx.serialization.KSerializer
 
 data class SpinEvent(override val data: Spin) : AppEvent<Spin> {
 
-    override val playerId = data.round.session.playerId.value
+    override val playerId = data.round.playerId.value
 
     companion object : AppEvent.Meta<Spin> {
         override val route = "spin.events"

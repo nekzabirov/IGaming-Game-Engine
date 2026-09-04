@@ -17,7 +17,9 @@ data class SpinResult(
 
 object SpinBalanceCalculator {
     fun process(balance: PlayerBalance, spin: Spin): SpinResult {
-        val bonusBetEnabled = spin.round.gameVariant.game.bonusBetEnable
+        // Null means a sportsbook leg — there is no per-game bonus-bet flag to gate it, so bonus
+        // betting is allowed by default, the same as a freshly-synced CasinoGame.
+        val bonusBetEnabled = spin.round.game?.bonusBetEnable ?: true
 
         return when (spin.type) {
             SpinType.PLACE    -> place(balance, spin, bonusBetEnabled)

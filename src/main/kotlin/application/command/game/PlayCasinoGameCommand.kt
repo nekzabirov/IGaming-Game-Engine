@@ -7,12 +7,9 @@ import domain.vo.Currency
 import domain.vo.Identity
 import domain.vo.Locale
 import domain.vo.PlayerId
-import domain.vo.CasinoSessionToken
 
 data class PlayCasinoGameResult(
     val launchUrl: String,
-
-    val sessionToken: CasinoSessionToken,
 )
 
 data class PlayCasinoGameCommand(

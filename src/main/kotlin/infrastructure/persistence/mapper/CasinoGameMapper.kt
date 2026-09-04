@@ -2,8 +2,10 @@ package infrastructure.persistence.mapper
 
 import domain.model.Collection
 import domain.model.CasinoGame
+import domain.model.Platform
 import domain.vo.Identity
 import domain.vo.ImageMap
+import domain.vo.Locale
 import infrastructure.persistence.entity.CasinoGameEntity
 import infrastructure.persistence.mapper.CollectionMapper.toDomain
 import infrastructure.persistence.mapper.CasinoProviderMapper.toDomain
@@ -22,8 +24,17 @@ object CasinoGameMapper {
         bonusWageringEnable = bonusWageringEnable,
         tags = tags,
         rtp = rtp,
+        freeSpinEnable = freeSpinEnable,
+        freeChipEnable = freeChipEnable,
+        jackpotEnable = jackpotEnable,
+        demoEnable = demoEnable,
+        bonusBuyEnable = bonusBuyEnable,
+        locales = locales.map { Locale(it) },
+        platforms = platforms.map { Platform.valueOf(it) },
+        playLines = playLines,
         active = active,
         images = ImageMap(images.toMutableMap()),
+        customImages = ImageMap(customImages.toMutableMap()),
         order = sortOrder,
     )
 
@@ -36,8 +47,17 @@ object CasinoGameMapper {
         bonusWageringEnable = this[CasinoGameTable.bonusWageringEnable],
         tags = this[CasinoGameTable.tags],
         rtp = this[CasinoGameTable.rtp],
+        freeSpinEnable = this[CasinoGameTable.freeSpinEnable],
+        freeChipEnable = this[CasinoGameTable.freeChipEnable],
+        jackpotEnable = this[CasinoGameTable.jackpotEnable],
+        demoEnable = this[CasinoGameTable.demoEnable],
+        bonusBuyEnable = this[CasinoGameTable.bonusBuyEnable],
+        locales = this[CasinoGameTable.locales].map { Locale(it) },
+        platforms = this[CasinoGameTable.platforms].map { Platform.valueOf(it) },
+        playLines = this[CasinoGameTable.playLines],
         active = this[CasinoGameTable.active],
         images = ImageMap(this[CasinoGameTable.images].toMutableMap()),
+        customImages = ImageMap(this[CasinoGameTable.customImages].toMutableMap()),
         order = this[CasinoGameTable.sortOrder],
     )
 }

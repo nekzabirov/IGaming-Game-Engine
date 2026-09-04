@@ -14,6 +14,6 @@ class PlaceSpinEventConsumer(
         val spin = event.data
         if (spin.type != SpinType.PLACE) return
 
-        decreasePlayerLimit(spin.round.session.playerId, spin.amount)
+        decreasePlayerLimit(spin.round.playerId, spin.amount)
     }
 }
