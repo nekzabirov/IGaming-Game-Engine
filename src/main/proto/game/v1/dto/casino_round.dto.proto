@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package game.v1;
+
+option java_multiple_files = true;
+option java_package = "com.nekgamebling.game.v1";
+
+import "game/v1/dto/casino_game.dto.proto";
+
+// One round of play as the engine recorded it. A round is named by the hub's own `external_id`;
+// the numeric `id` is this engine's row id and is the handle CasinoRoundService.Find takes.
+message CasinoRoundDto {
+  // Engine row id — the only key CasinoRoundService.Find accepts.
+  int64 id = 1;
+
+  // The hub's own round id. Unique: two legs of one round resolve to this same row.
+  string external_id = 2;
+
+  // Set only when the round was played on a freespin grant. Absent = real-money round.
+  // The winners feed deliberately excludes rounds that carry one — this listing does not.
+  optional string freespin_id = 3;
+
+  string player_id = 4;
+
+  // ABSENT for a sportsbook leg. Sportsbook money shares these tables: the hub sends an empty
+  // `game` for a bet, and the round is stored with no game at all. This listing does NOT filter
+  // those out, so a caller MUST check presence (has_game) before reading it — a round with no
+  // game is a bet, not a broken row. Filtering by `game_identity`/`provider_identity` is what
+  // narrows the listing to casino play.
+  CasinoGameDto game = 5;
+
+  string currency = 6;
+
+  // ISO-8601 instant, when the round OPENED (e.g. `2026-09-01T12:00:00Z`).
+  string created_at = 7;
+
+  // ISO-8601 instant, when the round was closed. Absent = the round is still open.
+  optional string finished_at = 8;
+}
+
+// A round plus the spin totals aggregated over it. Both totals are in the wallet system unit
+// (nano = value x 1e9) and are sums over the round's spins: `total_place` over PLACE legs,
+// `total_settle` over SETTLE legs. ROLLBACK legs are counted in neither, so a rolled-back round
+// keeps the place total it was charged.
+message CasinoRoundViewDto {
+  CasinoRoundDto round = 1;
+
+  int64 total_place = 2;
+
+  int64 total_settle = 3;
+}

@@ -1,0 +1,93 @@
+syntax = "proto3";
+
+package game.v1;
+
+option java_package = "com.nekgamebling.game.v1";
+option java_multiple_files = true;
+
+import "game/v1/dto/casino_round.dto.proto";
+
+// ---------------------------------------------------------------------------
+// CasinoRound history service — read-only. The round/spin ledger is written by the
+// hub's money path (gamehub.v1.WebhookService); nothing here creates, changes or
+// closes a round, and there is no delete.
+//
+// Naming convention, same as every other service here:
+//   Find<X>Query     — read one by id
+//   FindAll<X>Query  — paged, filtered read
+//
+// Both rounds of BOTH products live here: a sportsbook leg is a round with no
+// `game` (see CasinoRoundDto.game). Neither rpc filters those away.
+// ---------------------------------------------------------------------------
+service CasinoRoundService {
+  rpc Find(FindCasinoRoundQuery) returns (FindCasinoRoundQuery.Result);
+
+  rpc FindAll(FindAllCasinoRoundQuery) returns (FindAllCasinoRoundQuery.Result);
+}
+
+message FindCasinoRoundQuery {
+  // Engine row id (CasinoRoundDto.id), not the hub's `external_id`.
+  int64 id = 1;
+
+  message Result {
+    CasinoRoundViewDto item = 1;
+  }
+}
+
+// Paged round history, newest round first (round id DESC — stable across pages).
+//
+// Every filter field is `optional`: unset means "no restriction", and an explicitly
+// set value is validated, so an empty string is an error rather than a silent "all".
+// All set filters are ANDed. The amount filters apply to the round's aggregated spin
+// totals (CasinoRoundViewDto.total_place / total_settle), not to a single spin.
+message FindAllCasinoRoundQuery {
+  optional string player_id = 1;
+
+  // Restricts to rounds played on this game. Setting it therefore also excludes every
+  // sportsbook leg, since those carry no game.
+  optional string game_identity = 2;
+
+  // Restricts to rounds on any game of this provider. Unlike the game listings, no
+  // provider-active gate is applied here: history stays readable after a provider is
+  // deactivated.
+  optional string provider_identity = 3;
+
+  // Wallet system unit (nano = value x 1e9), inclusive bounds on the round's PLACE total.
+  optional int64 min_place_amount = 4;
+
+  optional int64 max_place_amount = 5;
+
+  // Inclusive bounds on the round's SETTLE total, same unit. A round with no settle yet
+  // has a total of 0, so `min_settle_amount = 1` is how to ask for rounds that paid out.
+  optional int64 min_settle_amount = 6;
+
+  optional int64 max_settle_amount = 7;
+
+  // Full ISO-8601 instant, e.g. `2026-09-01T00:00:00Z` — inclusive, matched against
+  // CasinoRoundDto.created_at (when the round OPENED, not when it settled). A bare date
+  // such as `2026-09-01` is rejected with INVALID_ARGUMENT.
+  optional string from_date = 8;
+
+  optional string to_date = 9;
+
+  // Paging is 1-BASED, engine-wide: `page_num = 1` is the first page.
+  // `page_num = 0` (the proto3 default, i.e. an unset field) is clamped to 1 — there is
+  // no page 0 and no error, so a 0-based client silently reads the first page twice.
+  int32 page_num = 10;
+
+  // `page_size = 0` (also the proto3 default) is clamped to 1, NOT to "unlimited" and not
+  // to a default page size: an unset page_size returns exactly ONE round. Always send it.
+  int32 page_size = 11;
+
+  message Result {
+    repeated CasinoRoundViewDto items = 1;
+
+    int32 total_items = 2;
+
+    // Derived from total_items and the page_size that was sent; 1 when total_items is 0.
+    int32 total_pages = 3;
+
+    // The page actually read — the clamped page_num, not the one sent.
+    int32 current_page = 4;
+  }
+}

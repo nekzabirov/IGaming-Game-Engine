@@ -7,6 +7,7 @@ import api.grpc.service.HubCredentialsInterceptor
 import api.grpc.service.JackpotGrpcService
 import api.grpc.service.WalletGrpcService
 import api.grpc.service.CasinoProviderGrpcService
+import api.grpc.service.CasinoRoundGrpcService
 import api.grpc.service.SportbookGrpcService
 import api.grpc.service.WinnerGrpcService
 import io.grpc.ServerBuilder
@@ -29,6 +30,7 @@ fun Application.configureGrpc() {
             .addService(get<CollectionGrpcService>())
             .addService(get<FreespinGrpcService>())
             .addService(get<WinnerGrpcService>())
+            .addService(get<CasinoRoundGrpcService>())
             .addService(get<JackpotGrpcService>())
             .addService(get<SportbookGrpcService>())
             // The hub calls us for every money movement, so its credential headers have to
