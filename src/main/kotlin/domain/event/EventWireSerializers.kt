@@ -10,13 +10,39 @@ import kotlinx.serialization.json.JsonTransformingSerializer
 import kotlinx.serialization.json.jsonObject
 
 /**
- * External consumers (the miniapp CRM bridge) read flat scalar fields, so these serializers add
- * `gameIdentity` / `gameProvider` / `currency` / `freespinId` at the TOP level **alongside** the
- * full nested payload — additive only. Internal consumers (e.g. PlaceSpinEventConsumer) keep
- * decoding the nested aggregate; the extra keys are ignored via `appJson { ignoreUnknownKeys }`.
- * `game` is nullable now (a sportsbook leg carries none) — `gameIdentity`/`gameProvider` are simply
- * absent for those.
+ * Форма события — ПУБЛИЧНЫЙ контракт, и она старше этого движка: на неё построены потребители,
+ * которых здесь не видно. Убрав из домена `CasinoSession` и `CasinoGameVariant`, мы вынесли их и с
+ * провода — и каждый спин перестал разбираться у читателей, молча, без единой ошибки на нашей
+ * стороне.
+ *
+ * Поэтому провод здесь СОБИРАЕТСЯ, а не отражает домен: раунд уезжает и в новой плоской форме
+ * (`playerId`, `game`), и в прежней вложенной (`session.playerId`, `gameVariant.game`). Надмножество
+ * — единственный вид совместимости, который не требует одновременного релиза на той стороне.
+ *
+ * Сверху добавляются ещё и плоские `gameIdentity` / `gameProvider` / `currency` / `freespinId`.
+ * Внутренние потребители продолжают читать вложенный агрегат; лишние ключи гасит
+ * `appJson { ignoreUnknownKeys }`.
  */
+/**
+ * Достраивает раунду прежнюю вложенную форму.
+ *
+ * `gameVariant` не выдаётся, когда игры нет: у ноги спортсбука её и не было, а пустая обёртка
+ * соврала бы читателю про игру, которой не существует.
+ */
+private fun JsonObject.withLegacyRoundShape(): JsonObject {
+    val round = this
+    val legacy = buildMap<String, JsonElement> {
+        round["playerId"]?.takeIf { it !is JsonNull }?.let {
+            put("session", JsonObject(mapOf("playerId" to it)))
+        }
+        round["game"]?.takeIf { it !is JsonNull }?.let {
+            put("gameVariant", JsonObject(mapOf("game" to it)))
+        }
+    }
+
+    return JsonObject(round + legacy)
+}
+
 private fun JsonObject.withFlatGameFields(
     game: JsonObject?,
     currency: JsonElement?,
@@ -34,7 +60,13 @@ private fun JsonObject.withFlatGameFields(
 object SpinWireSerializer : JsonTransformingSerializer<Spin>(Spin.serializer()) {
     public override fun transformSerialize(element: JsonElement): JsonElement {
         val round = element.jsonObject["round"]?.jsonObject
-        return element.jsonObject.withFlatGameFields(
+
+        val withRound = when (round) {
+            null -> element.jsonObject
+            else -> JsonObject(element.jsonObject + ("round" to round.withLegacyRoundShape()))
+        }
+
+        return withRound.withFlatGameFields(
             game = round?.get("game")?.jsonObject,
             currency = round?.get("currency"),
             freespinId = round?.get("freespinId"),
@@ -44,7 +76,7 @@ object SpinWireSerializer : JsonTransformingSerializer<Spin>(Spin.serializer()) 
 
 object CasinoRoundWireSerializer : JsonTransformingSerializer<CasinoRound>(CasinoRound.serializer()) {
     public override fun transformSerialize(element: JsonElement): JsonElement =
-        element.jsonObject.withFlatGameFields(
+        element.jsonObject.withLegacyRoundShape().withFlatGameFields(
             game = element.jsonObject["game"]?.jsonObject,
             currency = element.jsonObject["currency"],
             freespinId = element.jsonObject["freespinId"],

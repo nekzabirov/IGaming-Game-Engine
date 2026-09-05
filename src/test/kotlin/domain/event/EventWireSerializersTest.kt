@@ -70,4 +70,62 @@ class EventWireSerializersTest : FunSpec({
         out.containsKey("gameProvider") shouldBe false
         out["currency"] shouldBe JsonPrimitive("USD")
     }
+
+    test("раунд едет и в прежней вложенной форме: session.playerId и gameVariant.game") {
+        val nestedSpin = buildJsonObject {
+            put("type", JsonPrimitive("SETTLE"))
+            putJsonObject("round") {
+                put("playerId", JsonPrimitive("1"))
+                put("currency", JsonPrimitive("UAH"))
+                putJsonObject("game") {
+                    put("identity", JsonPrimitive("pragmatic_gates_of_olympus"))
+                    putJsonObject("provider") { put("identity", JsonPrimitive("pragmatic")) }
+                }
+            }
+        }
+
+        val round = SpinWireSerializer.transformSerialize(nestedSpin).jsonObject["round"]!!.jsonObject
+
+        // Ровно то, что читают потребители, построенные до того, как из домена ушли сессия и вариант.
+        round["session"]!!.jsonObject["playerId"] shouldBe JsonPrimitive("1")
+        round["gameVariant"]!!.jsonObject["game"]!!.jsonObject["identity"] shouldBe
+            JsonPrimitive("pragmatic_gates_of_olympus")
+
+        // Новая плоская форма остаётся рядом — провод надмножество, а не замена.
+        round["playerId"] shouldBe JsonPrimitive("1")
+        round["game"]!!.jsonObject["identity"] shouldBe JsonPrimitive("pragmatic_gates_of_olympus")
+    }
+
+    test("событие раунда несёт ту же пару форм") {
+        val round = buildJsonObject {
+            put("playerId", JsonPrimitive("42"))
+            put("currency", JsonPrimitive("UAH"))
+            put("freespinId", JsonPrimitive("1002"))
+            putJsonObject("game") {
+                put("identity", JsonPrimitive("skyline_slap_club"))
+                putJsonObject("provider") { put("identity", JsonPrimitive("skyline")) }
+            }
+        }
+
+        val out = CasinoRoundWireSerializer.transformSerialize(round).jsonObject
+
+        out["session"]!!.jsonObject["playerId"] shouldBe JsonPrimitive("42")
+        out["gameVariant"]!!.jsonObject["game"]!!.jsonObject["identity"] shouldBe
+            JsonPrimitive("skyline_slap_club")
+        out["freespinId"] shouldBe JsonPrimitive("1002")
+    }
+
+    test("без игры вложенного варианта нет: пустая обёртка соврала бы про игру, которой не было") {
+        val nestedSpin = buildJsonObject {
+            putJsonObject("round") {
+                put("playerId", JsonPrimitive("7"))
+                put("currency", JsonPrimitive("USD"))
+            }
+        }
+
+        val round = SpinWireSerializer.transformSerialize(nestedSpin).jsonObject["round"]!!.jsonObject
+
+        round.containsKey("gameVariant") shouldBe false
+        round["session"]!!.jsonObject["playerId"] shouldBe JsonPrimitive("7")
+    }
 })
