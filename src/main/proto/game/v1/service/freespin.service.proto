@@ -8,13 +8,18 @@ option java_multiple_files = true;
 import "game/v1/dto/common.dto.proto";
 import "google/protobuf/struct.proto";
 
-// Thin proxy onto the hub's GatewayService — GameHub is the sole source of grant state, casino-engine
-// keeps no local record. Create mints and returns the grant id; the caller must hold onto it for
-// Cancel and for recognising the grant on spin/round events (freespinId on the wire).
+// Тонкий прокси на GatewayService хаба: состоянием гранта владеет GameHub, casino-engine своей
+// записи о нём не держит.
+//
+// Контракт — ИСХОДНЫЙ, вместе с номерами полей. Грант называется ссылкой ВЫЗЫВАЮЩЕГО: она уходит
+// вендору и ею же грант назван в спин- и раунд-событиях (`freespinId` на проводе). Без неё
+// владелец акции не узнаёт на спине собственный грант — не считает отыгрыш и не платит по своим
+// правилам. Переномерованные поля здесь стоят дороже переименованных: чужие байты молча лягут в
+// соседнее поле того же типа, и ссылка приедет как валюта.
 service FreespinService {
   rpc GetPreset(GetFreespinPresetQuery) returns (GetFreespinPresetQuery.Result);
 
-  rpc Create(CreateFreespinCommand) returns (CreateFreespinCommand.Result);
+  rpc Create(CreateFreespinCommand) returns (Empty);
 
   rpc Cancel(CancelFreespinCommand) returns (Empty);
 }
@@ -32,21 +37,25 @@ message CreateFreespinCommand {
 
   string player_id = 2;
 
-  string currency = 3;
+  // Ссылка вызывающего. Ею грант представлен вендору и ею же он назван на событиях.
+  string reference_id = 3;
 
-  google.protobuf.Struct preset_values = 4;
+  string currency = 4;
 
-  int64 spin_amount = 5;
+  // Окно гранта, локальные ISO-даты без зоны, читаются как UTC.
+  string start_at = 5;
 
-  int32 spin_count = 6;
+  string end_at = 6;
 
-  message Result {
-    // The hub's own grant id.
-    string id = 1;
-  }
+  google.protobuf.Struct preset_values = 7;
+
+  int64 spin_amount = 8;
+
+  int32 spin_count = 9;
 }
 
 message CancelFreespinCommand {
-  // The id CreateFreespinCommand.Result returned.
-  string id = 1;
+  string game_identity = 1;
+
+  string reference_id = 2;
 }

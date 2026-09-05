@@ -86,7 +86,9 @@ class GameHubClient(channel: ManagedChannel, config: GameHubConfig) {
         count: Int,
         currency: String,
         presets: Map<String, String>,
-    ): String {
+        reference: String,
+        durationSeconds: Long,
+    ) {
         val request = Gateway.CreateFreespinRequest.newBuilder()
             .setGame(game)
             .setPlayerId(playerId)
@@ -94,13 +96,18 @@ class GameHubClient(channel: ManagedChannel, config: GameHubConfig) {
             .setCount(count)
             .setCurrency(currency)
             .putAllPresets(presets)
+            // Ссылка вызывающего едет насквозь: хаб отдаёт её вендору и ею же называет грант в
+            // кошельковых вызовах, так что она вернётся сюда на спине.
+            .setReference(reference)
+            .setDurationSeconds(durationSeconds)
             .build()
 
-        return call { it.createFreespin(request) }.id
+        call { it.createFreespin(request) }
     }
 
-    suspend fun cancelFreespin(id: String) {
-        val request = Gateway.CancelFreespinRequest.newBuilder().setId(id).build()
+    /** Отмена по ссылке вызывающего: своего номера гранта casino-engine не хранит. */
+    suspend fun cancelFreespin(reference: String) {
+        val request = Gateway.CancelFreespinRequest.newBuilder().setReference(reference).build()
         call { it.cancelFreespin(request) }
     }
 

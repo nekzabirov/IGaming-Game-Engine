@@ -4,14 +4,19 @@ import application.ICommand
 import domain.vo.Currency
 import domain.vo.Identity
 import domain.vo.PlayerId
+import kotlin.time.Duration
 
-/** Proxies straight to the hub — [infrastructure.gamehub.GameHubClient.createFreespin] mints the
- *  grant id and returns it; casino-engine keeps no local record of the grant. There is no window
- *  (start/end) any more — the hub's contract carries none. */
+/**
+ * Проксируется в хаб. Грант называется [referenceId] — ссылкой вызывающего: её хаб отдаёт вендору
+ * и ею же называет грант в кошельковых вызовах, так что она возвращается сюда на спин-событиях.
+ * Своей записи о гранте casino-engine не держит.
+ */
 data class CreateFreespinCommand(
     val gameIdentity: Identity,
 
     val playerId: PlayerId,
+
+    val referenceId: String,
 
     val currency: Currency,
 
@@ -19,5 +24,7 @@ data class CreateFreespinCommand(
 
     val spinCount: Int,
 
+    val duration: Duration,
+
     val presetValues: Map<String, Any>,
-) : ICommand<String>
+) : ICommand<Unit>

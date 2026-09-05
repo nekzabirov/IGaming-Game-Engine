@@ -9,6 +9,6 @@ class CancelFreespinCommandHandler(
 ) : ICommandHandler<CancelFreespinCommand, Unit> {
 
     override suspend fun handle(command: CancelFreespinCommand): Result<Unit> = runCatching {
-        gameHubClient.cancelFreespin(command.id)
+        gameHubClient.cancelFreespin(command.referenceId)
     }
 }

@@ -133,6 +133,14 @@ message CreateFreespinRequest {
   int32 count = 4;
   string currency = 5;
   map<string, string> presets = 6;
+
+  // Ссылка ОПЕРАТОРА на этот грант. Ею хаб представляет грант вендору, и ЕЮ ЖЕ называет его в
+  // кошельковых вызовах — иначе оператор не узнаёт на спине собственную акцию и не может ни
+  // засчитать отыгрыш, ни выплатить по своим правилам. Пусто — хаб называет грант своим номером.
+  optional string reference = 7;
+
+  // Окно жизни гранта. Пусто — хаб берёт своё значение по умолчанию.
+  optional int64 duration_seconds = 8;
 }
 
 message CreateFreespinResponse {
@@ -141,7 +149,11 @@ message CreateFreespinResponse {
 }
 
 message CancelFreespinRequest {
+  // Номер, который вернул CreateFreespin.
   string id = 1;
+
+  // Либо ссылка оператора — тем, кто своего номера не хранит. Задано ровно одно из двух.
+  optional string reference = 2;
 }
 
 message CancelFreespinResponse {}
