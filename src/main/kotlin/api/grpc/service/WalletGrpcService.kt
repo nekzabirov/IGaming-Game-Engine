@@ -147,11 +147,14 @@ class WalletGrpcService(
     override suspend fun rollbackSpin(request: Webhook.RollbackSpinRequest): Webhook.SpinResponse = handleHubCall {
         authenticate()
 
-        val balance = bus(RollbackSpinCommand(externalSpinId = request.id))
+        val reversed = bus(RollbackSpinCommand(externalSpinId = request.id))
 
         spinResponse {
             id = request.id
-            this.balance = toProto(balance)
+            // Null means there was no such leg — success, and no player to read a balance for,
+            // since the request names only the leg. proto3 leaves the field absent and the hub
+            // reads only `id` off a rollback answer.
+            if (reversed != null) this.balance = toProto(reversed)
         }
     }
 

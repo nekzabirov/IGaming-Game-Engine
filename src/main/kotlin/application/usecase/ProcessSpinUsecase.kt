@@ -52,10 +52,9 @@ class ProcessSpinUsecase(
 
         val updatedSpin = spinRepository.save(result.spin)
 
-        // Spin persisted: the event reflects committed state, so publish it now. A failed
-        // wallet move (see process()) does NOT roll back this spin or this event — the committed
-        // spin is the source of truth and the move is reconciled out-of-band. Likewise a broker
-        // failure must never 500 the webhook once the spin is committed.
+        // Spin persisted: the event reflects committed state, so publish it now. The wallet is
+        // already settled by this point (see process()), so a broker failure must never 500 the
+        // webhook — the hub would read that as "unknown outcome" and retry a movement that landed.
         try {
             eventPublisher.publish(SpinEvent(updatedSpin))
         } catch (e: Exception) {
@@ -100,22 +99,29 @@ class ProcessSpinUsecase(
         //
         // Awaited, not dispatched: the move has to land before the spin row commits, or a
         // concurrent redelivery that loses the unique-constraint race reads a wallet that has
-        // not caught up and answers the provider a balance that is simply wrong. A failure is
-        // still swallowed — the committed spin remains the source of truth and a broken wallet
-        // move is reconciled out of band, exactly as before.
-        runCatching { updateBalance(result.spin) }
-            .onFailure { logger.error("Wallet move failed for spin {}", spin.externalId.value, it) }
+        // not caught up and answers the provider a balance that is simply wrong.
+        //
+        // And its failure is NOT swallowed. Nothing in this service reconciles a lost movement, so
+        // a swallowed failure commits a spin the wallet never saw and answers the hub success: a
+        // bet the house paid for, or a win the vendor shows as credited that the player never got.
+        // Thrown, it leaves the spin unwritten and the call answers INTERNAL — the one code that
+        // means "unknown outcome" — and the retry that follows carries the same leg id, on which
+        // the wallet's `reference` is idempotent, so the money still moves at most once.
+        val balance = updateBalance(result.spin)
 
-        result
+        // The wallet's own answer, not the calculator's projection: webhook.proto promises the
+        // balance AFTER the movement, and the projection is blind to anything that touched the
+        // player's money between the read this spin started from and the write it just made.
+        result.copy(balance = balance)
     }
 
-    private suspend fun updateBalance(spin: Spin) {
+    private suspend fun updateBalance(spin: Spin): PlayerBalance {
         val round = spin.round
         // PLACE takes money, SETTLE gives it back. A ROLLBACK moves it opposite to the spin it
         // reverses, so rolling back a win is a withdrawal, not a deposit.
         val takesMoney = spin.isPlace || (spin.isRollback && spin.reference?.isSettle == true)
         val reference = reference(spin)
-        if (takesMoney) {
+        return if (takesMoney) {
             walletPort.withdraw(
                 playerId = round.playerId,
                 transactionId = reference,
