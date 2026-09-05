@@ -22,6 +22,7 @@ object CasinoGameProtoMapper {
         bonusBetEnable = this@toProto.bonusBetEnable
         bonusWageringEnable = this@toProto.bonusWageringEnable
         tags.addAll(this@toProto.resolvedTags())
+        customTags.addAll(this@toProto.customTags)
         active = this@toProto.active
         images.putAll(this@toProto.resolvedImages().data)
         order = this@toProto.order

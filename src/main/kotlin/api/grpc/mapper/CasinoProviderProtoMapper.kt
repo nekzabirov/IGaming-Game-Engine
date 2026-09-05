@@ -14,5 +14,6 @@ object CasinoProviderProtoMapper {
         active = this@toProto.active
         blockedCountry.addAll(this@toProto.blockedCountry.map { it.value })
         tags.addAll(this@toProto.resolvedTags())
+        customTags.addAll(this@toProto.customTags)
     }
 }

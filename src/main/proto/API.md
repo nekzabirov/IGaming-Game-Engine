@@ -748,9 +748,9 @@ message CasinoGameDto {
   repeated string collection_identities = 4;
   bool bonus_bet_enable = 5;
   bool bonus_wagering_enable = 6;
-  repeated string tags = 7;
+  repeated string tags = 7;             // MERGED: the hub's synced tags plus custom_tags
   bool active = 8;
-  map<string, string> images = 9;       // Key → full public image URL
+  map<string, string> images = 9;       // Key → full public image URL (merged the same way)
   int32 order = 10;
   string symbol = 11;                   // Aggregator game symbol/code
   string integration = 12;             // Aggregator integration type
@@ -762,8 +762,16 @@ message CasinoGameDto {
   repeated string locales = 19;         // Supported locales
   repeated PlatformDto platforms = 20;  // Supported platforms
   int32 play_lines = 21;               // Number of play lines
+  double rtp = 22;                     // Synced from GameHub. 0 = no measured value, not 0%
+  repeated string custom_tags = 23;    // The LOCAL half of `tags` — see below
 }
 ```
+
+`tags` is the merged view and `custom_tags` is the local subset of it — the editorial tags the catalog
+sync never touches. Both are on the wire because `UpdateTags` replaces the local list WHOLE: a caller
+that sees only the merge cannot call it correctly, since adding one tag would promote every hub tag
+into the local column and removing a hub tag would be a silent no-op. A player-facing client reads
+`tags` and ignores the seam; an operator editing them needs it.
 
 ### PlatformDto
 
@@ -785,9 +793,10 @@ message CasinoProviderDto {
   map<string, string> images = 3;
   int32 order = 4;
   bool active = 5;
-  string aggregator_identity = 6;
+  reserved 6;                          // was aggregator_identity — the Aggregator domain is gone
   repeated string blocked_country = 7; // ISO country codes blocked for this provider
-  repeated string tags = 8;            // Free-form tags (e.g. "live")
+  repeated string tags = 8;            // MERGED: the hub's synced tags plus custom_tags
+  repeated string custom_tags = 9;     // The LOCAL half — same reason as CasinoGameDto.custom_tags
 }
 ```
 

@@ -56,4 +56,13 @@ message CasinoGameDto {
   // Return-to-player percentage, synced from GameHub. 0 when GameHub reports no measured value
   // (no bets in its last window) — see domain.model.CasinoGame.rtp, which is nullable.
   double rtp = 22;
+
+  // The LOCAL half of `tags` — the editorial ones the catalog sync never touches. A subset of `tags`,
+  // which is the merged view.
+  //
+  // It is here because `UpdateTags` replaces the local list WHOLE, so a caller that cannot see which
+  // side a tag came from cannot call it correctly: adding one would promote every hub tag into the
+  // local column, and removing a hub tag would be a silent no-op. Reading them merged is right for a
+  // player-facing client; an operator editing them needs the seam.
+  repeated string custom_tags = 23;
 }

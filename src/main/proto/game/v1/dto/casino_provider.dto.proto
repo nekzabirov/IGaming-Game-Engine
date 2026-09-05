@@ -19,4 +19,7 @@ message CasinoProviderDto {
   repeated string blocked_country = 7;
 
   repeated string tags = 8;
+
+  // The LOCAL half of `tags` — see CasinoGameDto.custom_tags for why the seam is on the wire.
+  repeated string custom_tags = 9;
 }
