@@ -2,6 +2,7 @@ package infrastructure.persistence.repository
 
 import domain.exception.conflict.SpinAlreadyExistsException
 import domain.model.Spin
+import domain.model.SpinType
 import domain.repository.ISpinRepository
 import infrastructure.persistence.dbRead
 import infrastructure.persistence.dbTransaction
@@ -9,6 +10,7 @@ import infrastructure.persistence.entity.SpinEntity
 import infrastructure.persistence.mapper.SpinMapper.toDomain
 import infrastructure.persistence.table.SpinTable
 import org.jetbrains.exposed.exceptions.ExposedSQLException
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.jetbrains.exposed.sql.update
@@ -40,6 +42,16 @@ class SpinRepositoryImpl : ISpinRepository {
 
     override suspend fun findByExternalId(externalId: String): Spin? = dbRead {
         SpinEntity.find { SpinTable.externalId eq externalId }
+            .firstOrNull()?.toDomain()
+    }
+
+    override suspend fun findBonusPlaceByRound(roundId: Long): Spin? = dbRead {
+        SpinEntity
+            .find {
+                (SpinTable.round eq roundId) and
+                    (SpinTable.type eq SpinType.PLACE) and
+                    (SpinTable.bonusAmount greaterEq 1L)
+            }
             .firstOrNull()?.toDomain()
     }
 

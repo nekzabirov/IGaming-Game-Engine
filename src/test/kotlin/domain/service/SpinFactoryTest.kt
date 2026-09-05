@@ -53,4 +53,33 @@ class SpinFactoryTest : FunSpec({
         spin.amount shouldBe Amount(100)
         spin.reference shouldBe original
     }
+
+    test("выигрыш несёт ссылку на бонусную ставку своего раунда") {
+        val round = TestFixtures.round()
+        val bonusPlace = TestFixtures.spin(round = round, externalId = "place_1")
+            .copy(bonusAmount = Amount(100))
+
+        val settle = SpinFactory.settle(
+            round = round,
+            externalId = ExternalSpinId("settle_1"),
+            amount = Amount(250),
+            reference = bonusPlace,
+        )
+
+        // Без неё калькулятор не отличит бонусный раунд от реального и заплатит на реальный счёт:
+        // бонус превращался в реальные деньги за один спин, мимо всякого отыгрыша.
+        settle.reference shouldBe bonusPlace
+        settle.type shouldBe SpinType.SETTLE
+    }
+
+    test("ставки бонусом не было — ссылки нет, выигрыш пойдёт на реальный") {
+        val settle = SpinFactory.settle(
+            round = TestFixtures.round(),
+            externalId = ExternalSpinId("settle_2"),
+            amount = Amount(250),
+            reference = null,
+        )
+
+        settle.reference shouldBe null
+    }
 })

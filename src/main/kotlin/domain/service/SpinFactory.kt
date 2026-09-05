@@ -20,11 +20,24 @@ object SpinFactory {
         )
     }
 
-    fun settle(round: CasinoRound, externalId: ExternalSpinId, amount: Amount): Spin {
+    /**
+     * [reference] — ставка того же раунда, если она была оплачена бонусными деньгами.
+     *
+     * Именно по ней [SpinBalanceCalculator] решает, на какой счёт лечь выигрышу. Без неё выигрыш
+     * бонусного раунда уходил на РЕАЛЬНЫЙ баланс, и бонус превращался в реальные деньги за один
+     * спин, мимо всякого отыгрыша.
+     */
+    fun settle(
+        round: CasinoRound,
+        externalId: ExternalSpinId,
+        amount: Amount,
+        reference: Spin? = null,
+    ): Spin {
         domainRequire(!round.isFinished) { CasinoRoundAlreadyFinishedException() }
         return Spin(
             externalId = externalId,
             round = round,
+            reference = reference,
             type = SpinType.SETTLE,
             amount = amount,
         )

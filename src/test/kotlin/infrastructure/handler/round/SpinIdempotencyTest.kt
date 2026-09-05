@@ -52,6 +52,7 @@ class SpinIdempotencyTest : FunSpec({
         val gameRepository = mockk<ICasinoGameRepository>()
 
         coEvery { spinRepository.findByExternalId(any()) } returns null
+        coEvery { spinRepository.findBonusPlaceByRound(any()) } returns null
         coEvery { spinRepository.save(any()) } throws SpinAlreadyExistsException()
         coEvery { roundRepository.findOrCreate(any(), any(), any(), any(), any()) } returns round
 
@@ -85,6 +86,7 @@ class SpinIdempotencyTest : FunSpec({
         val gameRepository = mockk<ICasinoGameRepository>()
 
         coEvery { spinRepository.findByExternalId(any()) } returns null
+        coEvery { spinRepository.findBonusPlaceByRound(any()) } returns null
         coEvery { spinRepository.save(any()) } throws SpinAlreadyExistsException()
         coEvery { roundRepository.findOrCreate(any(), any(), any(), any(), any()) } returns round
 

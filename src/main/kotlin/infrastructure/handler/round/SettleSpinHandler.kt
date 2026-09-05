@@ -44,6 +44,9 @@ class SettleSpinHandler(
             round = round,
             externalId = ExternalSpinId(command.externalSpinId),
             amount = command.amount,
+            // Раунд, оплаченный бонусом, и платит на бонусный счёт. Ставка приезжает отдельной
+            // транзакцией, общее у них — раунд, поэтому по нему связь и ищется.
+            reference = spinRepository.findBonusPlaceByRound(round.id),
         )
 
         try {
