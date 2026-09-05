@@ -11,8 +11,8 @@ object CasinoGameProtoMapper {
      * `symbol`/`integration` are kept on the wire for backward compatibility with existing
      * consumers (backoffice-app, casino-app, telegram-miniapp) that read them, but no longer carry
      * vendor meaning — casino-engine never talks to a vendor directly any more, only to the hub, by
-     * [CasinoGame.identity]. `images` is the resolved (hub + local override) merge, never the raw
-     * synced set.
+     * [CasinoGame.identity]. `images` and `tags` are the resolved (hub + local override) merge,
+     * never the raw synced set.
      */
     fun CasinoGame.toProto(): CasinoGameDto = casinoGameDto {
         identity = this@toProto.identity.value
@@ -21,7 +21,7 @@ object CasinoGameProtoMapper {
         collectionIdentities.addAll(this@toProto.collections.map { it.identity.value })
         bonusBetEnable = this@toProto.bonusBetEnable
         bonusWageringEnable = this@toProto.bonusWageringEnable
-        tags.addAll(this@toProto.tags)
+        tags.addAll(this@toProto.resolvedTags())
         active = this@toProto.active
         images.putAll(this@toProto.resolvedImages().data)
         order = this@toProto.order

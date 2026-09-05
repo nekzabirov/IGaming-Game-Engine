@@ -27,8 +27,15 @@ data class CasinoProvider(
     val blockedCountry: List<Country> = emptyList(),
 
     val tags: List<String> = emptyList(),
+
+    /** Local editorial tags on top of [tags]. Set only through `SetCasinoProviderTagsCommand`; the
+     *  catalog sync never writes it — [tags] is overwritten wholesale on every run. */
+    var customTags: List<String> = emptyList(),
 ) : Activatable, Imageable, Orderable {
 
     /** What the wire actually shows: the hub's own artwork, with our overrides on top. */
     fun resolvedImages(): ImageMap = images.mergedWith(customImages)
+
+    /** Same contract as [resolvedImages], one level up: the hub's tags plus ours, deduplicated. */
+    fun resolvedTags(): List<String> = (tags + customTags).distinct()
 }

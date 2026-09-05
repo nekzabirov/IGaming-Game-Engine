@@ -57,5 +57,13 @@ object CasinoGameTable : LongIdTable("casino_games") {
         { Json.decodeFromString(stringMapSerializer, it) }
     ).default(emptyMap())
 
+    // Local-only, never written by sync — same deal as `custom_images`, but for `tags`, which the
+    // sync overwrites wholesale from the hub on every run.
+    val customTags = json(
+        "custom_tags",
+        { Json.encodeToString(stringListSerializer, it) },
+        { Json.decodeFromString(stringListSerializer, it) }
+    ).default(emptyList())
+
     val sortOrder = integer("sort_order")
 }

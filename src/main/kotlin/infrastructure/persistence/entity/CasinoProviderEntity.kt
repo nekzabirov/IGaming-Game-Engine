@@ -16,4 +16,5 @@ class CasinoProviderEntity(id: EntityID<Long>) : LongEntity(id) {
     var active by CasinoProviderTable.active
     var blockedCountry by CasinoProviderTable.blockedCountry
     var tags by CasinoProviderTable.tags
+    var customTags by CasinoProviderTable.customTags
 }

@@ -35,6 +35,7 @@ object CasinoGameMapper {
         active = active,
         images = ImageMap(images.toMutableMap()),
         customImages = ImageMap(customImages.toMutableMap()),
+        customTags = customTags,
         order = sortOrder,
     )
 
@@ -58,6 +59,7 @@ object CasinoGameMapper {
         active = this[CasinoGameTable.active],
         images = ImageMap(this[CasinoGameTable.images].toMutableMap()),
         customImages = ImageMap(this[CasinoGameTable.customImages].toMutableMap()),
+        customTags = this[CasinoGameTable.customTags],
         order = this[CasinoGameTable.sortOrder],
     )
 }

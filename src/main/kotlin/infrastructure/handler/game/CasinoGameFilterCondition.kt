@@ -86,9 +86,12 @@ fun CasinoGameFilter.toCondition(relaxed: Boolean = false): Op<Boolean> {
             add(Op.build { CasinoGameTable.bonusBuyEnable eq it })
         }
 
+        // Both tag lists are searched: `tags` is the hub's, `custom_tags` is ours, and a filter
+        // has no business knowing which side a tag came from — the wire shows them merged anyway.
         if (inTags.isNotEmpty()) {
             add(inTags.map { tag ->
-                Op.build { CasinoGameTable.tags.castTo<String>(TextColumnType()) like "%\"$tag\"%" }
+                Op.build { CasinoGameTable.tags.castTo<String>(TextColumnType()) like "%\"$tag\"%" } or
+                    Op.build { CasinoGameTable.customTags.castTo<String>(TextColumnType()) like "%\"$tag\"%" }
             }.reduce { acc, op -> acc or op })
         }
     }

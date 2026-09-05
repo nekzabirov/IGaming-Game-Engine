@@ -38,4 +38,11 @@ object CasinoProviderTable : LongIdTable("casino_providers") {
         { Json.encodeToString(stringListSerializer, it) },
         { Json.decodeFromString(stringListSerializer, it) }
     ).default(emptyList())
+
+    // Local-only, never written by sync — same deal as `custom_images`, but for `tags`.
+    val customTags = json<List<String>>(
+        "custom_tags",
+        { Json.encodeToString(stringListSerializer, it) },
+        { Json.decodeFromString(stringListSerializer, it) }
+    ).default(emptyList())
 }

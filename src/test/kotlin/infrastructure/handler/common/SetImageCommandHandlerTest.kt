@@ -38,6 +38,7 @@ class SetImageCommandHandlerTest : FunSpec({
         override suspend fun addImage(identity: Identity, key: String, url: String) {
             calls += Triple(identity, key, url)
         }
+        override suspend fun setCustomTags(identity: Identity, tags: List<String>) = Unit
     }
 
     class FakeCasinoProviderRepo : ICasinoProviderRepository {
@@ -50,6 +51,7 @@ class SetImageCommandHandlerTest : FunSpec({
         override suspend fun addImage(identity: Identity, key: String, url: String) {
             calls += Triple(identity, key, url)
         }
+        override suspend fun setCustomTags(identity: Identity, tags: List<String>) = Unit
     }
 
     class FakeCollectionRepo : ICollectionRepository {

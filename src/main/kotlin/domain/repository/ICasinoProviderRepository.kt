@@ -19,4 +19,8 @@ interface ICasinoProviderRepository {
 
     suspend fun addImage(identity: Identity, key: String, url: String)
 
+    /** Replaces the LOCAL tag list. `tags` stays untouched — it belongs to the catalog sync, which
+     *  overwrites it wholesale on every run. */
+    suspend fun setCustomTags(identity: Identity, tags: List<String>)
+
 }

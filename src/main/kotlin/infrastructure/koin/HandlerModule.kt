@@ -9,6 +9,7 @@ import infrastructure.handler.collection.RemoveCollectionCasinoGameCommandHandle
 import infrastructure.handler.collection.SaveCollectionCommandHandler
 import infrastructure.handler.collection.UpdateCollectionCasinoGameOrderCommandHandler
 import infrastructure.handler.common.SetImageCommandHandler
+import infrastructure.handler.common.SetTagsCommandHandler
 import infrastructure.handler.freespin.CancelFreespinCommandHandler
 import infrastructure.handler.freespin.CreateFreespinCommandHandler
 import infrastructure.handler.freespin.GetFreespinPresetsQueryHandler
@@ -104,6 +105,14 @@ val handlerModule = module {
             gameRepository = get(),
             providerRepository = get(),
             collectionRepository = get(),
+        )
+    }
+
+    // Common (polymorphic — serves SetCasinoGameTagsCommand / SetCasinoProviderTagsCommand)
+    single {
+        SetTagsCommandHandler(
+            gameRepository = get(),
+            providerRepository = get(),
         )
     }
 

@@ -27,6 +27,7 @@ class CasinoGameEntity(id: EntityID<Long>) : LongEntity(id) {
     var active by CasinoGameTable.active
     var images by CasinoGameTable.images
     var customImages by CasinoGameTable.customImages
+    var customTags by CasinoGameTable.customTags
     var sortOrder by CasinoGameTable.sortOrder
     var collections by CollectionEntity via CasinoGameCollectionTable
 }

@@ -24,6 +24,7 @@ class CasinoProviderRepositoryImpl : ICasinoProviderRepository {
             it[name] = provider.name
             it[images] = provider.images.data
             it[customImages] = provider.customImages.data
+            it[customTags] = provider.customTags
             it[sortOrder] = provider.order
             it[active] = provider.active
             it[blockedCountry] = provider.blockedCountry.map { it.value }
@@ -39,6 +40,7 @@ class CasinoProviderRepositoryImpl : ICasinoProviderRepository {
             this[CasinoProviderTable.name] = provider.name
             this[CasinoProviderTable.images] = provider.images.data
             this[CasinoProviderTable.customImages] = provider.customImages.data
+            this[CasinoProviderTable.customTags] = provider.customTags
             this[CasinoProviderTable.sortOrder] = provider.order
             this[CasinoProviderTable.active] = provider.active
             this[CasinoProviderTable.blockedCountry] = provider.blockedCountry.map { it.value }
@@ -81,6 +83,15 @@ class CasinoProviderRepositoryImpl : ICasinoProviderRepository {
                 CasinoProviderEntity.find { CasinoProviderTable.identity eq identity.value }.firstOrNull()
             ) { CasinoProviderNotFoundException() }
             entity.customImages = entity.customImages.toMutableMap().apply { put(key, url) }
+        }
+    }
+
+    override suspend fun setCustomTags(identity: Identity, tags: List<String>) {
+        dbTransaction {
+            val entity = domainRequireNotNull(
+                CasinoProviderEntity.find { CasinoProviderTable.identity eq identity.value }.firstOrNull()
+            ) { CasinoProviderNotFoundException() }
+            entity.customTags = tags.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
         }
     }
 }

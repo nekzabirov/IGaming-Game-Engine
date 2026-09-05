@@ -51,6 +51,11 @@ data class CasinoGame(
      *  the hub never writes it. Wins per-key when the two are merged for the wire. */
     var customImages: ImageMap = ImageMap.EMPTY,
 
+    /** Local editorial tags on top of [tags]. Set only through `SetCasinoGameTagsCommand`; the
+     *  catalog sync never writes it — which is the whole point: [tags] is overwritten wholesale on
+     *  every run, so a tag curated here (a lobby rail, a promo) would not survive there. */
+    var customTags: List<String> = emptyList(),
+
     override var order: Int = 0,
 ) : Activatable, Imageable, Orderable {
 
@@ -60,6 +65,10 @@ data class CasinoGame(
 
     /** What the wire actually shows: the hub's own artwork, with our overrides on top. */
     fun resolvedImages(): ImageMap = images.mergedWith(customImages)
+
+    /** Same contract as [resolvedImages], one level up: the hub's tags plus ours, deduplicated.
+     *  Hub order first — the local list is an addition, not a reordering. */
+    fun resolvedTags(): List<String> = (tags + customTags).distinct()
 
     companion object {
         const val DEFAULT_RTP = 96.0

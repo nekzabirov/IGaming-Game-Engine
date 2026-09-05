@@ -25,6 +25,8 @@ service CasinoProviderService {
   rpc Batch(BatchCasinoProviderQuery) returns (BatchCasinoProviderQuery.Result);
 
   rpc UpdateImage(UpdateCasinoProviderImageCommand) returns (Empty);
+
+  rpc UpdateTags(UpdateCasinoProviderTagsCommand) returns (Empty);
 }
 
 // ---------------------------------------------------------------------------
@@ -59,6 +61,15 @@ message UpdateCasinoProviderImageCommand {
 
   // Full public URL of the image; stored verbatim as the map value for `key`.
   string url = 5;
+}
+
+// Replaces the LOCAL tag list — see CasinoProviderDto.tags, which is already the merged result of
+// the hub's synced tags and these. The synced ones are never writable here.
+message UpdateCasinoProviderTagsCommand {
+  string identity = 1;
+
+  // The complete local list to end up with — sending fewer removes the rest.
+  repeated string tags = 2;
 }
 
 // ---------------------------------------------------------------------------

@@ -12,12 +12,13 @@ class FindAllCasinoGameTagQueryHandler : IQueryHandler<FindAllCasinoGameTagQuery
         // Tags live as a denormalized json array per game, so the distinct set is
         // assembled in memory: the scan reads one small column over the catalog,
         // while unnesting the array in SQL would tie the handler to the Postgres
-        // dialect. Only ACTIVE games contribute — a tag no live game carries would
+        // dialect. Local tags (`custom_tags`) are listed alongside the hub's: the filter accepts
+        // either, so the tag directory has to offer both. Only ACTIVE games contribute — a tag no live game carries would
         // produce an empty listing when used as a filter.
         val tags = CasinoGameTable
-            .select(CasinoGameTable.tags)
+            .select(CasinoGameTable.tags, CasinoGameTable.customTags)
             .where { CasinoGameTable.active eq true }
-            .flatMap { it[CasinoGameTable.tags] }
+            .flatMap { it[CasinoGameTable.tags] + it[CasinoGameTable.customTags] }
             .distinct()
             .sorted()
 

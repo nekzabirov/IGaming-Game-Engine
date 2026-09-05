@@ -52,6 +52,7 @@ class CasinoGameRepositoryImpl : ICasinoGameRepository {
                 active = game.active
                 images = game.images.data
                 customImages = game.customImages.data
+                customTags = game.customTags
                 sortOrder = game.order
             }
         } else {
@@ -74,6 +75,7 @@ class CasinoGameRepositoryImpl : ICasinoGameRepository {
                 active = game.active
                 images = game.images.data
                 customImages = game.customImages.data
+                customTags = game.customTags
                 sortOrder = game.order
             }
         }
@@ -114,6 +116,7 @@ class CasinoGameRepositoryImpl : ICasinoGameRepository {
             this[CasinoGameTable.active] = game.active
             this[CasinoGameTable.images] = game.images.data
             this[CasinoGameTable.customImages] = game.customImages.data
+            this[CasinoGameTable.customTags] = game.customTags
             this[CasinoGameTable.sortOrder] = game.order
         }
 
@@ -158,6 +161,15 @@ class CasinoGameRepositoryImpl : ICasinoGameRepository {
                 CasinoGameEntity.find { CasinoGameTable.identity eq identity.value }.firstOrNull()
             ) { CasinoGameNotFoundException() }
             entity.customImages = entity.customImages.toMutableMap().apply { put(key, url) }
+        }
+    }
+
+    override suspend fun setCustomTags(identity: Identity, tags: List<String>) {
+        dbTransaction {
+            val entity = domainRequireNotNull(
+                CasinoGameEntity.find { CasinoGameTable.identity eq identity.value }.firstOrNull()
+            ) { CasinoGameNotFoundException() }
+            entity.customTags = tags.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
         }
     }
 }

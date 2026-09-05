@@ -54,6 +54,7 @@ class LastWinnerQueryHandler : IQueryHandler<LastWinnerQuery, Page<LastWin>> {
                 CasinoGameTable.active,
                 CasinoGameTable.images,
                 CasinoGameTable.customImages,
+                CasinoGameTable.customTags,
                 CasinoGameTable.sortOrder,
                 CasinoProviderTable.identity,
                 CasinoProviderTable.name,
@@ -63,6 +64,7 @@ class LastWinnerQueryHandler : IQueryHandler<LastWinnerQuery, Page<LastWin>> {
                 CasinoProviderTable.active,
                 CasinoProviderTable.blockedCountry,
                 CasinoProviderTable.tags,
+                CasinoProviderTable.customTags,
             )
             .where {
                 // A lost round settles as a zero-amount SETTLE — it is a settlement, not a win,

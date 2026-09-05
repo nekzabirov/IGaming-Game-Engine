@@ -19,6 +19,7 @@ object CasinoProviderMapper {
         active = active,
         blockedCountry = blockedCountry.map { Country(it) },
         tags = tags,
+        customTags = customTags,
     )
 
     fun ResultRow.toCasinoProvider(): CasinoProvider = CasinoProvider(
@@ -30,5 +31,6 @@ object CasinoProviderMapper {
         active = this[CasinoProviderTable.active],
         blockedCountry = this[CasinoProviderTable.blockedCountry].map { Country(it) },
         tags = this[CasinoProviderTable.tags],
+        customTags = this[CasinoProviderTable.customTags],
     )
 }

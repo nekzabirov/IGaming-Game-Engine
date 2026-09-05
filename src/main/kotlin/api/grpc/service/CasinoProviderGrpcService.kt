@@ -5,6 +5,7 @@ import api.grpc.mapper.CasinoProviderProtoMapper.toProto
 import application.Bus
 import application.command.provider.SaveCasinoProviderCommand
 import application.command.provider.SetCasinoProviderImageCommand
+import application.command.provider.SetCasinoProviderTagsCommand
 import com.nekgamebling.game.v1.BatchCasinoProviderQueryKt
 import com.nekgamebling.game.v1.Empty
 import com.nekgamebling.game.v1.FindAllCasinoProviderQueryKt
@@ -12,6 +13,7 @@ import com.nekgamebling.game.v1.FindAllCasinoProviderTagQueryKt
 import com.nekgamebling.game.v1.FindCasinoProviderQueryKt
 import com.nekgamebling.game.v1.CasinoProviderServiceGrpcKt
 import com.nekgamebling.game.v1.UpdateCasinoProviderImageCommand
+import com.nekgamebling.game.v1.UpdateCasinoProviderTagsCommand
 import domain.exception.notfound.CasinoProviderNotFoundException
 import domain.vo.Country
 import domain.vo.Identity
@@ -100,6 +102,16 @@ class CasinoProviderGrpcService(
                 identity = Identity(request.identity),
                 key = request.key,
                 url = request.url,
+            )
+        )
+        Empty.getDefaultInstance()
+    }
+
+    override suspend fun updateTags(request: UpdateCasinoProviderTagsCommand): Empty = handleGrpcCall {
+        bus(
+            SetCasinoProviderTagsCommand(
+                identity = Identity(request.identity),
+                tags = request.tagsList,
             )
         )
         Empty.getDefaultInstance()

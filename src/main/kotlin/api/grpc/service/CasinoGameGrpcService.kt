@@ -20,6 +20,7 @@ import application.query.game.FindCasinoGameQuery
 import application.query.game.GetCasinoGameDemoUrlQuery
 import application.command.game.RemoveCasinoGameFavouriteCommand
 import application.command.game.SetCasinoGameImageCommand
+import application.command.game.SetCasinoGameTagsCommand
 import com.nekgamebling.game.v1.BatchCasinoGameQueryKt
 import com.nekgamebling.game.v1.Empty
 import com.nekgamebling.game.v1.FindAllCasinoGameTagQueryKt
@@ -31,6 +32,7 @@ import com.nekgamebling.game.v1.OpenDemoQuery
 import com.nekgamebling.game.v1.OpenDemoQueryKt
 import com.nekgamebling.game.v1.PlayCasinoGameCommandKt
 import com.nekgamebling.game.v1.UpdateCasinoGameImageCommand
+import com.nekgamebling.game.v1.UpdateCasinoGameTagsCommand
 import domain.exception.badrequest.UnspecifiedRtpTypeException
 import domain.exception.notfound.CasinoGameNotFoundException
 import domain.vo.Amount
@@ -142,6 +144,16 @@ class CasinoGameGrpcService(
                 identity = Identity(request.identity),
                 key = request.key,
                 url = request.url,
+            )
+        )
+        Empty.getDefaultInstance()
+    }
+
+    override suspend fun updateTags(request: UpdateCasinoGameTagsCommand): Empty = handleGrpcCall {
+        bus(
+            SetCasinoGameTagsCommand(
+                identity = Identity(request.identity),
+                tags = request.tagsList,
             )
         )
         Empty.getDefaultInstance()

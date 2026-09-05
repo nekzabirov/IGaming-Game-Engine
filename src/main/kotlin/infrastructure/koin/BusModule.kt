@@ -14,8 +14,10 @@ import application.command.game.PlayCasinoGameCommand
 import application.command.game.RemoveCasinoGameFavouriteCommand
 import application.command.game.SaveCasinoGameCommand
 import application.command.game.SetCasinoGameImageCommand
+import application.command.game.SetCasinoGameTagsCommand
 import application.command.provider.SaveCasinoProviderCommand
 import application.command.provider.SetCasinoProviderImageCommand
+import application.command.provider.SetCasinoProviderTagsCommand
 import application.command.round.CloseRoundCommand
 import application.command.round.PlaceSpinCommand
 import application.command.round.ReopenRoundCommand
@@ -52,6 +54,7 @@ import infrastructure.handler.collection.RemoveCollectionCasinoGameCommandHandle
 import infrastructure.handler.collection.SaveCollectionCommandHandler
 import infrastructure.handler.collection.UpdateCollectionCasinoGameOrderCommandHandler
 import infrastructure.handler.common.SetImageCommandHandler
+import infrastructure.handler.common.SetTagsCommandHandler
 import infrastructure.handler.freespin.CancelFreespinCommandHandler
 import infrastructure.handler.freespin.CreateFreespinCommandHandler
 import infrastructure.handler.freespin.GetFreespinPresetsQueryHandler
@@ -95,6 +98,7 @@ import org.koin.dsl.module
 val busModule = module {
     single<Bus> {
         val setImageHandler = get<SetImageCommandHandler>()
+        val setTagsHandler = get<SetTagsCommandHandler>()
 
         BusImpl(
             commandHandlers = mapOf(
@@ -108,6 +112,7 @@ val busModule = module {
                 PlayCasinoGameCommand::class.java to get<PlayCasinoGameCommandHandler>(),
                 SaveCasinoGameCommand::class.java to get<SaveCasinoGameCommandHandler>(),
                 SetCasinoGameImageCommand::class.java to setImageHandler,
+                SetCasinoGameTagsCommand::class.java to setTagsHandler,
                 AddCasinoGameFavouriteCommand::class.java to get<AddCasinoGameFavouriteCommandHandler>(),
                 RemoveCasinoGameFavouriteCommand::class.java to get<RemoveCasinoGameFavouriteCommandHandler>(),
                 // Freespin
@@ -116,6 +121,7 @@ val busModule = module {
                 // CasinoProvider
                 SaveCasinoProviderCommand::class.java to get<SaveCasinoProviderCommandHandler>(),
                 SetCasinoProviderImageCommand::class.java to setImageHandler,
+                SetCasinoProviderTagsCommand::class.java to setTagsHandler,
                 // Collection
                 SaveCollectionCommand::class.java to get<SaveCollectionCommandHandler>(),
                 SetCollectionImageCommand::class.java to setImageHandler,

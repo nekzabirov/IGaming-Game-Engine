@@ -13,6 +13,6 @@ object CasinoProviderProtoMapper {
         order = this@toProto.order
         active = this@toProto.active
         blockedCountry.addAll(this@toProto.blockedCountry.map { it.value })
-        tags.addAll(this@toProto.tags)
+        tags.addAll(this@toProto.resolvedTags())
     }
 }

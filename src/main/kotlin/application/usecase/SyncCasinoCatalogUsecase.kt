@@ -16,8 +16,8 @@ import org.slf4j.LoggerFactory
  * One call, the whole catalog: the hub already resolved provider matching and deduplication on
  * its own side (`docs/` — there is no fuzzy matcher here any more). Every field the hub reports
  * (`images`, `tags`, every former-variant field, `rtp`) is overwritten on every run; `customImages`
- * is a LOCAL override the sync never touches. Nothing is deleted — a game that dropped out of the
- * feed simply stops being refreshed.
+ * and `customTags` are LOCAL overrides the sync never touches. Nothing is deleted — a game that
+ * dropped out of the feed simply stops being refreshed.
  */
 class SyncCasinoCatalogUsecase(
     private val gameHubClient: GameHubClient,
@@ -61,6 +61,7 @@ class SyncCasinoCatalogUsecase(
         active = existing?.active ?: true,
         blockedCountry = existing?.blockedCountry ?: emptyList(),
         tags = tagsList,
+        customTags = existing?.customTags ?: emptyList(),
     )
 
     private fun Gateway.Game.toDomain(provider: CasinoProvider, existing: CasinoGame?): CasinoGame = CasinoGame(
@@ -71,6 +72,9 @@ class SyncCasinoCatalogUsecase(
         bonusBetEnable = existing?.bonusBetEnable ?: true,
         bonusWageringEnable = existing?.bonusWageringEnable ?: true,
         tags = tagsList,
+        // Local editorial tags are ours alone: `tags` above is overwritten wholesale every run, so
+        // anything curated here (lobby rails, promos) would not survive there.
+        customTags = existing?.customTags ?: emptyList(),
         // The hub reports `optional` — absent means unmeasured this window, never 0. Keep the
         // last known value rather than blanking it out.
         rtp = if (hasRtp()) rtp else existing?.rtp,

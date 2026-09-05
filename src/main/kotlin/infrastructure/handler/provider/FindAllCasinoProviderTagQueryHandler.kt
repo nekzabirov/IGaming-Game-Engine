@@ -12,9 +12,9 @@ class FindAllCasinoProviderTagQueryHandler : IQueryHandler<FindAllCasinoProvider
         // Same in-memory distinct as FindAllCasinoGameTagQueryHandler: the provider
         // catalog is tiny and the json array unnest would be dialect-specific.
         val tags = CasinoProviderTable
-            .select(CasinoProviderTable.tags)
+            .select(CasinoProviderTable.tags, CasinoProviderTable.customTags)
             .where { CasinoProviderTable.active eq true }
-            .flatMap { it[CasinoProviderTable.tags] }
+            .flatMap { it[CasinoProviderTable.tags] + it[CasinoProviderTable.customTags] }
             .distinct()
             .sorted()
 

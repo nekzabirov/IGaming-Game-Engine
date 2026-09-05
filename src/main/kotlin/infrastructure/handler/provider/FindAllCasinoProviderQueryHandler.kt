@@ -78,9 +78,13 @@ class FindAllCasinoProviderQueryHandler : IQueryHandler<FindAllCasinoProviderQue
                 ))
             }
 
+            // Hub tags and local ones are searched together — see CasinoGameFilterCondition.
             if (query.inTags.isNotEmpty()) {
                 add(query.inTags.map { tag ->
-                    Op.build { CasinoProviderTable.tags.castTo<String>(TextColumnType()) like "%\"$tag\"%" }
+                    Op.build { CasinoProviderTable.tags.castTo<String>(TextColumnType()) like "%\"$tag\"%" } or
+                        Op.build {
+                            CasinoProviderTable.customTags.castTo<String>(TextColumnType()) like "%\"$tag\"%"
+                        }
                 }.reduce { acc, op -> acc or op })
             }
         }
