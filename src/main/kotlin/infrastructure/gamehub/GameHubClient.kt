@@ -1,5 +1,6 @@
 package infrastructure.gamehub
 
+import domain.exception.conflict.CasinoGameUnavailableException
 import domain.exception.conflict.DemoNotSupportedException
 import domain.exception.conflict.FreespinNotSupportedException
 import domain.exception.notfound.CasinoGameNotFoundException
@@ -140,6 +141,9 @@ class GameHubClient(channel: ManagedChannel, config: GameHubConfig) {
             ERROR_NOT_FOUND -> CasinoGameNotFoundException()
             ERROR_NO_ROUTE -> CasinoGameNotRoutedException()
             ERROR_UNSUPPORTED -> FreespinNotSupportedException()
+            // A refusal from the vendor behind the hub, not a hub outage: until this arm existed
+            // the code fell through as INTERNAL and reached the player as a 502.
+            ERROR_VENDOR_REFUSED -> CasinoGameUnavailableException()
             ERROR_UNAUTHENTICATED, ERROR_INTERNAL -> GameHubUnavailableException(e.message)
             else -> e
         }
@@ -155,6 +159,8 @@ class GameHubClient(channel: ManagedChannel, config: GameHubConfig) {
         const val ERROR_NO_ROUTE = "NO_ROUTE"
 
         const val ERROR_UNSUPPORTED = "UNSUPPORTED"
+
+        const val ERROR_VENDOR_REFUSED = "VENDOR_REFUSED"
 
         const val ERROR_UNAUTHENTICATED = "UNAUTHENTICATED"
 
