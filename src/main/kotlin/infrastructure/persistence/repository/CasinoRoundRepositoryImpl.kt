@@ -8,6 +8,7 @@ import domain.repository.ICasinoRoundRepository
 import domain.vo.Currency
 import domain.vo.ExternalCasinoRoundId
 import domain.vo.FreespinId
+import domain.util.ext.InstantExt
 import domain.vo.PlayerId
 import infrastructure.persistence.dbRead
 import infrastructure.persistence.dbTransaction
@@ -78,6 +79,10 @@ class CasinoRoundRepositoryImpl : ICasinoRoundRepository {
             it[CasinoRoundTable.playerId] = playerId.value
             it[CasinoRoundTable.game] = gameEntityId
             it[CasinoRoundTable.currency] = currency.value
+            // Колонка NOT NULL и без значения по умолчанию, а этот путь — единственный, которым
+            // раунд заводится по колбэку вендора: без строки здесь КАЖДАЯ первая нога раунда
+            // падала на ограничении, и оператор отвечал хабу INTERNAL.
+            it[CasinoRoundTable.createdAt] = InstantExt.now()
         }.resultedValues!!.single()
 
         CasinoRoundEntity.wrapRow(row).load(*roundChain).toDomain()
