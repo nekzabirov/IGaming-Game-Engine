@@ -1,66 +1,37 @@
 # Configuration
 
-## Environment variables
+Every variable is read once in `AppConfig.kt`.
 
 | Variable | Description | Default |
 | --- | --- | --- |
-| `HTTP_PORT` | HTTP server port | `8080` |
-| `GRPC_PORT` | gRPC server port | `5050` |
-| `DATABASE_URL` | JDBC PostgreSQL URL | `jdbc:postgresql://localhost:5432/game_db` |
-| `DATABASE_USER` | Database username | — |
-| `DATABASE_PASSWORD` | Database password | — |
-| `REDIS_HOST` | Redis host | `localhost` |
-| `REDIS_PORT` | Redis port | `6379` |
-| `RABBITMQ_URL` | RabbitMQ AMQP URL | `amqp://guest:guest@localhost:5672` |
-| `RABBITMQ_EXCHANGE` | RabbitMQ exchange name | `casino-engine` |
+| `HTTP_PORT` | HTTP port (`/health` only) | `8080` |
+| `GRPC_PORT` | gRPC port | `5050` |
+| `DB_URL` | JDBC base URL, without the database name | `jdbc:postgresql://localhost:5432` |
+| `DATABASE_NAME` | Database name, appended to `DB_URL` | `casino` |
+| `DB_USERNAME` / `DB_PASSWORD` | Database credentials | `user` / `password` |
+| `DB_POOL_SIZE` | Hikari pool size; also caps the JDBC dispatcher | `10` |
+| `PAM_GRPC_HOST` / `PAM_GRPC_PORT` | pam-engine (player, wallet, currencies), plaintext | `localhost` / `9090` |
+| `GAMEHUB_GRPC_HOST` / `GAMEHUB_GRPC_PORT` | GameHub GatewayService | `localhost` / `443` |
+| `GAMEHUB_OPERATOR_ID` / `GAMEHUB_OPERATOR_KEY` | Operator pair, sent to the hub and checked on its wallet calls | empty |
+| `GAMEHUB_GRPC_PLAINTEXT` | `true` for a local hub over loopback; prod is TLS | `false` |
+| `REDIS_HOST` / `REDIS_PORT` | Player limits | `localhost` / `6379` |
+| `RABBIT_HOST` / `RABBIT_PORT` / `RABBIT_USER` / `RABBIT_PASSWORD` | Broker | `localhost` / `5672` / `guest` / `guest` |
+| `RABBIT_TLS` | `amqps://` (Amazon MQ) | `false` |
+| `EVENT_EXCHANGE` | Topic exchange for `spin.events` / `round.events` / `session.events` | `crm.exchange` |
+| `FREESPIN_TO_PAYOUT` | Whether this engine credits a free round's win to the wallet | `true` |
 
-Copy `.env.example` to `.env` for local development; production
-deployments should inject these through your orchestrator's secret
-management (Kubernetes secrets, Vault, AWS Secrets Manager, etc.).
+## Entrypoints
 
-## Infrastructure
+| Binary | Purpose |
+| --- | --- |
+| `bin/casino-engine` | server: gRPC + HTTP + RabbitMQ consumer |
+| `bin/sync-catalog` | one-shot catalog sync from GameHub (daily CronJob) |
+| `bin/db-migrate` | creates the database if missing and applies Flyway migrations |
 
-`docker-compose.yml` provisions the local development stack:
-
-| Service | Port(s) | Purpose |
-| --- | --- | --- |
-| PostgreSQL 16 | 5432 | Database |
-| RabbitMQ 3 | 5672, 15672 | Message broker + management UI |
-| Redis 7 | 6379 | Player limits cache |
-
-For production:
-
-- **PostgreSQL** — managed (RDS, Cloud SQL, Aiven) recommended; HA with
-  read replicas if you need analytics queries on the same dataset
-- **RabbitMQ** — clustered for HA; consider CloudAMQP or Amazon MQ
-- **Redis** — single primary is fine for player limits (TTL-bounded);
-  upgrade to cluster only if you scale past one node
-
-## Build
+## Local development
 
 ```bash
-./gradlew build          # Build (also runs installDist)
-./gradlew test           # Run all tests
-./gradlew run            # Run application (HTTP :8080, gRPC :5050)
-./gradlew runSync        # Run aggregator sync CLI locally
-./gradlew generateProto  # Generate gRPC stubs from proto files
-./gradlew grpcClientJar  # Build gRPC client JAR for consumers
+docker compose up -d postgres rabbitmq redis
+./gradlew runMigrate
+./gradlew run
 ```
-
-## Docker
-
-```bash
-./gradlew build          # Creates build/distributions/casino-engine-*.tar
-docker-compose up -d     # Starts infra + app + sync job
-```
-
-## Two entrypoints
-
-| Entrypoint | Command | Purpose |
-| --- | --- | --- |
-| Main server | `/app/bin/casino-engine` | HTTP + gRPC + RabbitMQ consumers |
-| Sync job | `/app/bin/sync-aggregators` | One-shot game sync from all active aggregators |
-
-The sync job is typically run as a cron / Kubernetes CronJob on a
-schedule (every few hours) to keep the game catalogue up to date with
-aggregators.

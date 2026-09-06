@@ -2,15 +2,14 @@
 kotlin = "2.0.21"
 ktor = "3.0.3"
 exposed = "0.57.0"
-koin = "4.0.3"
 grpc = "1.68.2"
 grpc-kotlin = "1.4.1"
 protobuf = "4.29.2"
 logback = "1.4.14"
-h2 = "2.3.232"
 postgresql = "42.7.4"
 hikari = "5.1.0"
-rabbitmq = "1.3.6"
+amqp-client = "5.24.0"
+kotlinx-serialization = "1.7.3"
 kotlinx-datetime = "0.6.1"
 kotlinx-coroutines = "1.10.1"
 lettuce = "6.5.3.RELEASE"
@@ -23,20 +22,9 @@ flyway = "10.20.1"
 # Ktor Server
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
 ktor-server-cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
-ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
-ktor-server-call-logging = { module = "io.ktor:ktor-server-call-logging-jvm", version.ref = "ktor" }
-ktor-server-double-receive = { module = "io.ktor:ktor-server-double-receive", version.ref = "ktor" }
-ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
 
-# Ktor Client
-ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
-ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
-ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
-ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
-ktor-client-websockets = { module = "io.ktor:ktor-client-websockets", version.ref = "ktor" }
-
-# Ktor Serialization
-ktor-serialization-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+# Serialization (event wire + JSON columns)
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 
 # Exposed ORM
 exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
@@ -46,13 +34,8 @@ exposed-dao = { module = "org.jetbrains.exposed:exposed-dao", version.ref = "exp
 exposed-json = { module = "org.jetbrains.exposed:exposed-json", version.ref = "exposed" }
 
 # Database Drivers
-h2 = { module = "com.h2database:h2", version.ref = "h2" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
 hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikari" }
-
-# Koin DI
-koin-ktor = { module = "io.insert-koin:koin-ktor", version.ref = "koin" }
-koin-logger-slf4j = { module = "io.insert-koin:koin-logger-slf4j", version.ref = "koin" }
 
 # Logging
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
@@ -61,7 +44,7 @@ logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 
 # RabbitMQ
-rabbitmq = { module = "io.github.damirdenis-tudor:ktor-server-rabbitmq", version.ref = "rabbitmq" }
+amqp-client = { module = "com.rabbitmq:amqp-client", version.ref = "amqp-client" }
 
 # gRPC
 grpc-netty-shaded = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc" }
@@ -70,26 +53,6 @@ grpc-kotlin-stub = { module = "io.grpc:grpc-kotlin-stub", version.ref = "grpc-ko
 grpc-stub = { module = "io.grpc:grpc-stub", version.ref = "grpc" }
 grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
 protobuf-kotlin = { module = "com.google.protobuf:protobuf-kotlin", version.ref = "protobuf" }
-
-# Protobuf Compiler
-protoc = { module = "com.google.protobuf:protoc", version.ref = "protobuf" }
-grpc-protoc-gen-java = { module = "io.grpc:protoc-gen-grpc-java", version.ref = "grpc" }
-grpc-protoc-gen-kotlin = { module = "io.grpc:protoc-gen-grpc-kotlin", version.ref = "grpc-kotlin" }
-
-# Testing
-kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
-mockk = { module = "io.mockk:mockk", version = "1.13.13" }
-kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version = "1.9.0" }
-kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest" }
-kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
-kotest-property = { module = "io.kotest:kotest-property", version.ref = "kotest" }
-junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit" }
-junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version = "1.11.4" }
-testcontainers-core = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
-testcontainers-postgresql = { module = "org.testcontainers:postgresql", version.ref = "testcontainers" }
-testcontainers-junit = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
-
-# AWS SDK for Kotlin
 
 # Redis
 lettuce = { module = "io.lettuce:lettuce-core", version.ref = "lettuce" }
@@ -100,54 +63,22 @@ kotlinx-coroutines-reactive = { module = "org.jetbrains.kotlinx:kotlinx-coroutin
 flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
 flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
 
+# Testing
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+mockk = { module = "io.mockk:mockk", version = "1.13.13" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version = "1.9.0" }
+kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest" }
+kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version = "1.11.4" }
+testcontainers-core = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
+testcontainers-postgresql = { module = "org.testcontainers:postgresql", version.ref = "testcontainers" }
+
 [bundles]
-ktor-server = [
-    "ktor-server-core",
-    "ktor-server-cio",
-    "ktor-server-content-negotiation",
-    "ktor-server-call-logging",
-    "ktor-server-double-receive"
-]
-ktor-client = [
-    "ktor-client-core",
-    "ktor-client-cio",
-    "ktor-client-logging",
-    "ktor-client-content-negotiation",
-    "ktor-client-websockets"
-]
-exposed = [
-    "exposed-core",
-    "exposed-dao",
-    "exposed-jdbc",
-    "exposed-datetime",
-    "exposed-json"
-]
-koin = [
-    "koin-ktor",
-    "koin-logger-slf4j"
-]
-grpc = [
-    "grpc-netty-shaded",
-    "grpc-services",
-    "grpc-kotlin-stub",
-    "grpc-stub",
-    "grpc-protobuf"
-]
-testing = [
-    "ktor-server-test-host",
-    "kotlin-test",
-    "mockk",
-    "kotlinx-coroutines-test",
-    "kotest-runner-junit5",
-    "kotest-assertions-core",
-    "kotest-property",
-    "junit-jupiter-api",
-]
-testcontainers = [
-    "testcontainers-core",
-    "testcontainers-postgresql",
-    "testcontainers-junit",
-]
+ktor-server = ["ktor-server-core", "ktor-server-cio"]
+exposed = ["exposed-core", "exposed-dao", "exposed-jdbc", "exposed-datetime", "exposed-json"]
+grpc = ["grpc-netty-shaded", "grpc-services", "grpc-kotlin-stub", "grpc-stub", "grpc-protobuf"]
+testing = ["kotlin-test", "mockk", "kotlinx-coroutines-test", "kotest-runner-junit5", "kotest-assertions-core"]
+testcontainers = ["testcontainers-core", "testcontainers-postgresql"]
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

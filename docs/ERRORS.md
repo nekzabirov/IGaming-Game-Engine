@@ -1,63 +1,35 @@
 # Error handling
 
-Casino Engine uses typed domain exceptions mapped to gRPC status codes.
-The `x-exception-name` metadata header carries the exception class name
-for downstream error identification.
-
-## Exception hierarchy
+Domain exceptions (`errors/Errors.kt`) are mapped by category to a gRPC status by
+`grpc/Grpc.kt#handleGrpcCall`; the class simple name travels in the `x-exception-name` trailer.
 
 | Category | gRPC status | Exceptions |
 | --- | --- | --- |
-| `NotFoundException` | `NOT_FOUND` | `SessionNotFoundException`, `RoundNotFoundException`, `GameNotFoundException`, `CollectionNotFoundException` |
-| `BadRequestException` | `INVALID_ARGUMENT` | `BlankSessionTokenException`, `BlankLocaleException`, `BlankCurrencyException`, `BlankPlayerIdException`, `InvalidAmountException`, `EmptyIdentityException`, `InvalidIdentityFormatException`, `SpinReferenceRequiredException`, `UnsupportedLocaleException`, `UnsupportedPlatformException` |
-| `ConflictException` | `ALREADY_EXISTS` | `RoundAlreadyFinishedException`, `GameNotActiveException`, `ProviderNotActiveException`, `AggregatorNotActiveException`, `FreespinNotSupportedException` |
+| `NotFoundException` | `NOT_FOUND` | `CasinoGameNotFoundException`, `CasinoGameNotRoutedException`, `CasinoProviderNotFoundException`, `CasinoRoundNotFoundException`, `CollectionNotFoundException` |
+| `BadRequestException` | `INVALID_ARGUMENT` | `Blank*Exception`, `EmptyIdentityException`, `InvalidIdentityFormatException`, `InvalidAmountException`, `InvalidDateFormatException`, `UnspecifiedRtpTypeException`, `UnsupportedPlatformException` |
+| `ConflictException` | `ALREADY_EXISTS` | `CasinoGameNotActiveException`, `CasinoGameUnavailableException`, `CasinoProviderNotActiveException`, `CasinoRoundAlreadyFinishedException`, `FreespinNotSupportedException`, `SpinAlreadyExistsException` |
 | `ForbiddenException` | `PERMISSION_DENIED` | `InsufficientBalanceException`, `MaxPlaceSpinException` |
-| `SystemException` | `INTERNAL` | Internal / unexpected errors |
+| `SystemException` | `INTERNAL` | `GameHubUnavailableException` |
 
-## Helper functions
+Anything else is `INTERNAL` with a generic description.
 
-```kotlin
-// Throws categorised DomainException if value is null
-domainRequireNotNull(value) { GameNotFoundException() }
+## The hub's wallet calls
 
-// Throws categorised DomainException if condition is false
-domainRequire(round.isActive) { RoundAlreadyFinishedException() }
-```
-
-These keep error handling concise without dropping type information.
+`gamehub.v1.WebhookService` answers with a machine-readable `x-error-code` trailer instead:
+`INSUFFICIENT_FUNDS` and `LIMIT_EXCEEDED` (`FAILED_PRECONDITION`), `PLAYER_NOT_FOUND`
+(`UNAUTHENTICATED` for bad credentials, `NOT_FOUND` for an unknown round), `INTERNAL` for an
+unknown outcome — the one code that starts a vendor rollback cycle, never used for a refusal.
 
 ## Client-side handling
-
-Downstream services using the published gRPC client JAR can dispatch
-on `x-exception-name`:
 
 ```kotlin
 try {
     gameClient.play(command)
 } catch (e: StatusRuntimeException) {
-    val exceptionName = e.trailers?.get(
-        Metadata.Key.of("x-exception-name", Metadata.ASCII_STRING_MARSHALLER)
-    )
-    when (exceptionName) {
-        "InsufficientBalanceException" -> showDepositPrompt()
-        "MaxPlaceSpinException" -> showLimitWarning()
-        "GameNotActiveException" -> showAlternativeGames()
+    when (e.trailers?.get(Metadata.Key.of("x-exception-name", Metadata.ASCII_STRING_MARSHALLER))) {
+        "CasinoGameUnavailableException" -> showGameUnavailable()
+        "CasinoGameNotActiveException" -> showAlternativeGames()
         else -> showGenericError()
     }
 }
 ```
-
-The status code alone is often enough — fall back to the exception name
-only when you need to distinguish errors that share a status code (e.g.
-`InsufficientBalanceException` vs `MaxPlaceSpinException`, both
-`PERMISSION_DENIED`).
-
-## Logging
-
-Domain exceptions are expected outcomes — they're logged at `INFO` level
-with structured context (player, session, transaction). Only
-`SystemException` and uncaught throwables are logged at `ERROR`.
-
-This keeps `ERROR`-level dashboards focused on actual bugs and
-infrastructure issues rather than expected business outcomes like
-insufficient balance.

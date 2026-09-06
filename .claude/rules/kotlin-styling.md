@@ -40,22 +40,11 @@ data class Pageable(
 )
 ```
 
-## Value Objects (`@JvmInline value class`)
+## Input validation
 
-- Use `@JvmInline value class` for domain primitives (Identity, Currency, Locale, CasinoSessionToken)
-- Add `@Serializable` annotation when the VO will be serialized
-- Validate in `init` block with `require()`
-- Annotations order: `@Serializable`, then `@JvmInline`, then `value class`
-
-```kotlin
-@Serializable
-@JvmInline
-value class Currency(val value: String) {
-    init {
-        require(value.isNotBlank()) { "Currency code cannot be blank" }
-    }
-}
-```
+- No value classes: identifiers and amounts are plain `String`/`Long`, checked once at the API
+  boundary with `errors.Valid.*` (`Valid.identity(raw)`, `Valid.amount(raw)`), which throw the
+  categorised `DomainException` for the field
 
 ## KDoc Comments
 

@@ -18,7 +18,7 @@ kotlin {
 }
 
 application {
-    mainClass.set("MainKt")
+    mainClass.set("ApplicationKt")
 }
 
 // Task to run the sync aggregators CLI
@@ -74,53 +74,33 @@ tasks.named("build") {
 }
 
 dependencies {
-    // Ktor Server
     implementation(libs.bundles.ktor.server)
-
-    // Ktor Client
-    implementation(libs.bundles.ktor.client)
-
-    // Serialization
-    implementation(libs.ktor.serialization.json)
-
-    // Database - Exposed ORM
-    implementation(libs.bundles.exposed)
-    implementation(libs.h2)
-    implementation(libs.postgresql)
-    implementation(libs.hikaricp)
-
-    // Dependency Injection - Koin
-    implementation(libs.bundles.koin)
-
-    // Logging
-    implementation(libs.logback)
-
-    // DateTime
+    implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.datetime)
 
-    // Messaging - RabbitMQ
-    implementation(libs.rabbitmq)
-
-    // Redis
-    implementation(libs.lettuce)
-    // Required at runtime by Lettuce's coroutines API (RedisCoroutinesCommands).
-    implementation(libs.kotlinx.coroutines.reactive)
-
-    // Flyway DB migrations
+    // Database - Exposed ORM over HikariCP; Flyway owns the schema
+    implementation(libs.bundles.exposed)
+    implementation(libs.postgresql)
+    implementation(libs.hikaricp)
     implementation(libs.flyway.core)
     implementation(libs.flyway.database.postgresql)
 
-    // gRPC
+    // Messaging - RabbitMQ (events out, one consumer in)
+    implementation(libs.amqp.client)
+
+    // Redis - player limits
+    implementation(libs.lettuce)
+    implementation(libs.kotlinx.coroutines.reactive)
+
+    // gRPC - our own services + GameHub client
     implementation(libs.bundles.grpc)
     implementation(libs.protobuf.kotlin)
 
-    // Sibling gRPC client published to GitHub Packages. One artifact covers the player
-    // account, the wallet ledger and the currency registry — pam-engine absorbed the
-    // retired user-engine and wallet-engine.
+    // pam-engine: player account, wallet ledger and currency registry in one artifact
     implementation("com.nekgambling:pam-grpc-client:1.0.0")
 
+    implementation(libs.logback)
 
-    // Testing
     testImplementation(libs.bundles.testing)
     testImplementation(libs.bundles.testcontainers)
     testRuntimeOnly(libs.junit.platform.launcher)

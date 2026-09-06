@@ -44,7 +44,7 @@ platform.
 | You are... | What this gives you |
 | --- | --- |
 | **A casino operator** running your own platform | A production-grade aggregator integration layer you can drop into your stack. No vendor lock-in, no rev share, no licence fees. |
-| **A platform engineer** evaluating iGaming infrastructure | A reference implementation of session, bet, round, and freespin mechanics in Kotlin/Ktor with hexagonal architecture. |
+| **A platform engineer** evaluating iGaming infrastructure | A reference implementation of launch, bet, round, and freespin mechanics in Kotlin/Ktor. |
 | **A startup** thinking about launching a casino | A way to validate the technical model before committing. When you're ready to go live, [1638.cloud](https://1638.cloud) handles the licence, payments, KYC, and the rest. |
 
 ---
@@ -60,8 +60,8 @@ platform.
   external ID, finish lifecycle
 - **Event-driven** — RabbitMQ publisher for session, spin, round, and game
   events
-- **Hexagonal architecture** — clean separation of domain, application,
-  infrastructure
+- **Flat Ktor application** — `plugins/`, `db/` (Exposed entities are the model),
+  `services/`, `grpc/`; no layers to cross, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - **gRPC API** — `game.v1` protocol with 5 services and published client JAR
 - **Pluggable adapters** — Wallet, PlayerLimit, File, Currency, Event ports
   you implement for your stack
@@ -77,7 +77,7 @@ git clone https://github.com/nekzabirov/IGaming-Game-Engine.git
 cd IGaming-Game-Engine
 
 # 2. Start infrastructure
-docker-compose up -d postgres rabbitmq redis minio minio-init
+docker compose up -d postgres rabbitmq redis
 
 # 3. Configure
 cp .env.example .env

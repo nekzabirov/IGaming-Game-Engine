@@ -7,8 +7,14 @@
         </encoder>
     </appender>
 
-    <root level="INFO">
+    <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>8192</queueSize>
+        <discardingThreshold>0</discardingThreshold>
         <appender-ref ref="CONSOLE"/>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="ASYNC"/>
     </root>
 
     <logger name="io.netty" level="WARN"/>
@@ -16,14 +22,8 @@
     <logger name="io.grpc.netty" level="WARN"/>
     <logger name="com.zaxxer.hikari" level="WARN"/>
     <logger name="io.lettuce" level="WARN"/>
-    <logger name="org.koin" level="WARN"/>
     <logger name="Exposed" level="WARN"/>
     <logger name="org.jetbrains.exposed" level="WARN"/>
     <logger name="org.flywaydb" level="WARN"/>
-    <logger name="io.github.damir.denis.tudor.ktor.server.rabbitmq" level="WARN"/>
-
-    <logger name="com.nekgamebling" level="INFO"/>
-    <logger name="application" level="INFO"/>
-    <logger name="infrastructure" level="INFO"/>
 
 </configuration>

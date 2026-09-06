@@ -10,14 +10,14 @@ You have access to `Bash` for running `grpcurl` commands.
 
 - **Server**: `localhost:5050` (plaintext, no TLS)
 - **Proto import path**: `src/main/proto` (relative to project root)
-- **Proto files are at**: `game/v1/service/game.service.proto`, `game/v1/service/collection.service.proto`
+- **Proto files are at**: `game/v1/service/casino_game.service.proto`, `game/v1/service/collection.service.proto`
 - **Package**: `game.v1`
 
 All `grpcurl` commands must use:
 ```
 grpcurl -plaintext \
   -import-path src/main/proto \
-  -proto game/v1/service/game.service.proto \
+  -proto game/v1/service/casino_game.service.proto \
   -proto game/v1/service/collection.service.proto \
   localhost:5050 <method>
 ```
@@ -26,13 +26,13 @@ grpcurl -plaintext \
 
 ### Step 1: Fetch all games
 
-Call `game.v1.GameService/Batch` with an empty body `{}`:
+Call `game.v1.CasinoGameService/FindAll` with an empty body `{}`:
 
 ```bash
 grpcurl -plaintext \
   -import-path src/main/proto \
-  -proto game/v1/service/game.service.proto \
-  localhost:5050 game.v1.GameService/Batch
+  -proto game/v1/service/casino_game.service.proto \
+  localhost:5050 game.v1.CasinoGameService/FindAll
 ```
 
 This returns JSON with:
