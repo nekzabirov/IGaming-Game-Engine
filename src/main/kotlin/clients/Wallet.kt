@@ -51,6 +51,9 @@ class PamWallet(config: PamConfig) : Wallet {
         .keepAliveTimeout(10, TimeUnit.SECONDS)
         .keepAliveWithoutCalls(true)
         .build()
+        // Resolve and connect now, at boot, so the first money call of a fresh pod does not pay
+        // for it while the hub is waiting.
+        .also { it.getState(true) }
 
     override suspend fun balance(playerId: String, currency: String): Balance = guarded {
         account(playerId, currency).toBalance(currency)
@@ -125,6 +128,8 @@ class PamWallet(config: PamConfig) : Wallet {
         /** The ledger category every casino and sportbook movement has always been recorded under. */
         const val TYPE = "SPIN"
 
-        const val CALL_TIMEOUT_SECONDS = 30L
+        /** Shorter than the hub's own patience for an operator call, so a stuck wallet answers
+         *  INTERNAL (and is retried under the same leg id) instead of timing out on the hub's side. */
+        const val CALL_TIMEOUT_SECONDS = 6L
     }
 }

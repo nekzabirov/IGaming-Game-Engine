@@ -77,6 +77,7 @@ class GameHubClient(config: GameHubConfig) : GameHub {
         .keepAliveTimeout(10, TimeUnit.SECONDS)
         .keepAliveWithoutCalls(true)
         .build()
+        .also { it.getState(true) }
 
     private val stub = GatewayServiceGrpcKt.GatewayServiceCoroutineStub(channel)
         .withInterceptors(MetadataUtils.newAttachHeadersInterceptor(authHeaders(config)))

@@ -7,6 +7,7 @@ import io.lettuce.core.RedisURI
 import io.lettuce.core.api.coroutines
 import io.lettuce.core.api.coroutines.RedisCoroutinesCommands
 import org.slf4j.LoggerFactory
+import java.time.Duration
 
 /** The per-player cap on a single bet, set at launch and worn down by every PLACE. */
 interface PlayerLimits {
@@ -31,7 +32,13 @@ interface PlayerLimits {
 class RedisPlayerLimits(config: RedisConfig) : PlayerLimits {
 
     private val client: RedisClient = RedisClient.create(
-        RedisURI.builder().withHost(config.host).withPort(config.port).build(),
+        RedisURI.builder()
+            .withHost(config.host)
+            .withPort(config.port)
+            // A limit read sits on the money path: a Redis that does not answer must fail the leg
+            // quickly (the hub retries), not hold it for Lettuce's default minute.
+            .withTimeout(Duration.ofSeconds(COMMAND_TIMEOUT_SECONDS))
+            .build(),
     )
 
     private val commands: RedisCoroutinesCommands<String, String> = client.connect().coroutines()
@@ -50,5 +57,7 @@ class RedisPlayerLimits(config: RedisConfig) : PlayerLimits {
 
     private companion object {
         const val KEY_PREFIX = "player:limit:max_place:"
+
+        const val COMMAND_TIMEOUT_SECONDS = 3L
     }
 }

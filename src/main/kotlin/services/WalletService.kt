@@ -224,7 +224,7 @@ class WalletService(
     private suspend fun move(draft: Draft): Pair<SpinMath.Split, Balance> = coroutineScope {
         val split = async { split(draft) }
 
-        checkLimit(draft)
+        timed("limits", draft) { checkLimit(draft) }
 
         val result = split.await()
 
@@ -235,20 +235,44 @@ class WalletService(
 
         // Awaited before the row is written, and NOT swallowed on failure: nothing here reconciles a
         // movement that did not land. The answer is the wallet's, not the calculator's projection.
-        val balance = wallet.transact(
-            playerId = draft.round.playerId,
-            reference = "spin:${draft.type.name.lowercase()}:${draft.externalId}",
-            currency = draft.round.currency,
-            realAmount = sign * result.real,
-            bonusAmount = sign * result.bonus,
-        )
+        val balance = timed("wallet.transact", draft) {
+            wallet.transact(
+                playerId = draft.round.playerId,
+                reference = "spin:${draft.type.name.lowercase()}:${draft.externalId}",
+                currency = draft.round.currency,
+                realAmount = sign * result.real,
+                bonusAmount = sign * result.bonus,
+            )
+        }
 
         result to balance
     }
 
+    /**
+     * Every remote dependency on the money path, timed. A slow one is named in the log — and so
+     * is one the caller gave up on, which otherwise leaves no trace at all: the hub cancels the
+     * call on its own deadline and the coroutine dies quietly.
+     */
+    private suspend fun <T> timed(what: String, draft: Draft, block: suspend () -> T): T {
+        val startedAt = System.nanoTime()
+        try {
+            return block()
+        } catch (e: CancellationException) {
+            log.warn("Money path cancelled while waiting on {} after {} ms [leg={} type={}]", what, elapsedMs(startedAt), draft.externalId, draft.type)
+            throw e
+        } finally {
+            val elapsed = elapsedMs(startedAt)
+            if (elapsed >= SLOW_DEPENDENCY_MS) {
+                log.warn("Slow money-path dependency: {} took {} ms [leg={} type={}]", what, elapsed, draft.externalId, draft.type)
+            }
+        }
+    }
+
+    private fun elapsedMs(startedAt: Long): Long = (System.nanoTime() - startedAt) / 1_000_000
+
     private suspend fun split(draft: Draft): SpinMath.Split = when (draft.type) {
         SpinType.PLACE -> SpinMath.place(
-            balance = wallet.balance(draft.round.playerId, draft.round.currency),
+            balance = timed("wallet.balance", draft) { wallet.balance(draft.round.playerId, draft.round.currency) },
             amount = draft.amount,
             bonusBetEnabled = draft.round.bonusBetEnabled,
         )
@@ -258,7 +282,8 @@ class WalletService(
         SpinType.ROLLBACK -> {
             val reference = checkNotNull(draft.reference) { "a rollback always names the leg it reverses" }
             if (reference.type == SpinType.SETTLE) {
-                SpinMath.reclaim(wallet.balance(draft.round.playerId, draft.round.currency), reference.realAmount, reference.bonusAmount)
+                val balance = timed("wallet.balance", draft) { wallet.balance(draft.round.playerId, draft.round.currency) }
+                SpinMath.reclaim(balance, reference.realAmount, reference.bonusAmount)
             } else {
                 SpinMath.refund(reference.realAmount, reference.bonusAmount)
             }
@@ -337,6 +362,8 @@ class WalletService(
 
     private companion object {
         const val ROLLBACK_SUFFIX = ":rollback"
+
+        const val SLOW_DEPENDENCY_MS = 2_000L
 
         const val UNIQUE_VIOLATION_SQL_STATE = "23505"
     }

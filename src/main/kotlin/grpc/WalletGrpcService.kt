@@ -159,6 +159,9 @@ private suspend fun <T> handleHubCall(block: suspend () -> T): T =
     } catch (e: HubRefusal) {
         throw e
     } catch (e: CancellationException) {
+        // The hub hung up first (its deadline). Nothing else logs this, and a money call the hub
+        // gave up on is exactly the one to know about.
+        log.warn("Hub cancelled the call before it was answered: {}", e.message)
         throw e
     } catch (e: InsufficientBalanceException) {
         throw hubError(Status.FAILED_PRECONDITION, ERROR_INSUFFICIENT_FUNDS, e.message)
