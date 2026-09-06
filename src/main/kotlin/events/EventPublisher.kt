@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import javax.net.ssl.SSLContext
 
 interface EventPublisher {
 
@@ -29,9 +30,23 @@ object NoOpEventPublisher : EventPublisher {
     override suspend fun publish(event: AppEvent) = Unit
 }
 
-/** The single long-lived connection; the publisher and the consumer each take their own channel. */
+/**
+ * The single long-lived connection; the publisher and the consumer each take their own channel.
+ *
+ * `setUri("amqps://…")` alone turns TLS on with a trust-everything manager. The broker (Amazon MQ)
+ * presents a publicly issued certificate, so the JVM's default trust store verifies it — and the
+ * hostname check catches a redirect to somebody else's broker.
+ */
 fun rabbitConnection(config: RabbitConfig): Connection =
-    ConnectionFactory().apply { setUri(config.uri) }.newConnection()
+    ConnectionFactory()
+        .apply {
+            setUri(config.uri)
+            if (config.tls) {
+                useSslProtocol(SSLContext.getDefault())
+                enableHostnameVerification()
+            }
+        }
+        .newConnection()
 
 /** Declares the shared topic exchange once at startup. */
 fun declareEventExchange(channel: Channel, exchange: String) {
