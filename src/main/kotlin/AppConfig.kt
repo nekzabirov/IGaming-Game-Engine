@@ -1,5 +1,3 @@
-import java.net.URLEncoder
-
 /** Every environment variable the engine reads, resolved once at boot. */
 data class AppConfig(
     val httpPort: Int,
@@ -76,15 +74,7 @@ data class RabbitConfig(
     val user: String,
     val password: String,
     val tls: Boolean,
-) {
-    /** Credentials are percent-encoded: an unescaped `@` in an Amazon MQ password shifts the host. */
-    val uri: String get() {
-        val scheme = if (tls) "amqps" else "amqp"
-        val user = URLEncoder.encode(user, Charsets.UTF_8)
-        val password = URLEncoder.encode(password, Charsets.UTF_8)
-        return "$scheme://$user:$password@$host:$port"
-    }
-}
+)
 
 /**
  * [operatorId]/[operatorKey] are the SAME pair in both directions: sent to the hub's GatewayService,

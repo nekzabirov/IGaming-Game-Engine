@@ -19,8 +19,8 @@ class AppConfigTest : FunSpec({
         AppConfig.fromEnv { if (it == "FREESPIN_TO_PAYOUT") "false" else null }.freespinToPayout shouldBe false
     }
 
-    test("the rabbit uri percent-encodes credentials") {
+    test("rabbit credentials are taken verbatim — an @ in an Amazon MQ password needs no escaping") {
         val config = AppConfig.fromEnv { mapOf("RABBIT_PASSWORD" to "p@ss", "RABBIT_TLS" to "true", "RABBIT_PORT" to "5671")[it] }
-        config.rabbit.uri shouldBe "amqps://guest:p%40ss@localhost:5671"
+        config.rabbit shouldBe RabbitConfig("localhost", 5671, "guest", "p@ss", true)
     }
 })

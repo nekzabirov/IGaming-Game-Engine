@@ -33,14 +33,19 @@ object NoOpEventPublisher : EventPublisher {
 /**
  * The single long-lived connection; the publisher and the consumer each take their own channel.
  *
- * `setUri("amqps://…")` alone turns TLS on with a trust-everything manager. The broker (Amazon MQ)
- * presents a publicly issued certificate, so the JVM's default trust store verifies it — and the
- * hostname check catches a redirect to somebody else's broker.
+ * Deliberately not `setUri("amqps://…")`: that turns TLS on with a trust-everything manager (and
+ * says so in the log on every boot) before anything can be overridden. The broker (Amazon MQ)
+ * presents a publicly issued certificate, so the JVM's default trust store verifies it, and the
+ * hostname check catches a redirect to somebody else's broker. Credentials are set as fields, so
+ * an `@` in an Amazon MQ password needs no escaping either.
  */
 fun rabbitConnection(config: RabbitConfig): Connection =
     ConnectionFactory()
         .apply {
-            setUri(config.uri)
+            host = config.host
+            port = config.port
+            username = config.user
+            password = config.password
             if (config.tls) {
                 useSslProtocol(SSLContext.getDefault())
                 enableHostnameVerification()
